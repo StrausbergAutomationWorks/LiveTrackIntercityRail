@@ -52,6 +52,8 @@ PASSTHROUGH = (
     "marker_arrow_outline_color",
     "marker_ring_color",
     "marker_ring_width",
+    # D4a: the marker's shape; "star" draws a star in the colours above.
+    "marker_shape",
 )
 
 

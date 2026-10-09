@@ -11,6 +11,10 @@ SSOT section 7, and the adapter (sources/amtraker.py) states only that.
 
 from __future__ import annotations
 
+from typing import Any
+
+from saw_livetrack.gtfs.realtime import Obs
+
 from .base import SOURCE_AMTRAKER, Operator
 
 # How long a train may go without a position change before it is AT REST
@@ -25,6 +29,36 @@ from .base import SOURCE_AMTRAKER, Operator
 # for 7-20 minutes, where "held" is the honest state. 420 s covers one late
 # fix plus our 30 s poll; a choice on that data, not a measurement.
 AMTRAK_REST_S = 420
+
+# The markers (Lee 2026-10-09 16:43): a STAR (06_MAP_CONTRACT.md D4a
+# `marker_shape`), the fuller one, in the flag's red, white and blue, white
+# inside, a thin white outline round it and a heavier white outline on the
+# number. ODD numbers are "D", blue edge and red number; EVEN are "C", red
+# edge and blue number. Odd/even is Amtrak's own split of a route's two
+# directions (Intercity SSOT section 8.1, measured on its GTFS: every route
+# but the Maple Leaf and five Northeast Regionals), and no end of a route is
+# its start, so direction is read from the number, not from a terminal.
+# The arrow is the edge colour outlined white: a choice, not Lee's.
+FLAG_BLUE, FLAG_RED, FLAG_WHITE = "#3C3B6E", "#B22234", "#FFFFFF"
+
+
+def amtrak_styling(obs: Obs) -> dict[str, Any]:
+    """D or C by the train number's parity; nothing for a number that is
+    not all digits (the card then draws its default disc)."""
+    number = obs.train
+    if not isinstance(number, str) or not number.isdigit():
+        return {}
+    edge, figure = (FLAG_BLUE, FLAG_RED) if int(number) % 2 else (FLAG_RED, FLAG_BLUE)
+    return {
+        "marker_shape": "star",
+        "marker_color": FLAG_WHITE,
+        "marker_ring_color": edge,
+        "marker_label_color": figure,
+        "marker_label_outline_color": FLAG_WHITE,
+        "marker_arrow_color": edge,
+        "marker_arrow_outline_color": FLAG_WHITE,
+    }
+
 
 AMTRAK = Operator(
     id="amtrak",
@@ -43,6 +77,7 @@ AMTRAK = Operator(
     # left the feed between polls; only Completed trains left, and the one
     # empty answer is an outage the adapter refuses (sources/amtraker.py).
     fleet={"rest_s": AMTRAK_REST_S},
+    styling=amtrak_styling,
     # Amtrak's on-time rule: a customer is on time arriving "no later than 15
     # minutes after their published scheduled arrival time" (49 CFR
     # 273.5(a)(1)). Amtraker's times are whole minutes, so the delay at the

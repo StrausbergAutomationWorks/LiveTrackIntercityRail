@@ -7,6 +7,9 @@ from _load import load
 operators = load("operators")
 sources_base = load("sources.base")
 attributes = load("attributes")
+amtrak = load("operators.amtrak")
+
+from saw_livetrack.gtfs.realtime import Obs  # noqa: E402
 
 
 class RegistryTests(unittest.TestCase):
@@ -67,6 +70,49 @@ class RegistryTests(unittest.TestCase):
         # A key an adapter may add but attributes.py drops would be dead.
         for key in sources_base.EXTRA_KEYS:
             self.assertIn(key, attributes.PASSTHROUGH)
+
+
+class AmtrakStarTests(unittest.TestCase):
+    """Lee 2026-10-09 16:43: odd numbers D, even C, a star."""
+
+    def obs(self, train):
+        return Obs(vehicle_id="x", lat=0.0, lon=0.0, observed_at=None, in_service=True,
+                   train=train, line=None, reported_course=None, trip_id="x")
+
+    def test_odd_is_d_blue_edge_red_number(self):
+        s = amtrak.amtrak_styling(self.obs("5"))
+        self.assertEqual(s["marker_shape"], "star")
+        self.assertEqual((s["marker_ring_color"], s["marker_label_color"]), ("#3C3B6E", "#B22234"))
+        self.assertEqual((s["marker_color"], s["marker_label_outline_color"]), ("#FFFFFF", "#FFFFFF"))
+
+    def test_even_is_c_red_edge_blue_number(self):
+        s = amtrak.amtrak_styling(self.obs("2150"))
+        self.assertEqual((s["marker_ring_color"], s["marker_label_color"]), ("#B22234", "#3C3B6E"))
+
+    def test_the_arrow_is_the_edge_outlined_white(self):
+        for n, edge in (("5", "#3C3B6E"), ("6", "#B22234")):
+            s = amtrak.amtrak_styling(self.obs(n))
+            self.assertEqual((s["marker_arrow_color"], s["marker_arrow_outline_color"]), (edge, "#FFFFFF"))
+
+    def test_no_number_no_style(self):
+        for n in (None, "", "v28", "5A"):
+            self.assertEqual(amtrak.amtrak_styling(self.obs(n)), {})
+
+    def test_every_colour_is_the_contracts_form(self):
+        import re
+        for n in ("1", "2"):
+            for k, v in amtrak.amtrak_styling(self.obs(n)).items():
+                if k.endswith("_color"):
+                    self.assertRegex(v, re.compile(r"^#[0-9A-Fa-f]{6}$"), k)
+
+    def test_amtrak_uses_it_and_the_map_gets_the_shape(self):
+        self.assertIs(operators.OPERATORS["amtrak"].styling, amtrak.amtrak_styling)
+        rec = {"vehicle_id": "5-8", "marker_label": "5", "in_service": True,
+               **amtrak.amtrak_styling(self.obs("5"))}
+        a = attributes.to_attributes(rec, "amtrak")
+        for k in ("marker_shape", "marker_color", "marker_ring_color", "marker_label_color",
+                  "marker_label_outline_color", "marker_arrow_color", "marker_arrow_outline_color"):
+            self.assertIn(k, a)
 
 
 if __name__ == "__main__":
