@@ -1,0 +1,41 @@
+"""The railroad registry. No Home Assistant imports.
+
+Adding a railroad is one operator module plus one line here, and a source
+adapter in sources/ if its source is new. Before it ships: may it be shipped
+at all (its source's licence, linked from `terms_url`), and what does it cost
+the user. Record both in the SSOT.
+
+! An operator's `id` becomes its config entry's unique_id and part of every
+entity name. Never change one once released.
+
+Brightline is this integration's first operator by design (SSOT section 3)
+and is NOT here yet: its identity rule waits on Lee (SSOT section 5, item
+284). It will read Brightline's own GTFS-Realtime, a second source adapter.
+"""
+
+from __future__ import annotations
+
+from .amtrak import AMTRAK
+from .base import REGIONS, SOURCE_AMTRAKER, SOURCES, Operator
+
+OPERATORS: dict[str, Operator] = {op.id: op for op in (AMTRAK,)}
+
+
+def regions_in_use() -> dict[str, str]:
+    """{region code: label} for every region at least one railroad serves,
+    sorted by label, so the setup list never offers an empty region."""
+    used = {code for op in OPERATORS.values() for code in op.regions}
+    unknown = used - REGIONS.keys()
+    if unknown:
+        raise ValueError(f"region codes without a label: {sorted(unknown)}")
+    return dict(sorted(((c, REGIONS[c]) for c in used), key=lambda kv: kv[1]))
+
+
+def operators_in(region: str) -> list[Operator]:
+    """Railroads serving a region, sorted by name."""
+    return sorted((op for op in OPERATORS.values() if region in op.regions),
+                  key=lambda op: op.name.lower())
+
+
+__all__ = ["OPERATORS", "REGIONS", "SOURCES", "SOURCE_AMTRAKER", "Operator",
+           "operators_in", "regions_in_use"]

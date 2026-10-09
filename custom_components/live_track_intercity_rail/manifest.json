@@ -1,0 +1,16 @@
+{
+  "domain": "live_track_intercity_rail",
+  "name": "Live Track Intercity Rail",
+  "codeowners": [
+    "@LeeS773-prog"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/StrausbergAutomationWorks/LiveTrackIntercityRail",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/StrausbergAutomationWorks/LiveTrackIntercityRail/issues",
+  "requirements": [
+    "saw-livetrack[gtfs]>=0.2.4,<0.3"
+  ],
+  "version": "0.1.0"
+}

@@ -1,0 +1,37 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Live Track Intercity Rail",
+        "description": "Where is the intercity railroad you want to watch? Only regions with at least one supported railroad are listed.",
+        "data": {
+          "region": "Region"
+        }
+      },
+      "operator": {
+        "title": "Choose the railroad",
+        "description": "Each railroad is added on its own. Add another later to watch more than one.",
+        "data": {
+          "operator": "Railroad"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "This railroad is already set up.",
+      "all_configured": "Every supported railroad is already set up."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Live Track Intercity Rail",
+        "data": {
+          "scan_interval": "Poll interval"
+        },
+        "data_description": {
+          "scan_interval": "How often to read the railroad's source. Amtraker refreshes about every 30 seconds."
+        }
+      }
+    }
+  }
+}
