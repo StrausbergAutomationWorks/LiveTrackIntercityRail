@@ -215,6 +215,49 @@ class ProjectorTests(unittest.TestCase):
         q.estimate("7-9", "7", (0.1, 0.1), T0, "C", 10.0, T0 + 100)
         self.assertEqual(q.course("7-9"), 0.0)             # north, along a meridian
 
+    def test_path_is_the_line_between_two_drawn_positions(self):
+        # A line with a bend: east to lon 0.2, then north.
+        g = geo(shapes={"S1": [[0.0, 0.0], [0.0, 0.1], [0.0, 0.2], [0.1, 0.2], [0.2, 0.2]]},
+                stops={"C": [0.2, 0.2]})
+        p = geometry.Projector(g)
+        self.assertIsNone(p.path("7-9"))
+        # From 20.0 km along: 300 m, then 4.8 km, past the bend at 22.2 km.
+        first = self.est(p, 0.18, T0, speed=30.0, now=T0 + 10)
+        self.assertIsNone(p.path("7-9"))                     # nothing before it
+        second = self.est(p, 0.18, T0, speed=30.0, now=T0 + 160)
+        path = p.path("7-9")
+        self.assertEqual(path[0], list(first))
+        self.assertEqual(path[-1], list(second))
+        self.assertIn([0.0, 0.2], path)                      # round the bend, not across
+        self.assertEqual(len(path), 3)
+
+    def test_path_keeps_the_fix_offset(self):
+        p = geometry.Projector(geo())
+        self.est(p, 0.1, T0, speed=100.0, now=T0 + 10, lat=0.0009)
+        self.est(p, 0.1, T0, speed=100.0, now=T0 + 100, lat=0.0009)
+        self.assertTrue(all(abs(q[0] - 0.0009) < 1e-9 for q in p.path("7-9")))
+
+    def test_a_path_against_the_lines_order_runs_the_way_the_train_went(self):
+        # Fixes going WEST along a line drawn east, vertices every 0.01 deg.
+        g = geo(shapes={"S1": line(n=101)}, stops={"A": [0.0, 0.0]})
+        p = geometry.Projector(g)
+        self.est(p, 0.5, T0, stop="A", speed=30.0)
+        self.est(p, 0.49, T0 + 60, stop="A", speed=30.0, now=T0 + 70)
+        self.est(p, 0.49, T0 + 60, stop="A", speed=30.0, now=T0 + 160)
+        lons = [q[1] for q in p.path("7-9")]
+        self.assertGreater(len(lons), 2)
+        self.assertEqual(lons, sorted(lons, reverse=True))
+
+    def test_no_path_when_held_or_jumping(self):
+        p = geometry.Projector(geo())
+        self.est(p, 0.1, T0, speed=10.0, now=T0 + 10)
+        self.est(p, 0.1, T0, speed=10.0, now=T0 + 10)       # no move
+        self.assertIsNone(p.path("7-9"))
+        q = geometry.Projector(geo())
+        self.est(q, 0.1, T0, speed=10.0, now=T0 + 10)
+        self.est(q, 0.25, T0 + 20, speed=10.0, now=T0 + 20)  # a fix 16.7 km on
+        self.assertIsNone(q.path("7-9"))
+
     def test_bearing(self):
         self.assertAlmostEqual(geometry.bearing((0, 0), (0, 1)), 90.0)
         self.assertAlmostEqual(geometry.bearing((0, 0), (-1, 0)), 180.0)

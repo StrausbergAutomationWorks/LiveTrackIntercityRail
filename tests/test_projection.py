@@ -135,6 +135,16 @@ class ApplyTests(unittest.TestCase):
         self.assertEqual((r["icon_rotation_deg"], r["icon_rotation_basis"]), (90.0, "held"))
         self.assertEqual(r["position_source"], "observed")
 
+    def test_a_moved_train_carries_its_track_path(self):
+        p = geometry.Projector(line_geo())
+        projection.apply(p, snap_of([obs(0.1, T0)], kmh=36.0),
+                         {"vehicles": {"7-9": rec(0.1)}, "departed": []}, T0 + 30)
+        res = {"vehicles": {"7-9": rec(0.1)}, "departed": []}
+        projection.apply(p, snap_of([obs(0.1, T0)], kmh=36.0), res, T0 + 60)
+        r = res["vehicles"]["7-9"]
+        self.assertEqual(r["track_path"][-1], [r["latitude"], r["longitude"]])
+        self.assertEqual(len(r["track_path"]), 2)            # a straight line: no vertex between
+
     def test_no_line_keeps_fleets_course(self):
         res = {"vehicles": {"7-9": rec(0.1, course_deg=37.0, icon_rotation_deg=37.0)}, "departed": []}
         projection.apply(None, snap_of([obs(0.1, T0)]), res, T0 + 60)
@@ -202,6 +212,19 @@ class ReplayTests(unittest.TestCase):
                     self.assertNotIn("course_deg", r)
                 checked += 1
         self.assertGreater(checked, 500)
+
+    def test_a_moved_train_carries_the_line_it_moved_along(self):
+        # Measured 2026-10-09 (bin\ltir_path_measure.txt): 495 of 580
+        # estimated records, at most 15 points, every one ending where drawn.
+        with_path = 0
+        for _, _, res, _ in self.frames:
+            for r in res["vehicles"].values():
+                p = r.get("track_path")
+                if p:
+                    with_path += 1
+                    self.assertEqual(p[-1], [r["latitude"], r["longitude"]])
+                    self.assertLessEqual(len(p), 50)
+        self.assertGreater(with_path, 450)
 
     def test_most_moving_trains_are_moved(self):
         est = sum(c["estimated"] for *_, c in self.frames)

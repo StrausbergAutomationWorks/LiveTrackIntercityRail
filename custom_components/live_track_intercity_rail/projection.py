@@ -58,6 +58,11 @@ def apply(projector: Projector | None, snap: Snapshot, result: dict[str, Any],
                 kmh / 3.6 if kmh is not None else None,
                 now)
         crs = projector.course(vid) if est is not None else None
+        path = projector.path(vid) if est is not None else None
+        if path is not None:
+            # The line it moved along since the last poll: the card slides
+            # along it instead of across (06_MAP_CONTRACT.md D3c-v).
+            rec["track_path"] = path
         if crs is not None:
             # The line's bearing, the way the train is going: what the marker
             # moves along. Replaces Fleet's chord between two fixes 3-5

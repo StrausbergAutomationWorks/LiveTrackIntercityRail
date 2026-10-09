@@ -45,6 +45,8 @@ class AttributeTests(unittest.TestCase):
         a = attributes.to_attributes(rec, "amtrak")
         self.assertEqual(a["position_source"], "estimated")
         self.assertEqual((a["fix_latitude"], a["fix_longitude"]), (40.09, -104.88))
+        path = [[40.09, -104.88], [40.1, -104.9]]
+        self.assertEqual(attributes.to_attributes(dict(rec, track_path=path), "amtrak")["track_path"], path)
         a = attributes.to_attributes(dict(REC, position_source="observed"), "amtrak")
         self.assertEqual(a["position_source"], "observed")
         self.assertNotIn("fix_latitude", a)

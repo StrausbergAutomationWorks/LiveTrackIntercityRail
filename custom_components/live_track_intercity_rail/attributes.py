@@ -39,6 +39,8 @@ PASSTHROUGH = (
     "position_source",
     "fix_latitude",
     "fix_longitude",
+    # D3c-v route hint: the line from the last drawn position to this one.
+    "track_path",
     # D2: the speed the SOURCE reported, in km/h. Only an adapter whose
     # source carries a real one sets it (Amtraker's Amtrak velocity is real,
     # 220 of 248 measured; its Brightline velocity is always zero, 05 B8.4).

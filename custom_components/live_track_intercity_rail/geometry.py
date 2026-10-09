@@ -62,6 +62,10 @@ MOTION_M = 150.0
 # a 100 m chord, short enough to follow a curve, long enough that the
 # simplified line's 15 m vertices do not twitch it.
 COURSE_SPAN_M = 50.0
+# The longest stretch of line published as a train's track_path. Thirty
+# seconds at 300 km/h is 2.5 km; a longer move is a new fix far from the
+# last estimate, drawn as the card's straight slide or a jump.
+MAX_PATH_M = 10000.0
 
 
 def bearing(a: tuple[float, float], b: tuple[float, float]) -> float:
@@ -201,6 +205,9 @@ class _State:
     last_d: float | None = None     # along-route position last published
     direction: float = 0.0          # +1 / -1 along the route, once known
     motion: float = 0.0             # +1 / -1: the way the FIXES moved along it
+    last_point: tuple | None = None  # the position last published
+    prev_d: float | None = None     # the one before it, for track_path
+    prev_point: tuple | None = None
 
 
 @dataclass
@@ -316,11 +323,49 @@ class Projector:
         if st.last_d is not None and st.direction and (d - st.last_d) * st.direction < 0 \
                 and abs(d - st.last_d) < 5000:
             d = st.last_d
-        st.last_d = d
         if d == st.d_fix:
-            return fix
-        # The fix MOVED along the route, never put onto it: the estimate keeps
-        # the fix's own offset from the line (p50 3 m), so at the moment of a
-        # fix it IS the fix (06_MAP_CONTRACT.md D3c-v: emitters never snap).
-        a, b = route.point(st.d_fix), route.point(d)
-        return (round(fix[0] + b[0] - a[0], 6), round(fix[1] + b[1] - a[1], 6))
+            p = fix
+        else:
+            # The fix MOVED along the route, never put onto it: the estimate
+            # keeps the fix's own offset from the line (p50 3 m), so at the
+            # moment of a fix it IS the fix (06_MAP_CONTRACT.md D3c-v:
+            # emitters never snap).
+            a, b = route.point(st.d_fix), route.point(d)
+            p = (round(fix[0] + b[0] - a[0], 6), round(fix[1] + b[1] - a[1], 6))
+        st.prev_d, st.prev_point = st.last_d, st.last_point
+        st.last_d, st.last_point = d, p
+        return p
+
+    def path(self, train_id: str) -> list[list[float]] | None:
+        """The train's line from where estimate() placed it the time before
+        to where it placed it last: [[lat, lon], ...], first and last exactly
+        those two positions, between them the line's own vertices carried by
+        the latest fix's offset. None when it did not move forward along its
+        line, moved more than MAX_PATH_M, or has no earlier position.
+
+        Lee 2026-10-09 17:44: "Trains are off the track by a long way".
+        MEASURED 17:45 (bin\\ltir_live_offline.txt): the PUBLISHED positions
+        are on the line (p50 3 m, p90 13 m); the card slid each marker in a
+        straight line between them for up to 30 s, and 2 km of Acela across a
+        curve strays hundreds of metres. This is the route hint of
+        06_MAP_CONTRACT.md D3c-v, for the card to slide along."""
+        st = self._state.get(train_id)
+        if st is None or st.prev_point is None or st.prev_d is None or st.last_d is None \
+                or st.last_point is None or not st.direction:
+            return None
+        moved = (st.last_d - st.prev_d) * st.direction
+        if moved <= 0 or moved > MAX_PATH_M:
+            return None
+        route = self._route(st.shape_id)
+        if route is None:
+            return None
+        on = route.point(st.last_d)
+        dlat, dlon = st.last_point[0] - on[0], st.last_point[1] - on[1]
+        lo, hi = sorted((st.prev_d, st.last_d))
+        inner = [i for i in range(len(route.cum)) if lo < route.cum[i] < hi]
+        if st.direction < 0:
+            inner.reverse()
+        pts = [list(st.prev_point)]
+        pts += [[round(route.lat[i] + dlat, 6), round(route.lon[i] + dlon, 6)] for i in inner]
+        pts.append(list(st.last_point))
+        return pts
