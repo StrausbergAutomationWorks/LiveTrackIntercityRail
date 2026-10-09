@@ -30,7 +30,7 @@ from saw_livetrack.gtfs import Fleet
 from .const import (
     CONF_SCAN_INTERVAL,
     DEFAULT_SCAN_INTERVAL,
-    MAX_TRANSIENT_FAILURES,
+    SOURCE_GAP_S,
     USER_AGENT,
 )
 from . import projection
@@ -38,7 +38,7 @@ from .operators import SOURCE_AMTRAKER, Operator
 from .route_store import RouteStore
 from .shared_coordinator import get_shared_client, release_shared_client
 from .sources import amtraker
-from .sources.base import EXTRA_KEYS, Snapshot, trains_in_service
+from .sources.base import EXTRA_KEYS, Snapshot, hold_last, trains_in_service
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -59,7 +59,8 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.operator = op
         self.fleet = Fleet(styling=op.styling, **dict(op.fleet))
         self._failures = 0
-        self._last_good: dict[str, Any] | None = None
+        self._last_snap: Snapshot | None = None
+        self._last_ok_t: float | None = None
         self.skipped: dict[str, int] = {}
         # The railroad's route lines, for the along-route estimate. Loaded and
         # refreshed in the background; a poll never waits for them.
@@ -102,20 +103,22 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def _async_update_data(self) -> dict[str, Any]:
         op = self.operator
-        snap = await self._fetch()
+        fresh = await self._fetch()
+        now = time.time()
+        snap, held = hold_last(fresh, self._last_snap, self._last_ok_t, now, SOURCE_GAP_S)
         if snap is None:
             self._failures += 1
-            if self._failures <= MAX_TRANSIENT_FAILURES and self._last_good is not None:
-                # Serve the last result rather than blanking the map. Every
-                # train carries observed_at where its source dates it, so a
-                # stale position reads as stale rather than as current.
-                return self._last_good
             raise UpdateFailed(
                 f"{op.name} positions unavailable ({self._failures} consecutive failures)")
-        self._failures = 0
+        if held:
+            # The source failed: its last good answer again, at the current
+            # time, so the trains keep moving along their lines (hold_last).
+            self._failures += 1
+        else:
+            self._failures = 0
+            self._last_snap, self._last_ok_t = snap, now
         self.skipped = dict(snap.skipped)
 
-        now = time.time()
         result = self.fleet.update(
             snap.observations, now,
             next_stops=snap.next_stops, trip_delays=snap.trip_delays)
@@ -137,5 +140,5 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # time walks every line its number runs on.
         self.placement = await self.hass.async_add_executor_job(
             projection.apply, self.routes.projector, snap, result, now)
-        self._last_good = result
+        self.placement["source_failures"] = self._failures
         return result

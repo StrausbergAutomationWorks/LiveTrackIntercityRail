@@ -20,10 +20,15 @@ USER_AGENT = (
     "(+https://github.com/StrausbergAutomationWorks/LiveTrackIntercityRail)"
 )
 
-# Ride out this many consecutive failed fetches by serving the last good
-# result, so one network blip does not blank every marker. Live Track
-# Commuter Rail's figure, carried over.
-MAX_TRANSIENT_FAILURES = 2
+# How long a failed source is ridden out on its last good answer before the
+# trains go unavailable (and the dashboard, which excludes unavailable
+# entities, drops them). It was 2 failed polls (Commuter Rail's figure): on
+# 2026-10-09 17:19:14 CDT Amtraker failed 3 polls running and every Amtrak
+# marker vanished for 31 s (Lee: "All of the icons just disappeared"). Ten
+# minutes is a choice: trains keep moving along their lines meanwhile
+# (sources/base.py hold_last), and every one still carries its fix's
+# observed_at, so a stale answer reads as stale.
+SOURCE_GAP_S = 600
 
 # The shared map's layer name (06_MAP_CONTRACT.md D10). Every vehicle here is
 # a train. The card owns the number.

@@ -44,6 +44,22 @@ class Snapshot:
     skipped: dict[str, int] = field(default_factory=dict)
 
 
+def hold_last(snap: Snapshot | None, last: Snapshot | None, last_ok_t: float | None,
+              now: float, gap_s: float) -> tuple[Snapshot | None, bool]:
+    """(the Snapshot to publish, whether it is the LAST GOOD one held).
+
+    A good answer is published as it is. A failed one (None) is replaced by
+    the last good answer while that is at most gap_s old, so the coordinator
+    runs it again at the current time and the trains keep moving along their
+    lines; after that, None: the source is down and the trains go
+    unavailable (coordinator, const.SOURCE_GAP_S)."""
+    if snap is not None:
+        return snap, False
+    if last is not None and last_ok_t is not None and now - last_ok_t <= gap_s:
+        return last, True
+    return None, False
+
+
 def trains_in_service(snap: Snapshot) -> int:
     """Trains in service in this poll: one per RUN, i.e. per identity.
 

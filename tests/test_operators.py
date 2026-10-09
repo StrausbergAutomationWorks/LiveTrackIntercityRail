@@ -72,6 +72,29 @@ class RegistryTests(unittest.TestCase):
             self.assertIn(key, attributes.PASSTHROUGH)
 
 
+class HoldLastTests(unittest.TestCase):
+    """A failed poll rides on the last good answer for SOURCE_GAP_S."""
+
+    def test_a_good_answer_is_published(self):
+        a, b = sources_base.Snapshot(), sources_base.Snapshot()
+        self.assertEqual(sources_base.hold_last(a, b, 0.0, 100.0, 600), (a, False))
+
+    def test_a_failure_rides_on_the_last_good_answer(self):
+        b = sources_base.Snapshot()
+        self.assertEqual(sources_base.hold_last(None, b, 0.0, 600.0, 600), (b, True))
+
+    def test_then_the_source_is_down(self):
+        b = sources_base.Snapshot()
+        self.assertEqual(sources_base.hold_last(None, b, 0.0, 600.5, 600), (None, False))
+
+    def test_nothing_to_hold(self):
+        self.assertEqual(sources_base.hold_last(None, None, None, 1.0, 600), (None, False))
+
+    def test_ten_minutes(self):
+        const = load("const")
+        self.assertEqual(const.SOURCE_GAP_S, 600)
+
+
 class AmtrakStarTests(unittest.TestCase):
     """Lee 2026-10-09 16:43: odd numbers D, even C, a star."""
 
