@@ -1,20 +1,20 @@
 """Where a train is BETWEEN its source's fixes: along its route, toward its
 next stop. No Home Assistant imports, no third-party packages.
 
-Lee, 2026-10-09: "Project the train along the rail line toward its next stop,
-arriving when Amtrak's estimate says it will." MEASURED first, on the
-2026-10-09 capture against each train's next real fix (SSOT section 9;
-bin\\ltir_proj_trial.py), 1,398 fix pairs:
+Lee, 2026-10-09: "Project the train along the rail line toward its next
+stop". MEASURED first, on the 2026-10-09 capture against each train's next
+real fix (SSOT section 9; bin\\ltir_proj_trial.py), 1,398 fix pairs:
 
     holding the last fix (the map until now)   p50 4.83 km  p90 9.77  max 26.3
-    timed to Amtrak's estimate                  p50 0.96 km  p90 3.78  max 101.9
-    at the reported velocity                    p50 0.40 km  p90 2.45  max 20.2
-    the SLOWER of the two (shipped)             p50 0.76 km  p90 2.86  max 11.3
+    timed to Amtrak's arrival estimate          p50 0.96 km  p90 3.78  max 101.9
+    at the reported velocity (SHIPPED)          p50 0.40 km  p90 2.45  max 20.2
+    the slower of the two                       p50 0.76 km  p90 2.86  max 11.3
 
-The estimate alone fails in its tail: a stale or near-due estimate for a stop
-far away implies impossible speeds (to 3,418 km/h). The shipped rule keeps
-Lee's: the train never reaches its next stop before Amtrak's estimate, and
-never moves faster than it reported. Every estimate moves the fix ALONG the
+The arrival estimate fails in its tail: a stale or near-due estimate for a
+stop far away implies impossible speeds (to 3,418 km/h). The slower of the
+two shipped first (4a2e469); Lee, 15:47: "Let's use reported speed". The
+train moves at the speed it reported, and stops at its next stop. Every
+estimate moves the fix ALONG the
 route, so a straight line can no longer cross the landscape (D3b condition 3,
 the reason straight-line extrapolation was refused). The fix is moved, never
 snapped: it keeps its own offset from the line.
@@ -218,7 +218,7 @@ class Projector:
         return best
 
     def estimate(self, train_id: str, number: str, fix: tuple[float, float], fix_t: float | None,
-                 stop_code: str | None, eta_t: float | None, speed_ms: float | None,
+                 stop_code: str | None, speed_ms: float | None,
                  now: float) -> tuple[float, float] | None:
         """(lat, lon) on the route at `now`, or None for "publish the fix"."""
         if fix_t is None or stop_code is None or now < fix_t:
@@ -265,14 +265,8 @@ class Projector:
         else:
             if dist > 0:
                 st.direction = math.copysign(1.0, gap)
-            # Timed to the estimate: never at the stop before Amtrak says.
-            if eta_t is None or eta_t <= fix_t:
-                by_eta = 0.0
-            else:
-                by_eta = dist * min(1.0, dt / (eta_t - fix_t))
-            # At the reported speed: never faster than the train said.
-            by_speed = min(dist, speed * dt)
-            step = min(by_eta, by_speed)
+            # At the reported speed, and never past the next stop.
+            step = min(dist, speed * dt)
         d = st.d_fix + st.direction * step
         # Never backwards along the direction of travel: a fix that arrives
         # behind the last estimate holds the marker until the train passes it.

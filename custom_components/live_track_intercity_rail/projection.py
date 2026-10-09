@@ -47,13 +47,11 @@ def apply(projector: Projector | None, snap: Snapshot, result: dict[str, Any],
         # Only a record standing at this poll's own fix is moved: anything
         # else is a position Fleet chose (a held one), and Fleet's call stands.
         if projector is not None and o.train and fix == (o.lat, o.lon):
-            nxt = snap.next_stops.get(vid)
             kmh = (snap.extras.get(vid) or {}).get("speed_kmh")
             est = projector.estimate(
                 vid, o.train, fix,
                 o.observed_at.timestamp() if o.observed_at is not None else None,
                 snap.stop_codes.get(vid),
-                nxt[1] if nxt else None,
                 kmh / 3.6 if kmh is not None else None,
                 now)
         if est is None or est == fix:

@@ -76,12 +76,14 @@ class ApplyTests(unittest.TestCase):
     def test_an_estimate_says_so_and_keeps_the_fix(self):
         p = geometry.Projector(line_geo())
         res = {"vehicles": {"7-9": rec(0.1)}, "departed": []}
-        counts = projection.apply(p, snap_of([obs(0.1, T0)], eta=T0 + 1000), res, T0 + 500)
+        counts = projection.apply(p, snap_of([obs(0.1, T0)], eta=T0 + 1000, kmh=36.0),
+                                  res, T0 + 500)
         r = res["vehicles"]["7-9"]
         self.assertEqual(counts, {"estimated": 1, "observed": 0})
         self.assertEqual(r["position_source"], "estimated")
         self.assertEqual((r["fix_latitude"], r["fix_longitude"]), (0.0, 0.1))
-        self.assertAlmostEqual(r["longitude"], 0.15, places=6)
+        # 36 km/h is 10 m/s: 5 km along in 500 s.
+        self.assertAlmostEqual(r["longitude"], 0.1 + 5000 / (geometry.R * math.pi / 180), places=6)
         for k in projection.SEGMENT_KEYS:
             self.assertNotIn(k, r)
 
@@ -189,9 +191,10 @@ class ReplayTests(unittest.TestCase):
         self.assertLess(drawn, MEASURED_P50_KM_CEILING, drawn)
 
 
-# Measured on these fixtures 2026-10-09 (bin\ltir_proj_measure.txt): 571
-# records estimated and 69 observed over 77 polls; 74 new fixes, the drawn
-# position p50 1.91 km from each (p90 6.33), holding the last fix p50 5.05 km.
+# Measured on these fixtures 2026-10-09 (bin\ltir_proj_measure.txt), the
+# speed-only rule: 575 records estimated and 65 observed over 77 polls; 74 new
+# fixes, the drawn position p50 2.20 km from each (p90 7.08), holding the last
+# fix p50 5.05 km. (The ETA-and-speed rule of 4a2e469: p50 1.91, p90 6.33.)
 # Set with a margin; a change past either is a change in the estimate.
 MEASURED_ESTIMATED_FLOOR = 500
 MEASURED_P50_KM_CEILING = 2.5

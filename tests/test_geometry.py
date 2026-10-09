@@ -116,34 +116,36 @@ class ProjectorTests(unittest.TestCase):
 
     def est(self, p, lon, t, stop="C", eta=None, speed=100.0, now=None, lat=0.0,
             tid="7-9", number="7"):
-        return p.estimate(tid, number, (lat, lon), t, stop, eta, speed,
+        # eta: kept in the calls as the record of what the source said; the
+        # rule no longer reads it (Lee 2026-10-09 15:47: reported speed).
+        return p.estimate(tid, number, (lat, lon), t, stop, speed,
                           t if now is None else now)
 
     def test_at_the_moment_of_a_fix_it_is_the_fix(self):
         p = geometry.Projector(geo())
         self.assertEqual(self.est(p, 0.1, T0, eta=T0 + 600), (0.0, 0.1))
 
-    def test_timed_to_the_estimate(self):
-        # 0.1 of a degree to go, due in 1000 s, half of it gone: half way.
+    def test_at_its_reported_speed(self):
         p = geometry.Projector(geo())
-        lat, lon = self.est(p, 0.1, T0, eta=T0 + 1000, now=T0 + 500)
+        lat, lon = self.est(p, 0.1, T0, speed=10.0, now=T0 + 500)
         self.assertEqual(lat, 0.0)
-        self.assertAlmostEqual(lon, 0.15, places=6)
+        self.assertAlmostEqual(lon, 0.1 + deg(5000), places=6)
 
-    def test_never_faster_than_it_reported(self):
-        p = geometry.Projector(geo())
-        _, lon = self.est(p, 0.1, T0, eta=T0 + 100, speed=2.0, now=T0 + 500)
-        self.assertAlmostEqual(lon, 0.1 + deg(1000), places=6)
+    def test_amtraks_arrival_estimate_is_not_an_input(self):
+        # Due at the stop in 100 s, or long overdue: the same place either way.
+        p1, p2 = geometry.Projector(geo()), geometry.Projector(geo())
+        self.assertEqual(self.est(p1, 0.1, T0, eta=T0 + 100, speed=2.0, now=T0 + 500),
+                         self.est(p2, 0.1, T0, eta=T0 - 900, speed=2.0, now=T0 + 500))
 
     def test_never_past_its_stop(self):
         p = geometry.Projector(geo())
         self.assertEqual(self.est(p, 0.1, T0, eta=T0 + 100, speed=1000.0, now=T0 + 900),
                          (0.0, 0.2))
 
-    def test_an_estimate_in_the_past_or_none_holds_the_fix(self):
-        for eta in (T0 - 10, T0, None):
+    def test_no_speed_holds_the_fix(self):
+        for speed in (0.0, None, -5.0):
             p = geometry.Projector(geo())
-            self.assertEqual(self.est(p, 0.1, T0, eta=eta, now=T0 + 300), (0.0, 0.1), eta)
+            self.assertEqual(self.est(p, 0.1, T0, speed=speed, now=T0 + 300), (0.0, 0.1), speed)
 
     def test_half_an_hour_is_the_horizon(self):
         p = geometry.Projector(geo())
@@ -153,9 +155,9 @@ class ProjectorTests(unittest.TestCase):
     def test_the_fix_is_moved_never_snapped(self):
         # 100 m north of the line: the estimate stays 100 m north of it.
         p = geometry.Projector(geo())
-        lat, lon = self.est(p, 0.1, T0, eta=T0 + 1000, now=T0 + 500, lat=0.0009)
+        lat, lon = self.est(p, 0.1, T0, speed=10.0, now=T0 + 500, lat=0.0009)
         self.assertEqual(lat, 0.0009)
-        self.assertAlmostEqual(lon, 0.15, places=6)
+        self.assertAlmostEqual(lon, 0.1 + deg(5000), places=6)
 
     def test_no_estimate_without_what_it_needs(self):
         p = geometry.Projector(geo())
@@ -208,19 +210,20 @@ class ProjectorTests(unittest.TestCase):
                 stops={"C": [0.0, 0.2], "N": [1.0, 0.2]})
         p = geometry.Projector(g)
         self.assertEqual(self.est(p, 0.1, T0, eta=T0 + 1000), (0.0, 0.1))
-        est = self.est(p, 0.1, T0 + 60, stop="N", eta=T0 + 1060, now=T0 + 560, lat=0.9995)
+        est = self.est(p, 0.1, T0 + 60, stop="N", speed=10.0, now=T0 + 560, lat=0.9995)
         self.assertIsNotNone(est)
         self.assertEqual(est[0], 0.9995)
-        self.assertAlmostEqual(est[1], 0.15, places=5)
+        self.assertGreater(est[1], 0.1 + deg(4900))
 
     def test_the_nearest_of_the_numbers_lines(self):
         g = geo(trains={"7": ["S1", "S2"]},
                 shapes={"S1": line(), "S2": line(lat=1.0)},
                 stops={"N": [1.0, 0.2]})
         p = geometry.Projector(g)
-        lat, lon = self.est(p, 0.1, T0, stop="N", eta=T0 + 1000, now=T0 + 500, lat=0.9995)
+        lat, lon = self.est(p, 0.1, T0, stop="N", speed=10.0, now=T0 + 500, lat=0.9995)
         self.assertEqual(lat, 0.9995)
-        self.assertAlmostEqual(lon, 0.15, places=5)
+        # On the line at 1 degree north, where a degree of longitude is shorter.
+        self.assertAlmostEqual(lon, 0.1 + deg(5000) / math.cos(math.radians(1.0)), places=5)
 
 
 if __name__ == "__main__":
