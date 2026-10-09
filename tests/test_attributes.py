@@ -38,6 +38,17 @@ class AttributeTests(unittest.TestCase):
                     "course_deg"):
             self.assertEqual(a[key], REC[key], key)
 
+    def test_an_estimate_says_so_and_carries_its_fix(self):
+        # D3 provenance (projection.py): the drawn position is the state; the
+        # source's fix rides in attributes, so the recorder keeps the real track.
+        rec = dict(REC, position_source="estimated", fix_latitude=40.09, fix_longitude=-104.88)
+        a = attributes.to_attributes(rec, "amtrak")
+        self.assertEqual(a["position_source"], "estimated")
+        self.assertEqual((a["fix_latitude"], a["fix_longitude"]), (40.09, -104.88))
+        a = attributes.to_attributes(dict(REC, position_source="observed"), "amtrak")
+        self.assertEqual(a["position_source"], "observed")
+        self.assertNotIn("fix_latitude", a)
+
     def test_position_is_not_an_attribute(self):
         a = attributes.to_attributes(dict(REC), "amtrak")
         self.assertNotIn("latitude", a)

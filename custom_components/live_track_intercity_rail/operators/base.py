@@ -40,6 +40,25 @@ class Operator:
     # Obs -> marker styling keys (06_MAP_CONTRACT.md D4a), each only when set.
     # None: the card's defaults. Colours are the operator's decision (Lee's).
     styling: Callable[[Obs], dict[str, Any]] | None = None
+    # How THIS railroad defines late (06_MAP_CONTRACT.md D4c; Lee 2026-10-09:
+    # "Change lateness based on how each system defines late"): a train is late
+    # when `delay_min` >= late_threshold_min, red from very_late_threshold_min.
+    # None: not published, and the card's defaults (6 and 15, Metra's) apply.
+    late_threshold_min: int | None = None
+    very_late_threshold_min: int | None = None
+    # The railroad's own GTFS static zip, for its route lines and stops: what
+    # moves a train along its line between fixes (geometry.py). None: every
+    # train is published at its fix, as it is.
+    gtfs_url: str | None = None
+
+    def lateness_keys(self) -> dict[str, int]:
+        """The D4c threshold keys for a train in service, each only when set."""
+        keys = {}
+        if self.late_threshold_min is not None:
+            keys["late_threshold_min"] = self.late_threshold_min
+        if self.very_late_threshold_min is not None:
+            keys["very_late_threshold_min"] = self.very_late_threshold_min
+        return keys
 
 
 # Region codes and the label the setup list shows: ISO 3166-1, because an

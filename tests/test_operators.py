@@ -44,6 +44,25 @@ class RegistryTests(unittest.TestCase):
         for op in operators.OPERATORS.values():
             Fleet(**dict(op.fleet))   # an unknown keyword raises TypeError
 
+    def test_amtraks_own_definition_of_late(self):
+        # 49 CFR 273.5(a)(1): on time up to 15 minutes; whole-minute times.
+        op = operators.OPERATORS["amtrak"]
+        self.assertEqual(op.lateness_keys(),
+                         {"late_threshold_min": 16, "very_late_threshold_min": 30})
+        self.assertGreaterEqual(op.very_late_threshold_min, op.late_threshold_min)
+
+    def test_a_railroad_that_publishes_none_says_nothing(self):
+        from dataclasses import replace
+        op = replace(operators.OPERATORS["amtrak"], late_threshold_min=None,
+                     very_late_threshold_min=None)
+        self.assertEqual(op.lateness_keys(), {})
+        op = replace(op, late_threshold_min=6)
+        self.assertEqual(op.lateness_keys(), {"late_threshold_min": 6})
+
+    def test_the_lateness_keys_reach_the_map(self):
+        for key in operators.OPERATORS["amtrak"].lateness_keys():
+            self.assertIn(key, attributes.PASSTHROUGH)
+
     def test_every_extra_key_can_reach_the_map(self):
         # A key an adapter may add but attributes.py drops would be dead.
         for key in sources_base.EXTRA_KEYS:

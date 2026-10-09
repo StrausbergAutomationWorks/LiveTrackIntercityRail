@@ -103,6 +103,8 @@ class RealRowsTests(unittest.TestCase):
                                 if s["status"] == "Departed"), default=-1)
                 self.assertGreater(i, last_dep, tid)
                 self.assertGreater(i, 0, tid)
+                # The along-route estimate aims at the SAME stop (geometry.py).
+                self.assertEqual(snap.stop_codes[tid], st[i]["code"], tid)
                 est, sch = parse_ts(st[i]["arr"]), parse_ts(st[i]["schArr"])
                 if est and sch:
                     self.assertEqual(snap.trip_delays[tid],

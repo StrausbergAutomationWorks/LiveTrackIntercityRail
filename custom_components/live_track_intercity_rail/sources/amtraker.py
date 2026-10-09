@@ -54,6 +54,32 @@ def _coord(value: Any) -> float | None:
     return value if math.isfinite(value) else None
 
 
+def _next_index(row: dict[str, Any]) -> tuple[list[dict[str, Any]], int] | None:
+    """(the row's stations, index of its next stop), or None when it has
+    none left. The rule is next_stop's; see there."""
+    stations = [s for s in row.get("stations") or () if isinstance(s, dict)]
+    if not stations:
+        return None
+    last_departed = max(
+        (i for i, s in enumerate(stations) if s.get("status") == "Departed"),
+        default=-1)
+    i = max(last_departed + 1, 1)
+    if i >= len(stations):
+        return None
+    return stations, i
+
+
+def next_stop_code(row: dict[str, Any]) -> str | None:
+    """The next stop's station code, or None. Amtraker's codes are Amtrak's,
+    which are the stop_ids of Amtrak's GTFS (matched in the 2026-10-09 trial,
+    bin\\ltir_proj_trial2.py; a code it lacks makes no estimate)."""
+    found = _next_index(row)
+    if found is None:
+        return None
+    stations, i = found
+    return _text(stations[i].get("code"))
+
+
 def next_stop(row: dict[str, Any]) -> tuple[str, float | None, int | None] | None:
     """(station name, estimated arrival as epoch s or None, seconds late or
     None) for the train's next stop, or None when it has none left.
@@ -70,15 +96,10 @@ def next_stop(row: dict[str, Any]) -> tuple[str, float | None, int | None] | Non
     `arr` is the feed's arrival estimate (actual, once arrived); the delay is
     `arr` - `schArr` there, positive late. Either absent leaves it out (D0).
     """
-    stations = [s for s in row.get("stations") or () if isinstance(s, dict)]
-    if not stations:
+    found = _next_index(row)
+    if found is None:
         return None
-    last_departed = max(
-        (i for i, s in enumerate(stations) if s.get("status") == "Departed"),
-        default=-1)
-    i = max(last_departed + 1, 1)
-    if i >= len(stations):
-        return None
+    stations, i = found
     stop = stations[i]
     name = _text(stop.get("name")) or _text(stop.get("code"))
     if name is None:
@@ -162,6 +183,9 @@ def parse(rows: Iterable[dict[str, Any]], now: float) -> Snapshot | None:
             snap.next_stops[tid] = (name, eta)
             if delay is not None:
                 snap.trip_delays[tid] = delay
+            code = next_stop_code(row)
+            if code is not None:
+                snap.stop_codes[tid] = code
 
         extra: dict[str, Any] = {}
         route = _text(row.get("routeName"))

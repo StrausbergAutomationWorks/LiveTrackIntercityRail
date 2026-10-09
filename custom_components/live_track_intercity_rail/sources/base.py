@@ -34,6 +34,9 @@ class Snapshot:
     next_stops: dict[str, tuple[str, float | None]] = field(default_factory=dict)
     # trip_id -> seconds late at the next stop, negative early (D4c).
     trip_delays: dict[str, int] = field(default_factory=dict)
+    # trip_id -> the next stop's station code, as the railroad's GTFS names
+    # its stops (stop_id). What the along-route estimate aims at (geometry.py).
+    stop_codes: dict[str, str] = field(default_factory=dict)
     # vehicle_id -> {EXTRA_KEYS subset}, each only when the source has it.
     extras: dict[str, dict[str, Any]] = field(default_factory=dict)
     # Trains the source listed but this adapter did not publish, by reason

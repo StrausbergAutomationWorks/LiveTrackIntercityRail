@@ -21,6 +21,7 @@ from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from saw_livetrack import AmtrakerError, RateLimited
@@ -32,7 +33,9 @@ from .const import (
     MAX_TRANSIENT_FAILURES,
     USER_AGENT,
 )
+from . import projection
 from .operators import SOURCE_AMTRAKER, Operator
+from .route_store import RouteStore
 from .shared_coordinator import get_shared_client, release_shared_client
 from .sources import amtraker
 from .sources.base import EXTRA_KEYS, Snapshot, trains_in_service
@@ -58,6 +61,10 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._failures = 0
         self._last_good: dict[str, Any] | None = None
         self.skipped: dict[str, int] = {}
+        # The railroad's route lines, for the along-route estimate. Loaded and
+        # refreshed in the background; a poll never waits for them.
+        self.routes = RouteStore(hass, async_get_clientsession(hass), op)
+        self.placement: dict[str, int] = {}
         self._amtraker = None
         if op.source == SOURCE_AMTRAKER:
             # On the event loop, as shared_coordinator requires.
@@ -108,14 +115,27 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._failures = 0
         self.skipped = dict(snap.skipped)
 
+        now = time.time()
         result = self.fleet.update(
-            snap.observations, time.time(),
+            snap.observations, now,
             next_stops=snap.next_stops, trip_delays=snap.trip_delays)
         # One per run, not per train number (sources/base.py, measured).
         result["trains_in_service"] = trains_in_service(snap)
+        late_keys = op.lateness_keys()
         for vid, rec in result["vehicles"].items():
             extra = snap.extras.get(vid)
             if extra:
                 rec.update({k: v for k, v in extra.items() if k in EXTRA_KEYS})
+            if rec.get("in_service"):
+                rec.update(late_keys)
+        if self.routes.due():
+            self.config_entry.async_create_background_task(
+                self.hass, self.routes.async_refresh(), f"{op.id} route lines")
+        # Lee 2026-10-09: "Project the train along the rail line toward its
+        # next stop, arriving when Amtrak's estimate says it will" (geometry.py,
+        # SSOT section 9). In the executor: placing a train seen for the first
+        # time walks every line its number runs on.
+        self.placement = await self.hass.async_add_executor_job(
+            projection.apply, self.routes.projector, snap, result, now)
         self._last_good = result
         return result

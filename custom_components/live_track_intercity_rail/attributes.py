@@ -28,8 +28,17 @@ PASSTHROUGH = (
     "position_jump",
     "stalled",
     "delay_min",
+    # D4c: this railroad's own definition of late (operators/base.py).
+    "late_threshold_min",
+    "very_late_threshold_min",
     "next_stop",
     "arrival_estimated_at",
+    # D3: "estimated" when the position was moved along the train's route
+    # from the source's fix, which then rides in fix_latitude/fix_longitude
+    # (projection.py); "observed" when it is the fix.
+    "position_source",
+    "fix_latitude",
+    "fix_longitude",
     # D2: the speed the SOURCE reported, in km/h. Only an adapter whose
     # source carries a real one sets it (Amtraker's Amtrak velocity is real,
     # 220 of 248 measured; its Brightline velocity is always zero, 05 B8.4).
@@ -52,7 +61,10 @@ def to_attributes(rec: dict[str, Any], operator_id: str) -> dict[str, Any]:
     Never emitted, on purpose:
       heading_deg          no source here reports which way a train FACES (D2)
       max_extrapolation_s  Amtraker's Amtrak positions fail D3b condition 3
-                           (median age 226 s; Live Track Amtrak SSOT 3.1)
+                           (median age 226 s; Live Track Amtrak SSOT 3.1).
+                           An estimated position (position_source) is moved
+                           along its route HERE; a consumer must not move it
+                           again (D3: extrapolating an estimate)
       object_ids           a train or trip id is none of D11's keys
       z_index_offset       retired; map_layer replaces it (D10)
     """

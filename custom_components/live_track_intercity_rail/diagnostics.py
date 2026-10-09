@@ -24,4 +24,6 @@ async def async_get_config_entry_diagnostics(
         "skipped": coordinator.skipped,
         "published": len(data.get("vehicles") or {}),
         "fleet": coordinator.fleet.stats(),
+        "route_lines": coordinator.routes.info,
+        "placement": coordinator.placement,
     }

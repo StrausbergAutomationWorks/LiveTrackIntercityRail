@@ -43,4 +43,16 @@ AMTRAK = Operator(
     # left the feed between polls; only Completed trains left, and the one
     # empty answer is an outage the adapter refuses (sources/amtraker.py).
     fleet={"rest_s": AMTRAK_REST_S},
+    # Amtrak's on-time rule: a customer is on time arriving "no later than 15
+    # minutes after their published scheduled arrival time" (49 CFR
+    # 273.5(a)(1)). Amtraker's times are whole minutes, so the delay at the
+    # next stop is an exact integer and 16 is the first late minute.
+    late_threshold_min=16,
+    # NOT Amtrak's: Amtrak defines no second tier. Lee's red for Metra is 15,
+    # which would make every late Amtrak train red at once; 30 is a
+    # placeholder for Lee to set (SSOT section 9).
+    very_late_threshold_min=30,
+    # Amtrak's own GTFS: 19,082,826 bytes on 2026-10-09, rebuilt daily, each
+    # feed valid a week (bin\ltir_gtfs_probe.py). Its terms: SSOT section 9.
+    gtfs_url="https://content.amtrak.com/content/gtfs/GTFS.zip",
 )
