@@ -54,6 +54,23 @@ SIMPLIFY_M = 15.0
 # Two fixes this far apart along the route say which way the train is going.
 # Saw_livetrack's JITTER_M: a parked train's reported position wanders less.
 MOVED_M = 50.0
+# ...but it takes this far to REVERSE a train against its line's own order.
+# MEASURED (bin\ltir_heading_trial2.py, the 2026-10-09 capture): at 50 m,
+# station jitter flipped 7 drawn arrows backwards; at 150, 300 and 500 m none.
+MOTION_M = 150.0
+# The course is the line's bearing over this far either side of the train:
+# a 100 m chord, short enough to follow a curve, long enough that the
+# simplified line's 15 m vertices do not twitch it.
+COURSE_SPAN_M = 50.0
+
+
+def bearing(a: tuple[float, float], b: tuple[float, float]) -> float:
+    """Initial great-circle bearing from a to b, degrees true, 0-360."""
+    la1, la2 = math.radians(a[0]), math.radians(b[0])
+    dl = math.radians(b[1] - a[1])
+    y = math.sin(dl) * math.cos(la2)
+    x = math.cos(la1) * math.sin(la2) - math.sin(la1) * math.cos(la2) * math.cos(dl)
+    return math.degrees(math.atan2(y, x)) % 360.0
 
 
 def _xy(lat, lon, kx):
@@ -206,6 +223,28 @@ class Projector:
     def forget(self, train_id: str) -> None:
         self._state.pop(train_id, None)
 
+    def course(self, train_id: str) -> float | None:
+        """The train's course where estimate() last placed it: its route
+        line's bearing there, the way it is going, degrees true to 0.1. None
+        until its direction is known, or at the very end of a line.
+
+        Lee 2026-10-09 16:05: "Amtrak headings are very bad". MEASURED live
+        16:10 (bin\\ltir_live_heading.txt): Fleet's course, from the chord
+        between two fixes 3-5 minutes apart, was p50 20 deg off the line the
+        estimate moves along, p90 60, 5 of 101 trains over 90."""
+        st = self._state.get(train_id)
+        if st is None or not st.direction or st.last_d is None:
+            return None
+        route = self._route(st.shape_id)
+        # Kept a span inside the line's ends: a train run past its terminus
+        # (replay: 794-8 at the end of its line) faces the line's last 100 m.
+        d = min(max(st.last_d, COURSE_SPAN_M), max(route.length - COURSE_SPAN_M, COURSE_SPAN_M))
+        a = route.point(d - st.direction * COURSE_SPAN_M)
+        b = route.point(d + st.direction * COURSE_SPAN_M)
+        if a == b:
+            return None
+        return round(bearing(a, b), 1)
+
     def _choose(self, number: str, lat: float, lon: float):
         best = None
         for sid in (self.geometry.get("trains") or {}).get(number, ()):
@@ -238,7 +277,7 @@ class Projector:
                     return None
                 st = _State(shape_id=best[0])
                 d_fix = best[1]
-            elif abs(d_fix - st.d_fix) > MOVED_M:
+            elif abs(d_fix - st.d_fix) > MOTION_M:
                 # The way the train actually went, from two fixes on its route.
                 st.motion = math.copysign(1.0, d_fix - st.d_fix)
             st.fix_key, st.d_fix = key, d_fix
@@ -254,17 +293,21 @@ class Projector:
         dist = abs(gap)
         dt = min(now - fix_t, MAX_HORIZON_S)
         speed = max(0.0, speed_ms or 0.0)
-        if st.motion and dist > 0 and math.copysign(1.0, gap) != st.motion:
+        # Which way along the line: the way two fixes showed it going, else
+        # the LINE'S OWN ORDER. A GTFS shape is drawn in the direction its
+        # trips run, and the line was chosen from this train number's own
+        # trips. It read: the side the next stop is on, which pointed a train
+        # whose passed stop the source had not yet marked Departed BACKWARDS
+        # (27 of 38 backward arrows in bin\ltir_heading_trial2.txt).
+        st.direction = st.motion or 1.0
+        if dist > 0 and math.copysign(1.0, gap) != st.direction:
             # The "next" stop is BEHIND the way the train is going: it has
             # passed it and the source has not marked it Departed yet
             # (measured: 22 of 22 backward moves in the first replay came from
             # this or from a stop overrun; bin\ltir_proj_back.txt). Move on at
             # the reported speed, no stop to stop at.
-            st.direction = st.motion
             step = speed * dt
         else:
-            if dist > 0:
-                st.direction = math.copysign(1.0, gap)
             # At the reported speed, and never past the next stop.
             step = min(dist, speed * dt)
         d = st.d_fix + st.direction * step

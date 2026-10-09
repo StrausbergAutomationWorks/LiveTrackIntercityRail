@@ -186,6 +186,40 @@ class ProjectorTests(unittest.TestCase):
                           now=T0 + 180)
         self.assertAlmostEqual(lon, 0.11 + deg(20.0 * 60), places=6)
 
+    def test_first_sight_goes_the_lines_way_not_toward_a_stop_behind(self):
+        # The source still names a stop the train has passed (B, behind it):
+        # with no second fix yet the train goes the way its line is drawn.
+        p = geometry.Projector(geo())
+        _, lon = self.est(p, 0.1, T0, stop="B", speed=10.0, now=T0 + 100)
+        self.assertAlmostEqual(lon, 0.1 + deg(1000), places=6)
+
+    def test_reversing_takes_150_m_of_fixes(self):
+        p = geometry.Projector(geo())
+        self.est(p, 0.1, T0)
+        # 100 m back between two fixes: station jitter, still going east.
+        self.est(p, 0.1 - deg(100), T0 + 60)
+        self.assertEqual(p.course("7-9"), 90.0)
+        # A further 200 m back: it has reversed.
+        _, lon = self.est(p, 0.1 - deg(300), T0 + 120, speed=10.0, now=T0 + 220)
+        self.assertEqual(p.course("7-9"), 270.0)
+        self.assertAlmostEqual(lon, 0.1 - deg(300) - deg(1000), places=6)
+
+    def test_course_is_the_lines_bearing_the_way_it_goes(self):
+        p = geometry.Projector(geo())
+        self.assertIsNone(p.course("7-9"))                 # never placed
+        self.est(p, 0.1, T0, speed=10.0, now=T0 + 100)
+        self.assertEqual(p.course("7-9"), 90.0)            # east, along the equator
+        g = geo(trains={"7": ["N"]}, shapes={"N": [[0.0, 0.1], [1.0, 0.1]]},
+                stops={"C": [0.5, 0.1]})
+        q = geometry.Projector(g)
+        q.estimate("7-9", "7", (0.1, 0.1), T0, "C", 10.0, T0 + 100)
+        self.assertEqual(q.course("7-9"), 0.0)             # north, along a meridian
+
+    def test_bearing(self):
+        self.assertAlmostEqual(geometry.bearing((0, 0), (0, 1)), 90.0)
+        self.assertAlmostEqual(geometry.bearing((0, 0), (-1, 0)), 180.0)
+        self.assertAlmostEqual(geometry.bearing((0, 1), (0, 0)), 270.0)
+
     def test_never_backwards_for_a_late_fix(self):
         p = geometry.Projector(geo())
         self.assertAlmostEqual(self.est(p, 0.1, T0, eta=T0 + 1000, now=T0 + 1000)[1], 0.2)

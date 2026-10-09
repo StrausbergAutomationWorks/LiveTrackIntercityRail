@@ -117,6 +117,29 @@ class ApplyTests(unittest.TestCase):
         projection.apply(p, snap_of([]), {"vehicles": {}, "departed": ["7-9"]}, T0 + 1030)
         self.assertNotIn("7-9", p._state)
 
+    def test_a_moving_train_faces_its_line(self):
+        p = geometry.Projector(line_geo())
+        res = {"vehicles": {"7-9": rec(0.1, course_deg=37.0, icon_rotation_deg=37.0,
+                                       icon_rotation_basis="course")}, "departed": []}
+        projection.apply(p, snap_of([obs(0.1, T0)], kmh=36.0), res, T0 + 60)
+        r = res["vehicles"]["7-9"]
+        self.assertEqual((r["course_deg"], r["icon_rotation_deg"], r["icon_rotation_basis"]),
+                         (90.0, 90.0, "course"))
+
+    def test_a_train_at_rest_holds_its_lines_bearing_and_has_no_course(self):
+        p = geometry.Projector(line_geo())
+        res = {"vehicles": {"7-9": rec(0.1, course_deg=37.0)}, "departed": []}
+        projection.apply(p, snap_of([obs(0.1, T0)], kmh=0.0), res, T0 + 60)
+        r = res["vehicles"]["7-9"]
+        self.assertNotIn("course_deg", r)
+        self.assertEqual((r["icon_rotation_deg"], r["icon_rotation_basis"]), (90.0, "held"))
+        self.assertEqual(r["position_source"], "observed")
+
+    def test_no_line_keeps_fleets_course(self):
+        res = {"vehicles": {"7-9": rec(0.1, course_deg=37.0, icon_rotation_deg=37.0)}, "departed": []}
+        projection.apply(None, snap_of([obs(0.1, T0)]), res, T0 + 60)
+        self.assertEqual(res["vehicles"]["7-9"]["course_deg"], 37.0)
+
     def test_no_speed_no_move(self):
         p = geometry.Projector(line_geo())
         res = {"vehicles": {"7-9": rec(0.1)}, "departed": []}
@@ -162,6 +185,23 @@ class ReplayTests(unittest.TestCase):
                     self.assertNotIn("previous_latitude", r)
                 else:
                     self.assertEqual((r["latitude"], r["longitude"]), fixes[vid])
+
+    def test_a_moved_train_faces_the_line_it_moves_along(self):
+        checked = 0
+        for _, snap, res, _ in self.frames:
+            kmh = {vid: (snap.extras.get(vid) or {}).get("speed_kmh") for vid in res["vehicles"]}
+            for vid, r in res["vehicles"].items():
+                if r["position_source"] != "estimated":
+                    continue
+                self.assertIn("icon_rotation_deg", r, vid)
+                if (kmh[vid] or 0) >= projection.MOVING_KMH:
+                    self.assertEqual(r["icon_rotation_basis"], "course")
+                    self.assertEqual(r["course_deg"], r["icon_rotation_deg"])
+                else:
+                    self.assertEqual(r["icon_rotation_basis"], "held")
+                    self.assertNotIn("course_deg", r)
+                checked += 1
+        self.assertGreater(checked, 500)
 
     def test_most_moving_trains_are_moved(self):
         est = sum(c["estimated"] for *_, c in self.frames)

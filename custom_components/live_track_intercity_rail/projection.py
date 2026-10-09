@@ -25,6 +25,9 @@ from .sources.base import Snapshot
 
 ESTIMATED = "estimated"
 OBSERVED = "observed"
+# Below this reported speed a train is at rest: no course_deg (D3c-iii), and
+# its picture is HELD at its line's bearing (D4, icon_rotation_basis "held").
+MOVING_KMH = 1.0
 SEGMENT_KEYS = ("previous_latitude", "previous_longitude", "previous_observed_at",
                 "segment_duration_s")
 
@@ -44,16 +47,28 @@ def apply(projector: Projector | None, snap: Snapshot, result: dict[str, Any],
             continue
         fix = (rec.get("latitude"), rec.get("longitude"))
         est = None
+        kmh = (snap.extras.get(vid) or {}).get("speed_kmh")
         # Only a record standing at this poll's own fix is moved: anything
         # else is a position Fleet chose (a held one), and Fleet's call stands.
         if projector is not None and o.train and fix == (o.lat, o.lon):
-            kmh = (snap.extras.get(vid) or {}).get("speed_kmh")
             est = projector.estimate(
                 vid, o.train, fix,
                 o.observed_at.timestamp() if o.observed_at is not None else None,
                 snap.stop_codes.get(vid),
                 kmh / 3.6 if kmh is not None else None,
                 now)
+        crs = projector.course(vid) if est is not None else None
+        if crs is not None:
+            # The line's bearing, the way the train is going: what the marker
+            # moves along. Replaces Fleet's chord between two fixes 3-5
+            # minutes apart (geometry.Projector.course, measured there).
+            if kmh is not None and kmh >= MOVING_KMH:
+                rec["course_deg"] = crs
+                rec["icon_rotation_basis"] = "course"
+            else:
+                rec.pop("course_deg", None)
+                rec["icon_rotation_basis"] = "held"
+            rec["icon_rotation_deg"] = crs
         if est is None or est == fix:
             rec["position_source"] = OBSERVED
             counts[OBSERVED] += 1
