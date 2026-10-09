@@ -39,3 +39,15 @@ class Snapshot:
     # Trains the source listed but this adapter did not publish, by reason
     # ("predeparture", "completed", "no_position", ...), for diagnostics.
     skipped: dict[str, int] = field(default_factory=dict)
+
+
+def trains_in_service(snap: Snapshot) -> int:
+    """Trains in service in this poll: one per RUN, i.e. per identity.
+
+    ! NOT Fleet's `trains_in_service`, which counts distinct train NUMBERS
+    (right on a commuter railroad, where a number runs once a day). On Amtrak
+    a long-distance number runs on two or three departure dates at once.
+    MEASURED on the box 2026-10-09 17:16Z: 124 trains in service, Fleet's
+    count 112, because 23 runs shared 11 numbers (train 6 three times).
+    """
+    return len({o.vehicle_id for o in snap.observations if o.in_service})

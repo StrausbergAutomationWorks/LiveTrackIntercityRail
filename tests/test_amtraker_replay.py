@@ -18,6 +18,7 @@ from saw_livetrack import parse_ts
 from saw_livetrack.gtfs import Fleet
 
 amtraker = load("sources.amtraker")
+sources_base = load("sources.base")
 operators = load("operators")
 
 FIXTURE = pathlib.Path(__file__).parent / "fixtures" / "amtraker_amtrak_20261009.json.gz"
@@ -72,6 +73,18 @@ class RealRowsTests(unittest.TestCase):
             runs = {k: v for k, v in by_id.items() if k.split("-")[0] == num}
             self.assertEqual(len(runs), 2, num)
             self.assertEqual(set(runs.values()), {num})
+
+    def test_the_count_is_runs_not_numbers(self):
+        # Measured on the box: a count of numbers read 112 for 124 trains.
+        for t, rows in POLLS:
+            snap = amtraker.parse(rows, t)
+            if snap is None:
+                continue
+            active = {r["trainID"] for r in rows if r["trainState"] == "Active"}
+            self.assertEqual(sources_base.trains_in_service(snap), len(active))
+        snap = amtraker.parse(POLLS[0][1], POLLS[0][0])
+        numbers = {o.train for o in snap.observations}
+        self.assertGreater(sources_base.trains_in_service(snap), len(numbers))
 
     def test_next_stop_is_ahead_of_every_departed_stop(self):
         checked = 0

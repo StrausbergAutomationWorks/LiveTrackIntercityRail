@@ -35,7 +35,7 @@ from .const import (
 from .operators import SOURCE_AMTRAKER, Operator
 from .shared_coordinator import get_shared_client, release_shared_client
 from .sources import amtraker
-from .sources.base import EXTRA_KEYS, Snapshot
+from .sources.base import EXTRA_KEYS, Snapshot, trains_in_service
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -111,6 +111,8 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         result = self.fleet.update(
             snap.observations, time.time(),
             next_stops=snap.next_stops, trip_delays=snap.trip_delays)
+        # One per run, not per train number (sources/base.py, measured).
+        result["trains_in_service"] = trains_in_service(snap)
         for vid, rec in result["vehicles"].items():
             extra = snap.extras.get(vid)
             if extra:
