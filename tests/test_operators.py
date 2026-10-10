@@ -9,8 +9,6 @@ sources_base = load("sources.base")
 attributes = load("attributes")
 amtrak = load("operators.amtrak")
 
-from saw_livetrack.gtfs.realtime import Obs  # noqa: E402
-
 
 class RegistryTests(unittest.TestCase):
 
@@ -96,42 +94,85 @@ class HoldLastTests(unittest.TestCase):
 
 
 class AmtrakStarTests(unittest.TestCase):
-    """Lee 2026-10-09 16:43: odd numbers D, even C, a star."""
+    """Lee 2026-10-09 16:43: odd numbers D, even C, a star. 2026-10-10 00:11
+    and 00:13: colours by route, the same three areas, white outlines kept."""
 
-    def obs(self, train):
-        return Obs(vehicle_id="x", lat=0.0, lon=0.0, observed_at=None, in_service=True,
-                   train=train, line=None, reported_course=None, trip_id="x")
+    def look(self, number, line=None):
+        s = amtrak.amtrak_styling(number, line)
+        return s["marker_ring_color"], s["marker_color"], s["marker_label_color"]
 
     def test_odd_is_d_blue_edge_red_number(self):
-        s = amtrak.amtrak_styling(self.obs("5"))
+        s = amtrak.amtrak_styling("5")
         self.assertEqual(s["marker_shape"], "star")
         self.assertEqual((s["marker_ring_color"], s["marker_label_color"]), ("#3C3B6E", "#B22234"))
         self.assertEqual((s["marker_color"], s["marker_label_outline_color"]), ("#FFFFFF", "#FFFFFF"))
 
     def test_even_is_c_red_edge_blue_number(self):
-        s = amtrak.amtrak_styling(self.obs("2150"))
+        s = amtrak.amtrak_styling("2150")
         self.assertEqual((s["marker_ring_color"], s["marker_label_color"]), ("#B22234", "#3C3B6E"))
 
-    def test_the_arrow_is_the_edge_outlined_white(self):
-        for n, edge in (("5", "#3C3B6E"), ("6", "#B22234")):
-            s = amtrak.amtrak_styling(self.obs(n))
-            self.assertEqual((s["marker_arrow_color"], s["marker_arrow_outline_color"]), (edge, "#FFFFFF"))
+    def test_lees_route_colours_as_he_gave_them(self):
+        # (band, fill, number): odd first, then the other direction.
+        cases = {
+            "Amtrak Cascades": (("#5C3327", "#004833", "#00537E"), ("#004833", "#5C3327", "#00537E")),
+            "Northeast Regional": (("#FB0001", "#3FC3F4", "#0B1F42"), ("#3FC3F4", "#FB0001", "#0B1F42")),
+            "Pacific Surfliner": (("#003A7B", "#003A7B", "#CBD1D5"), ("#003A7B", "#CBD1D5", "#003A7B")),
+            "Capitol Corridor": (("#001945", "#FFC709", "#001945"), ("#001945", "#001945", "#FFC709")),
+            "Acela": (("#00537E", "#00537E", "#00B3E3"), ("#00537E", "#00B3E3", "#00537E")),
+        }
+        for line, (odd, even) in cases.items():
+            self.assertEqual(self.look("501", line), odd, line)
+            self.assertEqual(self.look("500", line), even, line)
+
+    def test_every_route_lee_named_is_matched(self):
+        ne = self.look("1", "Northeast Regional")
+        for line in ("Northeast Regional", "Amtrak Virginia", "Carolinian", "Keystone",
+                     "Keystone Service", "Vermonter", "Downeaster", "Amtrak Downeaster",
+                     "Palmetto", "Pennsylvanian", "Adirondack", "Empire Service",
+                     "Ethan Allen Express", "Maple Leaf",
+                     "New Haven-Springfield-Greenfield Service", "Hartford Line",
+                     "Amtrak Hartford Line", "Valley Flyer"):
+            self.assertEqual(self.look("1", line), ne, line)
+        for line in ("San Joaquins", "Gold Runner", "Capitol Corridor"):
+            self.assertEqual(self.look("1", line), ("#001945", "#FFC709", "#001945"), line)
+        self.assertEqual(self.look("1", "Cascades"), self.look("1", "Amtrak Cascades"))
+
+    def test_a_route_lee_did_not_name_keeps_the_flag(self):
+        flag = self.look("5")
+        for line in ("California Zephyr", "Empire Builder", "Silver Meteor", "Lincoln Service",
+                     "Hiawatha", None, ""):
+            self.assertEqual(self.look("5", line), flag, line)
+
+    def test_the_arrow_is_the_band_outlined_white(self):
+        for n, line in (("5", None), ("6", None), ("501", "Amtrak Cascades"), ("500", "Amtrak Cascades")):
+            s = amtrak.amtrak_styling(n, line)
+            self.assertEqual((s["marker_arrow_color"], s["marker_arrow_outline_color"]),
+                             (s["marker_ring_color"], "#FFFFFF"))
 
     def test_no_number_no_style(self):
         for n in (None, "", "v28", "5A"):
-            self.assertEqual(amtrak.amtrak_styling(self.obs(n)), {})
+            self.assertEqual(amtrak.amtrak_styling(n, "Acela"), {})
 
     def test_every_colour_is_the_contracts_form(self):
         import re
-        for n in ("1", "2"):
-            for k, v in amtrak.amtrak_styling(self.obs(n)).items():
-                if k.endswith("_color"):
-                    self.assertRegex(v, re.compile(r"^#[0-9A-Fa-f]{6}$"), k)
+        for line in [None] + sorted(amtrak.ROUTE_SCHEMES):
+            for n in ("1", "2"):
+                for k, v in amtrak.amtrak_styling(n, line).items():
+                    if k.endswith("_color"):
+                        self.assertRegex(v, re.compile(r"^#[0-9A-F]{6}$"), (k, line))
+
+    def test_the_published_record_is_styled_by_its_line(self):
+        op = operators.OPERATORS["amtrak"]
+        self.assertIs(op.styling, amtrak.amtrak_styling)
+        keys = op.marker_keys({"train": "2151", "line_name": "Acela"})
+        self.assertEqual(keys["marker_label_color"], "#00B3E3")
+        self.assertEqual(op.marker_keys({"train": "5"})["marker_ring_color"], "#3C3B6E")
+        self.assertEqual(operators.Operator(id="x", name="x", short="x", regions=(), source="amtraker",
+                                            attribution="x").marker_keys({"train": "5"}), {})
 
     def test_amtrak_uses_it_and_the_map_gets_the_shape(self):
-        self.assertIs(operators.OPERATORS["amtrak"].styling, amtrak.amtrak_styling)
         rec = {"vehicle_id": "5-8", "marker_label": "5", "in_service": True,
-               **amtrak.amtrak_styling(self.obs("5"))}
+               **amtrak.amtrak_styling("5")}
         a = attributes.to_attributes(rec, "amtrak")
         for k in ("marker_shape", "marker_color", "marker_ring_color", "marker_label_color",
                   "marker_label_outline_color", "marker_arrow_color", "marker_arrow_outline_color"):

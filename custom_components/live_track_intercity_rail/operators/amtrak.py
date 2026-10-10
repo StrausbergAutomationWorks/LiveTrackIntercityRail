@@ -13,8 +13,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from saw_livetrack.gtfs.realtime import Obs
-
 from .base import SOURCE_AMTRAKER, Operator
 
 # How long a train may go without a position change before it is AT REST
@@ -41,21 +39,74 @@ AMTRAK_REST_S = 420
 # The arrow is the edge colour outlined white: a choice, not Lee's.
 FLAG_BLUE, FLAG_RED, FLAG_WHITE = "#3C3B6E", "#B22234", "#FFFFFF"
 
+# Route colours (Lee 2026-10-10 00:11, the Cascades number 00:13): the same
+# three areas as the flag star, the white outlines kept. Each scheme is
+# (band, fill, number) for ODD numbers, then for EVEN numbers, Lee's "other
+# direction" as he spelled it per route. A route not named here keeps the
+# flag star. The arrow stays the band colour outlined white.
+PMS_302C = "#00537E"   # Lee: PMS 302 C, 100C 26M 0Y 51K, 0R 83G 126B, 00537e
+PMS_280C = "#003A7B"   # Lee: PMS 280 C, 100C 76M 0Y 32K, 0R 58G 123B, 003a7b
+# Lee: PMS 306 C, 81C 0M 13Y 0K, no RGB given. Pantone's own sRGB for 306 C;
+# the CMYK converted naively (#30FFDE) is a green Pantone does not print.
+PMS_306C = "#00B3E3"
+FLAG = ((FLAG_BLUE, FLAG_WHITE, FLAG_RED), (FLAG_RED, FLAG_WHITE, FLAG_BLUE))
+CASCADES = (("#5C3327", "#004833", PMS_302C), ("#004833", "#5C3327", PMS_302C))
+NORTHEAST = (("#FB0001", "#3FC3F4", "#0B1F42"), ("#3FC3F4", "#FB0001", "#0B1F42"))
+SURFLINER = ((PMS_280C, PMS_280C, "#CBD1D5"), (PMS_280C, "#CBD1D5", PMS_280C))
+CALTRANS = (("#001945", "#FFC709", "#001945"), ("#001945", "#001945", "#FFC709"))
+ACELA = ((PMS_302C, PMS_302C, PMS_306C), (PMS_302C, PMS_306C, PMS_302C))
 
-def amtrak_styling(obs: Obs) -> dict[str, Any]:
-    """D or C by the train number's parity; nothing for a number that is
-    not all digits (the card then draws its default disc)."""
-    number = obs.train
+# By Amtraker's routeName, normalised by route_key(). MEASURED names
+# (bin\ltir_route_names2.txt, every saved Amtraker answer): "Amtrak
+# Cascades", "Keystone", "Downeaster", "Empire Service", "Acela", "Capitol
+# Corridor", "San Joaquins". Amtrak Virginia's trains run as "Northeast
+# Regional". NOT SEEN in any capture: the New Haven-Springfield-Greenfield
+# trains; Amtraker's own list says "Hartford Line" and "Valley Flyer", Amtrak's
+# GTFS "Amtrak Hartford Line" and "Valley Flyer". Lee's "Caltrans" is read as
+# the two state routes Caltrans runs as Amtrak California besides the
+# Surfliner, which has its own: Capitol Corridor and San Joaquins (renamed
+# Gold Runner by its agency; that name too).
+ROUTE_SCHEMES = {
+    "cascades": CASCADES,
+    **{k: NORTHEAST for k in (
+        "northeast regional", "virginia", "carolinian", "keystone", "vermonter",
+        "downeaster", "palmetto", "pennsylvanian", "adirondack", "empire",
+        "ethan allen express", "maple leaf", "new haven springfield greenfield",
+        "new haven springfield", "hartford line", "valley flyer")},
+    "pacific surfliner": SURFLINER,
+    **{k: CALTRANS for k in ("capitol corridor", "san joaquins", "san joaquin", "gold runner")},
+    "acela": ACELA,
+    "acela express": ACELA,
+}
+
+
+def route_key(name: str | None) -> str:
+    """'Amtrak Cascades', 'Keystone Service', 'New Haven-Springfield' ->
+    'cascades', 'keystone', 'new haven springfield'. 'Empire Builder' stays
+    itself: only a leading Amtrak and a trailing Service go."""
+    words = "".join(c if c.isalnum() else " " for c in (name or "").lower()).split()
+    if words[:1] == ["amtrak"]:
+        words = words[1:]
+    if len(words) > 1 and words[-1] == "service":
+        words = words[:-1]
+    return " ".join(words)
+
+
+def amtrak_styling(number: str | None, line_name: str | None = None) -> dict[str, Any]:
+    """The star for a train number on a route: the route's scheme, else the
+    flag; odd numbers the first set, even the other direction. Nothing for a
+    number that is not all digits (the card then draws its default disc)."""
     if not isinstance(number, str) or not number.isdigit():
         return {}
-    edge, figure = (FLAG_BLUE, FLAG_RED) if int(number) % 2 else (FLAG_RED, FLAG_BLUE)
+    odd, even = ROUTE_SCHEMES.get(route_key(line_name), FLAG)
+    band, fill, figure = odd if int(number) % 2 else even
     return {
         "marker_shape": "star",
-        "marker_color": FLAG_WHITE,
-        "marker_ring_color": edge,
+        "marker_color": fill,
+        "marker_ring_color": band,
         "marker_label_color": figure,
         "marker_label_outline_color": FLAG_WHITE,
-        "marker_arrow_color": edge,
+        "marker_arrow_color": band,
         "marker_arrow_outline_color": FLAG_WHITE,
     }
 

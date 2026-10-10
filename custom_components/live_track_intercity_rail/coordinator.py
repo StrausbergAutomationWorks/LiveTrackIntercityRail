@@ -57,7 +57,9 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 seconds=int(opts.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL))),
         )
         self.operator = op
-        self.fleet = Fleet(styling=op.styling, **dict(op.fleet))
+        # No styling hook: Operator.marker_keys styles the published record,
+        # which carries the line name the route colours need.
+        self.fleet = Fleet(**dict(op.fleet))
         self._failures = 0
         self._last_snap: Snapshot | None = None
         self._last_ok_t: float | None = None
@@ -129,6 +131,7 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             extra = snap.extras.get(vid)
             if extra:
                 rec.update({k: v for k, v in extra.items() if k in EXTRA_KEYS})
+            rec.update(op.marker_keys(rec))
             if rec.get("in_service"):
                 rec.update(late_keys)
         if self.routes.due():

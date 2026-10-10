@@ -12,8 +12,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Callable, Mapping
 
-from saw_livetrack.gtfs.realtime import Obs
-
 # Source adapters this integration has. The coordinator dispatches on these.
 SOURCE_AMTRAKER = "amtraker"
 SOURCES = (SOURCE_AMTRAKER,)
@@ -37,9 +35,13 @@ class Operator:
     # Fleet keyword overrides (saw_livetrack.gtfs.Fleet), each one measured
     # for this railroad's source and recorded where it is set.
     fleet: Mapping[str, float] = field(default_factory=dict)
-    # Obs -> marker styling keys (06_MAP_CONTRACT.md D4a), each only when set.
-    # None: the card's defaults. Colours are the operator's decision (Lee's).
-    styling: Callable[[Obs], dict[str, Any]] | None = None
+    # (train number, line name) -> marker styling keys (06_MAP_CONTRACT.md
+    # D4a), each only when set. None: the card's defaults. Colours are the
+    # operator's decision (Lee's). Applied to the PUBLISHED record by
+    # marker_keys(), after the source's extras, because a route's colours
+    # need its line name and Fleet's styling hook sees only the Obs
+    # (2026-10-10, route colours).
+    styling: Callable[[str | None, str | None], dict[str, Any]] | None = None
     # How THIS railroad defines late (06_MAP_CONTRACT.md D4c; Lee 2026-10-09:
     # "Change lateness based on how each system defines late"): a train is late
     # when `delay_min` >= late_threshold_min, red from very_late_threshold_min.
@@ -59,6 +61,13 @@ class Operator:
         if self.very_late_threshold_min is not None:
             keys["very_late_threshold_min"] = self.very_late_threshold_min
         return keys
+
+    def marker_keys(self, rec: Mapping[str, Any]) -> dict[str, Any]:
+        """The marker styling for a published record, from its train number
+        and line name. Empty without a styling function."""
+        if self.styling is None:
+            return {}
+        return self.styling(rec.get("train"), rec.get("line_name"))
 
 
 # Region codes and the label the setup list shows: ISO 3166-1, because an
