@@ -38,9 +38,14 @@ SEGMENT_KEYS = ("previous_latitude", "previous_longitude", "previous_observed_at
 
 
 def apply(projector: Projector | None, snap: Snapshot, result: dict[str, Any],
-          now: float) -> dict[str, int]:
+          now: float, derive_speed: bool = False) -> dict[str, int]:
     """Move each published train in `result` along its route, in place.
-    Returns {"estimated": n, "observed": n} for diagnostics."""
+    Returns {"estimated": n, "observed": n} for diagnostics.
+
+    derive_speed: the source reports no speed (Brightline); a train moves at
+    the speed of its last two fixes along its line (Projector.fix_speed), and
+    that speed decides moving or at rest. It is never published as
+    speed_kmh, which is the speed the SOURCE reported (D2)."""
     counts = {ESTIMATED: 0, OBSERVED: 0}
     if projector is not None:
         for vid in result.get("departed") or ():
@@ -61,7 +66,11 @@ def apply(projector: Projector | None, snap: Snapshot, result: dict[str, Any],
                 o.observed_at.timestamp() if o.observed_at is not None else None,
                 snap.stop_codes.get(vid),
                 kmh / 3.6 if kmh is not None else None,
-                now)
+                now, derive_speed=derive_speed)
+            if kmh is None and derive_speed and est is not None:
+                derived = projector.fix_speed(vid)
+                if derived is not None:
+                    kmh = derived * 3.6
         crs = projector.course(vid) if est is not None else None
         path = projector.path(vid) if est is not None else None
         if path is not None:

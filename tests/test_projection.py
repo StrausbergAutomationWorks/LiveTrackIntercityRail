@@ -163,6 +163,35 @@ class ApplyTests(unittest.TestCase):
         projection.apply(None, snap_of([obs(0.1, T0)]), res, T0 + 60)
         self.assertEqual(res["vehicles"]["7-9"]["course_deg"], 37.0)
 
+    def two_fixes(self, metres, derive):
+        p = geometry.Projector(line_geo())
+        projection.apply(p, snap_of([obs(0.1, T0)], kmh=None),
+                         {"vehicles": {"7-9": rec(0.1)}, "departed": []}, T0, derive)
+        lon2 = 0.1 + metres / (geometry.R * math.pi / 180)
+        res = {"vehicles": {"7-9": rec(lon2, course_deg=37.0)}, "departed": []}
+        counts = projection.apply(p, snap_of([obs(lon2, T0 + 60)], kmh=None), res,
+                                  T0 + 120, derive)
+        return lon2, counts, res["vehicles"]["7-9"]
+
+    def test_a_derived_speed_moves_the_train_and_says_it_is_moving(self):
+        # Brightline (Lee 2026-10-10, rule 4): 1,200 m in 60 s, 60 s on.
+        lon2, counts, r = self.two_fixes(1200, True)
+        self.assertEqual(counts, {"estimated": 1, "observed": 0})
+        self.assertAlmostEqual(r["longitude"], lon2 + 1200 / (geometry.R * math.pi / 180), places=6)
+        self.assertEqual((r["course_deg"], r["icon_rotation_basis"]), (90.0, "course"))
+        # Never published as the source's speed (06_MAP_CONTRACT.md D2).
+        self.assertNotIn("speed_kmh", r)
+
+    def test_a_derived_standstill_holds_the_arrow(self):
+        _, _, r = self.two_fixes(5, True)
+        self.assertNotIn("course_deg", r)
+        self.assertEqual(r["icon_rotation_basis"], "held")
+
+    def test_without_derive_speed_a_speedless_train_is_not_moved(self):
+        lon2, _, r = self.two_fixes(1200, False)
+        self.assertAlmostEqual(r["longitude"], lon2, places=6)
+        self.assertEqual(r["icon_rotation_basis"], "held")
+
     def test_no_speed_no_move(self):
         p = geometry.Projector(line_geo())
         res = {"vehicles": {"7-9": rec(0.1)}, "departed": []}

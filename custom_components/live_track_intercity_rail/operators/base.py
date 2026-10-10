@@ -14,7 +14,9 @@ from typing import Any, Callable, Mapping
 
 # Source adapters this integration has. The coordinator dispatches on these.
 SOURCE_AMTRAKER = "amtraker"
-SOURCES = (SOURCE_AMTRAKER,)
+# Brightline's own GTFS-Realtime (sources/brightline_rt.py).
+SOURCE_BRIGHTLINE_RT = "brightline_rt"
+SOURCES = (SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT)
 
 
 @dataclass(frozen=True)
@@ -35,13 +37,19 @@ class Operator:
     # Fleet keyword overrides (saw_livetrack.gtfs.Fleet), each one measured
     # for this railroad's source and recorded where it is set.
     fleet: Mapping[str, float] = field(default_factory=dict)
-    # (train number, line name) -> marker styling keys (06_MAP_CONTRACT.md
-    # D4a), each only when set. None: the card's defaults. Colours are the
-    # operator's decision (Lee's). Applied to the PUBLISHED record by
-    # marker_keys(), after the source's extras, because a route's colours
-    # need its line name and Fleet's styling hook sees only the Obs
-    # (2026-10-10, route colours).
-    styling: Callable[[str | None, str | None], dict[str, Any]] | None = None
+    # (train number, line name, destination stop id) -> marker styling keys
+    # (06_MAP_CONTRACT.md D4a), each only when set. None: the card's
+    # defaults. Colours are the operator's decision (Lee's). Applied to the
+    # PUBLISHED record by marker_keys(), after the source's extras, because a
+    # route's colours need its line name and Fleet's styling hook sees only
+    # the Obs (2026-10-10, route colours); Brightline's need the destination.
+    styling: Callable[[str | None, str | None, str | None], dict[str, Any]] | None = None
+    # The poll interval a new entry starts with (the user may change it).
+    # Brightline's feed changes every 60 s (measured, RECORD 5).
+    scan_interval_s: int = 30
+    # The source reports no speed: the along-route estimate derives one from
+    # the train's last two fixes (geometry.Projector.fix_speed; Brightline).
+    derive_speed: bool = False
     # How THIS railroad defines late (06_MAP_CONTRACT.md D4c; Lee 2026-10-09:
     # "Change lateness based on how each system defines late"): a train is late
     # when `delay_min` >= late_threshold_min, red from very_late_threshold_min.
@@ -63,11 +71,12 @@ class Operator:
         return keys
 
     def marker_keys(self, rec: Mapping[str, Any]) -> dict[str, Any]:
-        """The marker styling for a published record, from its train number
-        and line name. Empty without a styling function."""
+        """The marker styling for a published record, from its train number,
+        line name and destination stop (Brightline colours by destination).
+        Empty without a styling function."""
         if self.styling is None:
             return {}
-        return self.styling(rec.get("train"), rec.get("line_name"))
+        return self.styling(rec.get("train"), rec.get("line_name"), rec.get("destination"))
 
 
 # Region codes and the label the setup list shows: ISO 3166-1, because an

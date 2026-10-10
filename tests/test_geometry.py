@@ -111,6 +111,11 @@ class DistillTests(unittest.TestCase):
         d = geometry.distill(gtfs_zip(feed_info=False))
         self.assertNotIn("feed_end_date", d)
 
+    def test_every_stops_name_by_its_id_even_without_a_position(self):
+        # The next-stop name for a source that gives only stop ids (Brightline).
+        d = geometry.distill(gtfs_zip())
+        self.assertEqual(d["stop_names"], {"CHI": "Chicago", "NOPOS": "Nowhere"})
+
 
 class ProjectorTests(unittest.TestCase):
 
@@ -310,6 +315,82 @@ class ProjectorTests(unittest.TestCase):
         self.assertEqual(lat, 1.0)
         # On the line at 1 degree north, where a degree of longitude is shorter.
         self.assertAlmostEqual(lon, 0.1 + deg(5000) / math.cos(math.radians(1.0)), places=5)
+
+
+class FixSpeedTests(unittest.TestCase):
+    """A source that reports no speed (Brightline; Lee 2026-10-10, rule 4):
+    the train moves on at the speed of its last two fixes along its line."""
+
+    def fix(self, p, metres, t, now=None, derive=True, speed=None):
+        return p.estimate("7-9", "7", (0.0, 0.1 + deg(metres)), t, "E", speed,
+                          t if now is None else now, derive_speed=derive)
+
+    def test_two_fixes_give_the_speed_between_them(self):
+        p = geometry.Projector(geo())
+        self.fix(p, 0, T0)
+        self.fix(p, 1200, T0 + 60)
+        self.assertAlmostEqual(p.fix_speed("7-9"), 20.0, places=3)
+
+    def test_and_the_train_moves_on_at_it(self):
+        p = geometry.Projector(geo())
+        self.fix(p, 0, T0)
+        _, lon = self.fix(p, 1200, T0 + 60, now=T0 + 120)
+        self.assertAlmostEqual(lon, 0.1 + deg(2400), places=6)
+
+    def test_the_same_fix_seen_again_keeps_its_speed(self):
+        p = geometry.Projector(geo())
+        self.fix(p, 0, T0)
+        self.fix(p, 1200, T0 + 60, now=T0 + 120)
+        _, lon = self.fix(p, 1200, T0 + 60, now=T0 + 180)
+        self.assertAlmostEqual(lon, 0.1 + deg(3600), places=6)
+
+    def test_without_derive_speed_it_holds_the_fix(self):
+        p = geometry.Projector(geo())
+        self.fix(p, 0, T0, derive=False)
+        _, lon = self.fix(p, 1200, T0 + 60, now=T0 + 120, derive=False)
+        self.assertAlmostEqual(lon, 0.1 + deg(1200), places=6)
+
+    def test_a_reported_speed_wins(self):
+        p = geometry.Projector(geo())
+        self.fix(p, 0, T0)
+        _, lon = self.fix(p, 1200, T0 + 60, now=T0 + 120, speed=5.0)
+        self.assertAlmostEqual(lon, 0.1 + deg(1500), places=6)
+
+    def test_one_fix_is_no_speed_and_holds(self):
+        p = geometry.Projector(geo())
+        _, lon = self.fix(p, 0, T0, now=T0 + 60)
+        self.assertIsNone(p.fix_speed("7-9"))
+        self.assertAlmostEqual(lon, 0.1, places=6)
+        self.assertIsNone(p.fix_speed("nobody"))
+
+    def test_a_standing_train_wanders_and_is_speed_zero(self):
+        p = geometry.Projector(geo())
+        self.fix(p, 0, T0)
+        self.fix(p, geometry.MOVED_M / 2, T0 + 60)
+        self.assertEqual(p.fix_speed("7-9"), 0.0)
+
+    def test_fixes_too_far_apart_in_time_give_no_speed(self):
+        p = geometry.Projector(geo())
+        self.fix(p, 0, T0)
+        self.fix(p, 3000, T0 + geometry.MAX_FIX_GAP_S)
+        self.assertAlmostEqual(p.fix_speed("7-9"), 3000 / geometry.MAX_FIX_GAP_S, places=3)
+        p = geometry.Projector(geo())
+        self.fix(p, 0, T0)
+        self.fix(p, 3000, T0 + geometry.MAX_FIX_GAP_S + 1)
+        self.assertIsNone(p.fix_speed("7-9"))
+
+    def test_a_locomotive_handover_is_no_speed(self):
+        # Measured 2026-10-10: 5339's departure handover read 152 m/s.
+        self.assertEqual(geometry.MAX_FIX_SPEED_MS, 70.0)
+        p = geometry.Projector(geo())
+        self.fix(p, 0, T0)
+        self.fix(p, 69 * 60, T0 + 60)
+        self.assertAlmostEqual(p.fix_speed("7-9"), 69.0, places=3)
+        p = geometry.Projector(geo())
+        self.fix(p, 0, T0)
+        _, lon = self.fix(p, 71 * 60, T0 + 60, now=T0 + 120)
+        self.assertIsNone(p.fix_speed("7-9"))
+        self.assertAlmostEqual(lon, 0.1 + deg(71 * 60), places=6)
 
 
 if __name__ == "__main__":

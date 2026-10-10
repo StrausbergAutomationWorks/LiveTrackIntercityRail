@@ -21,7 +21,10 @@ from saw_livetrack.gtfs.realtime import Obs  # noqa: F401  (re-exported)
 
 # Keys a source may add to a train's record beyond what Fleet computes. The
 # allowlist lives in attributes.py; this is only the adapter's side of it.
-EXTRA_KEYS = ("line_name", "speed_kmh", "heading_octant")
+# `destination` (the last stop's id) is for the operator's styling only and is
+# NOT in that allowlist: it is not a contract key, so it never reaches the map.
+EXTRA_KEYS = ("line_name", "speed_kmh", "heading_octant", "destination")
+RECORD_ONLY_KEYS = ("destination",)
 
 
 @dataclass

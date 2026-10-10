@@ -8,6 +8,7 @@ operators = load("operators")
 sources_base = load("sources.base")
 attributes = load("attributes")
 amtrak = load("operators.amtrak")
+brightline = load("operators.brightline")
 
 
 class RegistryTests(unittest.TestCase):
@@ -65,9 +66,18 @@ class RegistryTests(unittest.TestCase):
             self.assertIn(key, attributes.PASSTHROUGH)
 
     def test_every_extra_key_can_reach_the_map(self):
-        # A key an adapter may add but attributes.py drops would be dead.
+        # A key an adapter may add but attributes.py drops would be dead,
+        # unless it is there only for the operator's styling.
         for key in sources_base.EXTRA_KEYS:
-            self.assertIn(key, attributes.PASSTHROUGH)
+            if key in sources_base.RECORD_ONLY_KEYS:
+                self.assertNotIn(key, attributes.PASSTHROUGH)
+            else:
+                self.assertIn(key, attributes.PASSTHROUGH)
+
+    def test_destination_stays_off_the_map(self):
+        rec = {"vehicle_id": "5740-3", "marker_label": "5740", "in_service": True,
+               "destination": "MCO"}
+        self.assertNotIn("destination", attributes.to_attributes(rec, "brightline"))
 
 
 class HoldLastTests(unittest.TestCase):
@@ -195,6 +205,10 @@ class AmtrakStarTests(unittest.TestCase):
         self.assertEqual(operators.Operator(id="x", name="x", short="x", regions=(), source="amtraker",
                                             attribution="x").marker_keys({"train": "5"}), {})
 
+    def test_amtrak_ignores_a_destination(self):
+        self.assertEqual(amtrak.amtrak_styling("5", "Acela", "NYP"),
+                         amtrak.amtrak_styling("5", "Acela"))
+
     def test_amtrak_uses_it_and_the_map_gets_the_shape(self):
         rec = {"vehicle_id": "5-8", "marker_label": "5", "in_service": True,
                **amtrak.amtrak_styling("5")}
@@ -202,6 +216,69 @@ class AmtrakStarTests(unittest.TestCase):
         for k in ("marker_shape", "marker_color", "marker_ring_color", "marker_label_color",
                   "marker_label_outline_color", "marker_arrow_color", "marker_arrow_outline_color"):
             self.assertIn(k, a)
+
+
+class BrightlineTests(unittest.TestCase):
+    """Live Track Brightline's look, carried over (Lee 2026-09-15, 2026-09-20)."""
+
+    def test_registered_on_its_own_feed(self):
+        op = operators.OPERATORS["brightline"]
+        self.assertEqual(op.source, operators.SOURCE_BRIGHTLINE_RT)
+        self.assertEqual(op.regions, ("US",))
+        self.assertEqual(op.source_options,
+                         {"positions": "https://feed.gobrightline.com/position_updates.pb",
+                          "trip_updates": "https://feed.gobrightline.com/trip_updates.pb"})
+        self.assertEqual(op.gtfs_url, "https://feed.gobrightline.com/bl_gtfs.zip")
+        self.assertEqual((op.scan_interval_s, op.derive_speed), (60, True))
+        self.assertIn("Brightline", op.attribution)
+        # Brightline defines no "late": the card's defaults.
+        self.assertEqual(op.lateness_keys(), {})
+
+    def test_amtrak_keeps_its_interval_and_its_reported_speed(self):
+        op = operators.OPERATORS["amtrak"]
+        self.assertEqual((op.scan_interval_s, op.derive_speed), (30, False))
+
+    def test_the_disc_is_the_destinations_colour(self):
+        cases = {"MCO": "#F29F05", "EKW": "#299FD5", "WPT": "#64BF4B",
+                 "FBT": "#9019E6", "RRN": "#A12073", "AVE": "#FF091D"}
+        self.assertEqual(brightline.DESTINATION_COLOURS, cases)
+        for stop, colour in cases.items():
+            self.assertEqual(brightline.brightline_styling("5740", "Brightline", stop)["marker_color"],
+                             colour)
+            self.assertEqual(brightline.brightline_styling("5740", None, stop.lower())["marker_color"],
+                             colour)
+
+    def test_the_rest_of_the_look(self):
+        s = brightline.brightline_styling("5740", "Brightline", "MCO")
+        self.assertEqual(
+            {k: v for k, v in s.items() if k != "marker_color"},
+            {"marker_label_color": "#000000", "marker_label_outline_color": "#FFFFFF",
+             "marker_arrow_color": "#000000", "marker_arrow_outline_color": "#EBF213",
+             "marker_ring_color": "#000000", "marker_ring_width": 1.5})
+        self.assertNotIn("marker_shape", s)          # the card's disc
+
+    def test_no_destination_keeps_the_cards_fill(self):
+        for dest in (None, "", "XYZ"):
+            self.assertNotIn("marker_color", brightline.brightline_styling("5740", None, dest))
+
+    def test_brand_yellow_is_never_a_destination(self):
+        self.assertNotIn(brightline.ARROW_OUTLINE, brightline.DESTINATION_COLOURS.values())
+
+    def test_the_published_record_is_styled_by_its_destination(self):
+        op = operators.OPERATORS["brightline"]
+        keys = op.marker_keys({"train": "5740", "line_name": "Brightline", "destination": "AVE"})
+        self.assertEqual(keys["marker_color"], "#FF091D")
+        a = attributes.to_attributes({"vehicle_id": "5740-3", "marker_label": "5740",
+                                      "in_service": True, **keys}, "brightline")
+        for k in keys:
+            self.assertIn(k, a)
+
+    def test_every_colour_is_the_contracts_form(self):
+        import re
+        for dest in list(brightline.DESTINATION_COLOURS) + [None]:
+            for k, v in brightline.brightline_styling("1", None, dest).items():
+                if k.endswith("_color"):
+                    self.assertRegex(v, re.compile(r"^#[0-9A-F]{6}$"), k)
 
 
 if __name__ == "__main__":

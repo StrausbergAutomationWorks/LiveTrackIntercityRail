@@ -121,7 +121,8 @@ def route_key(name: str | None) -> str:
     return " ".join(words)
 
 
-def amtrak_styling(number: str | None, line_name: str | None = None) -> dict[str, Any]:
+def amtrak_styling(number: str | None, line_name: str | None = None,
+                   destination: str | None = None) -> dict[str, Any]:
     """The star for a train number on a route: the route's scheme, else the
     flag; odd numbers the first set, even the other direction. Nothing for a
     number that is not all digits (the card then draws its default disc)."""

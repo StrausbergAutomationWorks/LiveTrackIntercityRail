@@ -95,9 +95,13 @@ class IntercityRailOptionsFlow(OptionsFlow):
             user_input[CONF_SCAN_INTERVAL] = int(user_input[CONF_SCAN_INTERVAL])
             return self.async_create_entry(title="", data=user_input)
         cur = self.config_entry.options
+        # The railroad's own interval when the user has not set one
+        # (operators/base.py scan_interval_s; Brightline 60 s).
+        op = OPERATORS.get(self.config_entry.data.get(CONF_OPERATOR, ""))
+        default = op.scan_interval_s if op is not None else DEFAULT_SCAN_INTERVAL
         schema = vol.Schema({
             vol.Required(CONF_SCAN_INTERVAL,
-                         default=cur.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)):
+                         default=cur.get(CONF_SCAN_INTERVAL, default)):
                 NumberSelector(NumberSelectorConfig(
                     min=MIN_SCAN_INTERVAL, max=MAX_SCAN_INTERVAL, step=1,
                     unit_of_measurement="s", mode=NumberSelectorMode.BOX)),

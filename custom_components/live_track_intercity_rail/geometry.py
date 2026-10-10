@@ -72,6 +72,17 @@ COURSE_SPAN_M = 50.0
 # seconds at 300 km/h is 2.5 km; a longer move is a new fix far from the
 # last estimate, drawn as the card's straight slide or a jump.
 MAX_PATH_M = 10000.0
+# Two fixes farther apart than this give no derived speed (fix_speed): a gap
+# that long is an outage or a stop, not a run. Brightline's fixes come every
+# 60 s (measured, RECORD 5); 300 s is its stale-fix limit.
+MAX_FIX_GAP_S = 300.0
+# Two fixes that imply more than this give no derived speed: the feed handed
+# the trip to another locomotive and the "move" is the gap between the two
+# (measured 2026-10-10 on the round-4 test fixture: 5339 read 152 m/s at its
+# departure handover and was drawn 15 km ahead). 70 m/s is the replay's jump
+# bound (RECORD 5); Brightline's top speed, 125 mph, is 56 m/s, and the
+# fastest pair measured on the fixture was 56.1 m/s.
+MAX_FIX_SPEED_MS = 70.0
 
 
 def bearing(a: tuple[float, float], b: tuple[float, float]) -> float:
@@ -179,6 +190,12 @@ def distill(zip_bytes: bytes, simplify_m: float = SIMPLIFY_M) -> dict[str, Any]:
 
     stops = {r["stop_id"].strip(): [round(float(r["stop_lat"]), 6), round(float(r["stop_lon"]), 6)]
              for r in rows("stops.txt") if r.get("stop_lat") and r.get("stop_lon")}
+    # Station names for the hover box, by stop_id (2026-10-10, Brightline:
+    # its realtime feed names stops by id only). Added without bumping
+    # GEOMETRY_VERSION: an older cached copy simply has none until its next
+    # weekly refresh, and only a source that needs names reads them.
+    stop_names = {r["stop_id"].strip(): (r.get("stop_name") or "").strip()
+                  for r in rows("stops.txt") if (r.get("stop_name") or "").strip()}
     trains: dict[str, set] = {}
     for r in rows("trips.txt"):
         num, sid = (r.get("trip_short_name") or "").strip(), (r.get("shape_id") or "").strip()
@@ -198,7 +215,7 @@ def distill(zip_bytes: bytes, simplify_m: float = SIMPLIFY_M) -> dict[str, Any]:
         for r in rows("feed_info.txt"):
             info = {k: (r.get(k) or "").strip() or None for k in ("feed_version", "feed_start_date", "feed_end_date")}
             break
-    return {"v": GEOMETRY_VERSION, **info, "stops": stops,
+    return {"v": GEOMETRY_VERSION, **info, "stops": stops, "stop_names": stop_names,
             "trains": {k: sorted(v & shapes.keys()) for k, v in trains.items() if v & shapes.keys()},
             "shapes": shapes}
 
@@ -214,6 +231,8 @@ class _State:
     last_point: tuple | None = None  # the position last published
     prev_d: float | None = None     # the one before it, for track_path
     prev_point: tuple | None = None
+    fix_t: float | None = None      # the current fix's time
+    prev_fix: tuple | None = None   # (d, time) of the fix before it, for a derived speed
 
 
 @dataclass
@@ -269,10 +288,35 @@ class Projector:
                 best = (sid, d, off)
         return best
 
+    def fix_speed(self, train_id: str) -> float | None:
+        """m/s along the line between the train's last two fixes, or None
+        (no earlier fix, the two more than MAX_FIX_GAP_S apart, or a speed
+        over MAX_FIX_SPEED_MS, which is a handover, not a run).
+
+        Lee 2026-10-10 (Brightline, whose feed sets no speed): "Use the Amtrak
+        positioning for Brightline too". MEASURED on Brightline's rounds 3 and
+        4 (bin\\ltir_bl_replay2.py, 6,136 fix pairs 60 s apart): moved along
+        the line at this speed, a train lands p50 0.2 km, p90 0.7 km from its
+        next fix; held, p50 2.1 km, p90 2.9 km."""
+        st = self._state.get(train_id)
+        if st is None or st.prev_fix is None or st.fix_t is None:
+            return None
+        d0, t0 = st.prev_fix
+        gap = st.fix_t - t0
+        if gap <= 0 or gap > MAX_FIX_GAP_S:
+            return None
+        moved = abs(st.d_fix - d0)
+        # A standing train's reported position wanders (MOVED_M): not a speed.
+        if moved < MOVED_M:
+            return 0.0
+        speed = moved / gap
+        return speed if speed <= MAX_FIX_SPEED_MS else None
+
     def estimate(self, train_id: str, number: str, fix: tuple[float, float], fix_t: float | None,
                  stop_code: str | None, speed_ms: float | None,
-                 now: float) -> tuple[float, float] | None:
-        """(lat, lon) on the route at `now`, or None for "publish the fix"."""
+                 now: float, derive_speed: bool = False) -> tuple[float, float] | None:
+        """(lat, lon) on the route at `now`, or None for "publish the fix".
+        With derive_speed and no speed_ms, the speed of the last two fixes."""
         if fix_t is None or now < fix_t:
             return None
         stop = (self.geometry.get("stops") or {}).get(stop_code) if stop_code else None
@@ -288,10 +332,13 @@ class Projector:
                     return None
                 st = _State(shape_id=best[0])
                 d_fix = best[1]
-            elif abs(d_fix - st.d_fix) > MOTION_M:
-                # The way the train actually went, from two fixes on its route.
-                st.motion = math.copysign(1.0, d_fix - st.d_fix)
-            st.fix_key, st.d_fix = key, d_fix
+            else:
+                if abs(d_fix - st.d_fix) > MOTION_M:
+                    # The way the train actually went, from two fixes on its route.
+                    st.motion = math.copysign(1.0, d_fix - st.d_fix)
+                if st.fix_t is not None:
+                    st.prev_fix = (st.d_fix, st.fix_t)
+            st.fix_key, st.d_fix, st.fix_t = key, d_fix, fix_t
             self._state[train_id] = st
         route = self._route(st.shape_id)
         d_stop = None
@@ -303,6 +350,10 @@ class Projector:
             if stop_off > MAX_STOP_OFF_M:
                 d_stop = None
         dt = min(now - fix_t, MAX_HORIZON_S)
+        if speed_ms is None and derive_speed:
+            # A source with no speed (Brightline): the speed of its last two
+            # fixes along the line (fix_speed).
+            speed_ms = self.fix_speed(train_id)
         speed = max(0.0, speed_ms or 0.0)
         # Which way along the line: the way two fixes showed it going, else
         # the LINE'S OWN ORDER. A GTFS shape is drawn in the direction its

@@ -8,17 +8,17 @@ the user. Record both in the SSOT.
 ! An operator's `id` becomes its config entry's unique_id and part of every
 entity name. Never change one once released.
 
-Brightline is this integration's first operator by design (SSOT section 3)
-and is NOT here yet: its identity rule waits on Lee (SSOT section 5, item
-284). It will read Brightline's own GTFS-Realtime, a second source adapter.
+Brightline reads Brightline's own GTFS-Realtime, the second source adapter
+(2026-10-10; its identity is the trip, SSOT section 5, item 284).
 """
 
 from __future__ import annotations
 
 from .amtrak import AMTRAK
-from .base import REGIONS, SOURCE_AMTRAKER, SOURCES, Operator
+from .base import REGIONS, SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCES, Operator
+from .brightline import BRIGHTLINE
 
-OPERATORS: dict[str, Operator] = {op.id: op for op in (AMTRAK,)}
+OPERATORS: dict[str, Operator] = {op.id: op for op in (AMTRAK, BRIGHTLINE)}
 
 
 def regions_in_use() -> dict[str, str]:
@@ -37,5 +37,5 @@ def operators_in(region: str) -> list[Operator]:
                   key=lambda op: op.name.lower())
 
 
-__all__ = ["OPERATORS", "REGIONS", "SOURCES", "SOURCE_AMTRAKER", "Operator",
+__all__ = ["OPERATORS", "REGIONS", "SOURCES", "SOURCE_AMTRAKER", "SOURCE_BRIGHTLINE_RT", "Operator",
            "operators_in", "regions_in_use"]
