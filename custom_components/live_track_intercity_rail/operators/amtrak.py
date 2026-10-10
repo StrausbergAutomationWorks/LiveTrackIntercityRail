@@ -49,12 +49,27 @@ PMS_280C = "#003A7B"   # Lee: PMS 280 C, 100C 76M 0Y 32K, 0R 58G 123B, 003a7b
 # Lee: PMS 306 C, 81C 0M 13Y 0K, no RGB given. Pantone's own sRGB for 306 C;
 # the CMYK converted naively (#30FFDE) is a green Pantone does not print.
 PMS_306C = "#00B3E3"
-FLAG = ((FLAG_BLUE, FLAG_WHITE, FLAG_RED), (FLAG_RED, FLAG_WHITE, FLAG_BLUE))
-CASCADES = (("#5C3327", "#004833", PMS_302C), ("#004833", "#5C3327", PMS_302C))
-NORTHEAST = (("#FB0001", "#3FC3F4", "#0B1F42"), ("#3FC3F4", "#FB0001", "#0B1F42"))
-SURFLINER = ((PMS_280C, PMS_280C, "#CBD1D5"), (PMS_280C, "#CBD1D5", PMS_280C))
-CALTRANS = (("#001945", "#FFC709", "#001945"), ("#001945", "#001945", "#FFC709"))
-ACELA = ((PMS_302C, PMS_302C, PMS_306C), (PMS_302C, PMS_306C, PMS_302C))
+# The third item is the number's outline: white, or "none" for no outline
+# (06_MAP_CONTRACT.md D4a; Lee 00:46: "Drop number outlines on Surfliner,
+# Caltrans").
+NO_OUTLINE = "none"
+# Cascades (Lee 01:0x, option C6 of bin\ltmc_star_pics\lbl_sheet.png): a
+# light inside, green band and brown number one way, the other way round the
+# other. The brown is the redder #7A3B26 (Lee 00:46: "increase the
+# red/brown"; his first brown was #5C3327). The inside is Lee's cream
+# #F8F2E6 (01:52: "change tan to #F8F2E6 if that would look better"):
+# rendered against his tan #BA9765 (bin\ltmc_star_pics\lbl_sheet3.png) the
+# number reads 7.6:1 and 9.5:1 instead of 3.1:1 and 3.9:1.
+CASCADES_GREEN, CASCADES_BROWN, CASCADES_TAN = "#004833", "#7A3B26", "#F8F2E6"
+FLAG = ((FLAG_BLUE, FLAG_WHITE, FLAG_RED), (FLAG_RED, FLAG_WHITE, FLAG_BLUE), FLAG_WHITE)
+CASCADES = ((CASCADES_GREEN, CASCADES_TAN, CASCADES_BROWN),
+            (CASCADES_BROWN, CASCADES_TAN, CASCADES_GREEN), NO_OUTLINE)
+# Northeast (Lee 01:0x): no number outline; black numbers on the blue
+# inside, white on the red.
+NORTHEAST = (("#FB0001", "#3FC3F4", "#000000"), ("#3FC3F4", "#FB0001", "#FFFFFF"), NO_OUTLINE)
+SURFLINER = ((PMS_280C, PMS_280C, "#CBD1D5"), (PMS_280C, "#CBD1D5", PMS_280C), NO_OUTLINE)
+CALTRANS = (("#001945", "#FFC709", "#001945"), ("#001945", "#001945", "#FFC709"), NO_OUTLINE)
+ACELA = ((PMS_302C, PMS_302C, PMS_306C), (PMS_302C, PMS_306C, PMS_302C), NO_OUTLINE)
 
 # By Amtraker's routeName, normalised by route_key(). MEASURED names
 # (bin\ltir_route_names2.txt, every saved Amtraker answer): "Amtrak
@@ -98,14 +113,14 @@ def amtrak_styling(number: str | None, line_name: str | None = None) -> dict[str
     number that is not all digits (the card then draws its default disc)."""
     if not isinstance(number, str) or not number.isdigit():
         return {}
-    odd, even = ROUTE_SCHEMES.get(route_key(line_name), FLAG)
+    odd, even, outline = ROUTE_SCHEMES.get(route_key(line_name), FLAG)
     band, fill, figure = odd if int(number) % 2 else even
     return {
         "marker_shape": "star",
         "marker_color": fill,
         "marker_ring_color": band,
         "marker_label_color": figure,
-        "marker_label_outline_color": FLAG_WHITE,
+        "marker_label_outline_color": outline,
         "marker_arrow_color": band,
         "marker_arrow_outline_color": FLAG_WHITE,
     }

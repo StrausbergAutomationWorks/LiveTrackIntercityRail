@@ -114,8 +114,10 @@ class AmtrakStarTests(unittest.TestCase):
     def test_lees_route_colours_as_he_gave_them(self):
         # (band, fill, number): odd first, then the other direction.
         cases = {
-            "Amtrak Cascades": (("#5C3327", "#004833", "#00537E"), ("#004833", "#5C3327", "#00537E")),
-            "Northeast Regional": (("#FB0001", "#3FC3F4", "#0B1F42"), ("#3FC3F4", "#FB0001", "#0B1F42")),
+            # 01:0x: Cascades option C6 (01:52: cream inside); Northeast
+            # black on blue, white on red.
+            "Amtrak Cascades": (("#004833", "#F8F2E6", "#7A3B26"), ("#7A3B26", "#F8F2E6", "#004833")),
+            "Northeast Regional": (("#FB0001", "#3FC3F4", "#000000"), ("#3FC3F4", "#FB0001", "#FFFFFF")),
             "Pacific Surfliner": (("#003A7B", "#003A7B", "#CBD1D5"), ("#003A7B", "#CBD1D5", "#003A7B")),
             "Capitol Corridor": (("#001945", "#FFC709", "#001945"), ("#001945", "#001945", "#FFC709")),
             "Acela": (("#00537E", "#00537E", "#00B3E3"), ("#00537E", "#00B3E3", "#00537E")),
@@ -123,6 +125,16 @@ class AmtrakStarTests(unittest.TestCase):
         for line, (odd, even) in cases.items():
             self.assertEqual(self.look("501", line), odd, line)
             self.assertEqual(self.look("500", line), even, line)
+
+    def test_number_outlines(self):
+        # Lee 00:46 and 01:0x: no outline on Cascades, Northeast, Surfliner,
+        # Caltrans and Acela numbers; the flag keeps its white outline.
+        for line in ("Amtrak Cascades", "Northeast Regional", "Pacific Surfliner",
+                     "Capitol Corridor", "Acela"):
+            for n in ("1", "2"):
+                self.assertEqual(amtrak.amtrak_styling(n, line)["marker_label_outline_color"], "none", line)
+        for n in ("1", "2"):
+            self.assertEqual(amtrak.amtrak_styling(n, "Empire Builder")["marker_label_outline_color"], "#FFFFFF")
 
     def test_every_route_lee_named_is_matched(self):
         ne = self.look("1", "Northeast Regional")
@@ -158,6 +170,8 @@ class AmtrakStarTests(unittest.TestCase):
         for line in [None] + sorted(amtrak.ROUTE_SCHEMES):
             for n in ("1", "2"):
                 for k, v in amtrak.amtrak_styling(n, line).items():
+                    if k == "marker_label_outline_color" and v == "none":
+                        continue   # D4a: "none", no outline (card, 2026-10-10)
                     if k.endswith("_color"):
                         self.assertRegex(v, re.compile(r"^#[0-9A-F]{6}$"), (k, line))
 
