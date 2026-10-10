@@ -145,14 +145,25 @@ class AmtrakStarTests(unittest.TestCase):
                      "New Haven-Springfield-Greenfield Service", "Hartford Line",
                      "Amtrak Hartford Line", "Valley Flyer"):
             self.assertEqual(self.look("1", line), ne, line)
-        for line in ("San Joaquins", "Gold Runner", "Capitol Corridor"):
-            self.assertEqual(self.look("1", line), ("#001945", "#FFC709", "#001945"), line)
+        self.assertEqual(self.look("1", "Capitol Corridor"), ("#001945", "#FFC709", "#001945"))
+        # Lee 03:40: Gold Runner (G3), Piedmont (P1), Hiawatha on Surfliner.
+        for line in ("San Joaquins", "Gold Runner"):
+            self.assertEqual(self.look("1", line), ("#4741AF", "#FEDB18", "#4741AF"), line)
+            self.assertEqual(self.look("2", line), ("#3DA7E9", "#FEDB18", "#4741AF"), line)
+        self.assertEqual(self.look("73", "Piedmont"), ("#001E60", "#9D2235", "#E6DE0A"))
+        self.assertEqual(self.look("74", "Piedmont"), ("#9D2235", "#001E60", "#E6DE0A"))
+        for n in ("331", "332"):
+            self.assertEqual(self.look(n, "Hiawatha"), self.look(n, "Pacific Surfliner"))
+            self.assertEqual(self.look(n, "Hiawatha Service"), self.look(n, "Pacific Surfliner"))
+        for line in ("Piedmont", "Gold Runner", "Hiawatha"):
+            self.assertEqual(amtrak.amtrak_styling("1", line)["marker_label_outline_color"], "none")
         self.assertEqual(self.look("1", "Cascades"), self.look("1", "Amtrak Cascades"))
 
     def test_a_route_lee_did_not_name_keeps_the_flag(self):
         flag = self.look("5")
+        # The rest of Amtrak Midwest keeps the flag (Lee 03:40).
         for line in ("California Zephyr", "Empire Builder", "Silver Meteor", "Lincoln Service",
-                     "Hiawatha", None, ""):
+                     "Borealis", "Wolverine", "Missouri River Runner", None, ""):
             self.assertEqual(self.look("5", line), flag, line)
 
     def test_the_arrow_is_the_band_outlined_white(self):

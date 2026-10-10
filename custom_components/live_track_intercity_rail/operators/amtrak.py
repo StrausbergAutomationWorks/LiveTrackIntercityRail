@@ -70,6 +70,13 @@ NORTHEAST = (("#FB0001", "#3FC3F4", "#000000"), ("#3FC3F4", "#FB0001", "#FFFFFF"
 SURFLINER = ((PMS_280C, PMS_280C, "#CBD1D5"), (PMS_280C, "#CBD1D5", PMS_280C), NO_OUTLINE)
 CALTRANS = (("#001945", "#FFC709", "#001945"), ("#001945", "#001945", "#FFC709"), NO_OUTLINE)
 ACELA = ((PMS_302C, PMS_302C, PMS_306C), (PMS_302C, PMS_306C, PMS_302C), NO_OUTLINE)
+# Lee 03:40, from bin\ltmc_star_pics\lbl_sheet4.png. Piedmont (NC By Train;
+# his #9D2235 red, #001E60 navy, #E6DE0A yellow, the "NC" on the locomotive):
+# option P1. Gold Runner (the San Joaquins, renamed 2025-11-03; his #4741AF,
+# #FEDB18, #3DA7E9): option G3, split from Caltrans, whose yellow and dark
+# blue it would otherwise resemble.
+PIEDMONT = (("#001E60", "#9D2235", "#E6DE0A"), ("#9D2235", "#001E60", "#E6DE0A"), NO_OUTLINE)
+GOLD_RUNNER = (("#4741AF", "#FEDB18", "#4741AF"), ("#3DA7E9", "#FEDB18", "#4741AF"), NO_OUTLINE)
 
 # By Amtraker's routeName, normalised by route_key(). MEASURED names
 # (bin\ltir_route_names2.txt, every saved Amtraker answer): "Amtrak
@@ -77,10 +84,12 @@ ACELA = ((PMS_302C, PMS_302C, PMS_306C), (PMS_302C, PMS_306C, PMS_302C), NO_OUTL
 # Corridor", "San Joaquins". Amtrak Virginia's trains run as "Northeast
 # Regional". NOT SEEN in any capture: the New Haven-Springfield-Greenfield
 # trains; Amtraker's own list says "Hartford Line" and "Valley Flyer", Amtrak's
-# GTFS "Amtrak Hartford Line" and "Valley Flyer". Lee's "Caltrans" is read as
-# the two state routes Caltrans runs as Amtrak California besides the
-# Surfliner, which has its own: Capitol Corridor and San Joaquins (renamed
-# Gold Runner by its agency; that name too).
+# GTFS "Amtrak Hartford Line" and "Valley Flyer". Lee's "Caltrans" was read
+# as the state routes Caltrans runs as Amtrak California besides the
+# Surfliner; since 03:40 the San Joaquins / Gold Runner has its own star, so
+# Caltrans is the Capitol Corridor. Amtraker still names 718 "San Joaquins"
+# (2026-10-10, measured); both names match. "Hiawatha" and "Piedmont" are
+# measured names too.
 ROUTE_SCHEMES = {
     "cascades": CASCADES,
     **{k: NORTHEAST for k in (
@@ -89,7 +98,12 @@ ROUTE_SCHEMES = {
         "ethan allen express", "maple leaf", "new haven springfield greenfield",
         "new haven springfield", "hartford line", "valley flyer")},
     "pacific surfliner": SURFLINER,
-    **{k: CALTRANS for k in ("capitol corridor", "san joaquins", "san joaquin", "gold runner")},
+    # Lee 03:40: "Hiawatha can use the Surfliner stars". The rest of Amtrak
+    # Midwest keeps the flag ("red, white, blue... poetic license").
+    "hiawatha": SURFLINER,
+    "capitol corridor": CALTRANS,
+    **{k: GOLD_RUNNER for k in ("san joaquins", "san joaquin", "gold runner")},
+    "piedmont": PIEDMONT,
     "acela": ACELA,
     "acela express": ACELA,
 }
