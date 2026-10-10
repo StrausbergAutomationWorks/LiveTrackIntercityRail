@@ -16,13 +16,19 @@ two shipped first (4a2e469); Lee, 15:47: "Let's use reported speed". The
 train moves at the speed it reported, and stops at its next stop. Every
 estimate moves the fix ALONG the
 route, so a straight line can no longer cross the landscape (D3b condition 3,
-the reason straight-line extrapolation was refused). The fix is moved, never
-snapped: it keeps its own offset from the line.
+the reason straight-line extrapolation was refused).
+
+Every estimate is ON the line. Lee, 2026-10-09 20:38: "Let's snap so train
+stays on the tracks." Until then the fix was moved along the line keeping
+its own offset from it (p50 3 m, but 655 in the Hudson at 523 m); now the
+train is drawn at the nearest point of its line, and the fix it came from is
+published beside it (fix_latitude, fix_longitude).
 
 The route is the railroad's own GTFS shape for the train's number; the stop
-is the GTFS stop with the source's station code. Anything missing, or a fix
-or stop too far from the route, and no estimate is made: the fix is published
-as it is.
+is the GTFS stop with the source's station code. No route, or a fix more
+than MAX_FIX_OFF_M from every route of its number, and no estimate is made:
+the fix is published as it is. No next stop, or one off the route, and the
+train is put on its line where its fix is, and held there.
 """
 
 from __future__ import annotations
@@ -267,11 +273,9 @@ class Projector:
                  stop_code: str | None, speed_ms: float | None,
                  now: float) -> tuple[float, float] | None:
         """(lat, lon) on the route at `now`, or None for "publish the fix"."""
-        if fix_t is None or stop_code is None or now < fix_t:
+        if fix_t is None or now < fix_t:
             return None
-        stop = (self.geometry.get("stops") or {}).get(stop_code)
-        if stop is None:
-            return None
+        stop = (self.geometry.get("stops") or {}).get(stop_code) if stop_code else None
         st = self._state.get(train_id)
         key = (fix[0], fix[1], fix_t)
         if st is None or st.fix_key != key:
@@ -290,14 +294,14 @@ class Projector:
             st.fix_key, st.d_fix = key, d_fix
             self._state[train_id] = st
         route = self._route(st.shape_id)
-        skey = (st.shape_id, stop_code)
-        if skey not in self._stop_d:
-            self._stop_d[skey] = route.project(*stop)
-        d_stop, stop_off = self._stop_d[skey]
-        if stop_off > MAX_STOP_OFF_M:
-            return None
-        gap = d_stop - st.d_fix
-        dist = abs(gap)
+        d_stop = None
+        if stop is not None:
+            skey = (st.shape_id, stop_code)
+            if skey not in self._stop_d:
+                self._stop_d[skey] = route.project(*stop)
+            d_stop, stop_off = self._stop_d[skey]
+            if stop_off > MAX_STOP_OFF_M:
+                d_stop = None
         dt = min(now - fix_t, MAX_HORIZON_S)
         speed = max(0.0, speed_ms or 0.0)
         # Which way along the line: the way two fixes showed it going, else
@@ -307,7 +311,10 @@ class Projector:
         # whose passed stop the source had not yet marked Departed BACKWARDS
         # (27 of 38 backward arrows in bin\ltir_heading_trial2.txt).
         st.direction = st.motion or 1.0
-        if dist > 0 and math.copysign(1.0, gap) != st.direction:
+        if d_stop is None:
+            # No stop to aim at: on the line where the fix is, held there.
+            step = 0.0
+        elif d_stop != st.d_fix and math.copysign(1.0, d_stop - st.d_fix) != st.direction:
             # The "next" stop is BEHIND the way the train is going: it has
             # passed it and the source has not marked it Departed yet
             # (measured: 22 of 22 backward moves in the first replay came from
@@ -316,22 +323,16 @@ class Projector:
             step = speed * dt
         else:
             # At the reported speed, and never past the next stop.
-            step = min(dist, speed * dt)
+            step = min(abs(d_stop - st.d_fix), speed * dt)
         d = st.d_fix + st.direction * step
         # Never backwards along the direction of travel: a fix that arrives
         # behind the last estimate holds the marker until the train passes it.
         if st.last_d is not None and st.direction and (d - st.last_d) * st.direction < 0 \
                 and abs(d - st.last_d) < 5000:
             d = st.last_d
-        if d == st.d_fix:
-            p = fix
-        else:
-            # The fix MOVED along the route, never put onto it: the estimate
-            # keeps the fix's own offset from the line (p50 3 m), so at the
-            # moment of a fix it IS the fix (06_MAP_CONTRACT.md D3c-v:
-            # emitters never snap).
-            a, b = route.point(st.d_fix), route.point(d)
-            p = (round(fix[0] + b[0] - a[0], 6), round(fix[1] + b[1] - a[1], 6))
+        # ON the line, even at the moment of a fix (Lee 2026-10-09 20:38,
+        # "snap so train stays on the tracks"; 06_MAP_CONTRACT.md D3d).
+        p = route.point(d)
         st.prev_d, st.prev_point = st.last_d, st.last_point
         st.last_d, st.last_point = d, p
         return p
@@ -339,8 +340,8 @@ class Projector:
     def path(self, train_id: str) -> list[list[float]] | None:
         """The train's line from where estimate() placed it the time before
         to where it placed it last: [[lat, lon], ...], first and last exactly
-        those two positions, between them the line's own vertices carried by
-        the latest fix's offset. None when it did not move forward along its
+        those two positions, between them the line's own vertices (all of it
+        on the line since 2026-10-09 20:38). None when it did not move forward along its
         line, moved more than MAX_PATH_M, or has no earlier position.
 
         Lee 2026-10-09 17:44: "Trains are off the track by a long way".
@@ -359,13 +360,11 @@ class Projector:
         route = self._route(st.shape_id)
         if route is None:
             return None
-        on = route.point(st.last_d)
-        dlat, dlon = st.last_point[0] - on[0], st.last_point[1] - on[1]
         lo, hi = sorted((st.prev_d, st.last_d))
         inner = [i for i in range(len(route.cum)) if lo < route.cum[i] < hi]
         if st.direction < 0:
             inner.reverse()
         pts = [list(st.prev_point)]
-        pts += [[round(route.lat[i] + dlat, 6), round(route.lon[i] + dlon, 6)] for i in inner]
+        pts += [[route.lat[i], route.lon[i]] for i in inner]
         pts.append(list(st.last_point))
         return pts

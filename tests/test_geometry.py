@@ -152,18 +152,24 @@ class ProjectorTests(unittest.TestCase):
         _, lon = self.est(p, 0.1, T0, stop="E", eta=T0 + 1000, speed=1.0, now=T0 + 5000)
         self.assertAlmostEqual(lon, 0.1 + deg(geometry.MAX_HORIZON_S * 1.0), places=6)
 
-    def test_the_fix_is_moved_never_snapped(self):
-        # 100 m north of the line: the estimate stays 100 m north of it.
+    def test_a_fix_off_its_line_is_put_on_it(self):
+        # Lee 2026-10-09 20:38: "snap so train stays on the tracks". 100 m
+        # north of the line: on it at the fix's own moment, and moving along it.
         p = geometry.Projector(geo())
+        self.assertEqual(self.est(p, 0.1, T0, speed=10.0, lat=0.0009), (0.0, 0.1))
         lat, lon = self.est(p, 0.1, T0, speed=10.0, now=T0 + 500, lat=0.0009)
-        self.assertEqual(lat, 0.0009)
+        self.assertEqual(lat, 0.0)
         self.assertAlmostEqual(lon, 0.1 + deg(5000), places=6)
+
+    def test_no_stop_puts_it_on_its_line_and_holds(self):
+        for stop in (None, "NOPE"):
+            p = geometry.Projector(geo())
+            self.assertEqual(self.est(p, 0.1, T0, stop=stop, speed=10.0, now=T0 + 500,
+                                      lat=0.0009), (0.0, 0.1), stop)
 
     def test_no_estimate_without_what_it_needs(self):
         p = geometry.Projector(geo())
         self.assertIsNone(self.est(p, 0.1, None, eta=T0 + 600, now=T0 + 60))
-        self.assertIsNone(self.est(p, 0.1, T0, stop=None, eta=T0 + 600, now=T0 + 60))
-        self.assertIsNone(self.est(p, 0.1, T0, stop="NOPE", eta=T0 + 600, now=T0 + 60))
         self.assertIsNone(self.est(p, 0.1, T0, number="99", eta=T0 + 600, now=T0 + 60))
         self.assertIsNone(self.est(p, 0.1, T0 + 100, eta=T0 + 600, now=T0))  # clock behind
 
@@ -176,7 +182,8 @@ class ProjectorTests(unittest.TestCase):
 
     def test_a_stop_off_the_route_is_no_target(self):
         p = geometry.Projector(geo())
-        self.assertIsNone(self.est(p, 0.1, T0, stop="FAR", eta=T0 + 600, now=T0 + 60))
+        self.assertEqual(self.est(p, 0.1, T0, stop="FAR", speed=10.0, now=T0 + 60),
+                         (0.0, 0.1))
 
     def test_a_stop_behind_the_motion_was_passed(self):
         # Two fixes going east; the source still names a stop behind it.
@@ -231,11 +238,13 @@ class ProjectorTests(unittest.TestCase):
         self.assertIn([0.0, 0.2], path)                      # round the bend, not across
         self.assertEqual(len(path), 3)
 
-    def test_path_keeps_the_fix_offset(self):
+    def test_path_is_on_the_line_for_a_fix_off_it(self):
         p = geometry.Projector(geo())
         self.est(p, 0.1, T0, speed=100.0, now=T0 + 10, lat=0.0009)
         self.est(p, 0.1, T0, speed=100.0, now=T0 + 100, lat=0.0009)
-        self.assertTrue(all(abs(q[0] - 0.0009) < 1e-9 for q in p.path("7-9")))
+        path = p.path("7-9")
+        self.assertGreater(len(path), 2)
+        self.assertTrue(all(q[0] == 0.0 for q in path), path)
 
     def test_a_path_against_the_lines_order_runs_the_way_the_train_went(self):
         # Fixes going WEST along a line drawn east, vertices every 0.01 deg.
@@ -289,7 +298,7 @@ class ProjectorTests(unittest.TestCase):
         self.assertEqual(self.est(p, 0.1, T0, eta=T0 + 1000), (0.0, 0.1))
         est = self.est(p, 0.1, T0 + 60, stop="N", speed=10.0, now=T0 + 560, lat=0.9995)
         self.assertIsNotNone(est)
-        self.assertEqual(est[0], 0.9995)
+        self.assertEqual(est[0], 1.0)
         self.assertGreater(est[1], 0.1 + deg(4900))
 
     def test_the_nearest_of_the_numbers_lines(self):
@@ -298,7 +307,7 @@ class ProjectorTests(unittest.TestCase):
                 stops={"N": [1.0, 0.2]})
         p = geometry.Projector(g)
         lat, lon = self.est(p, 0.1, T0, stop="N", speed=10.0, now=T0 + 500, lat=0.9995)
-        self.assertEqual(lat, 0.9995)
+        self.assertEqual(lat, 1.0)
         # On the line at 1 degree north, where a degree of longitude is shorter.
         self.assertAlmostEqual(lon, 0.1 + deg(5000) / math.cos(math.radians(1.0)), places=5)
 

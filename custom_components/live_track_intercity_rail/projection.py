@@ -14,6 +14,11 @@ A record whose position is an estimate:
   the first time would slide it from the last fix toward the estimate in a
   straight line, the thing the estimate exists to avoid.
 Every other train in service carries `position_source: "observed"`.
+
+A train with a line is drawn ON it (Lee 2026-10-09 20:38, "snap so train
+stays on the tracks"), so a fix even a metre off its line is "estimated" from
+the moment it arrives; "observed" is a fix exactly on its line, or a train
+with no line at all.
 """
 
 from __future__ import annotations

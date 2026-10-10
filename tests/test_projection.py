@@ -54,8 +54,8 @@ def snap_of(obs, stop="C", eta=None, kmh=360.0):
     return s
 
 
-def obs(lon, t, vid="7-9", train="7"):
-    return Obs(vehicle_id=vid, lat=0.0, lon=lon,
+def obs(lon, t, vid="7-9", train="7", lat=0.0):
+    return Obs(vehicle_id=vid, lat=lat, lon=lon,
                observed_at=dt.datetime.fromtimestamp(t, UTC), in_service=True,
                train=train, line=None, reported_course=None, trip_id=vid)
 
@@ -96,6 +96,19 @@ class ApplyTests(unittest.TestCase):
         self.assertEqual(r["position_source"], "observed")
         self.assertNotIn("fix_latitude", r)
         self.assertIn("previous_latitude", r)
+
+    def test_a_fix_off_its_line_is_drawn_on_it_from_its_first_moment(self):
+        # Lee 2026-10-09 20:38: "snap so train stays on the tracks".
+        p = geometry.Projector(line_geo())
+        r = rec(0.1, latitude=0.0009)
+        res = {"vehicles": {"7-9": r}, "departed": []}
+        counts = projection.apply(p, snap_of([obs(0.1, T0, lat=0.0009)], kmh=36.0), res, T0)
+        self.assertEqual(counts, {"estimated": 1, "observed": 0})
+        self.assertEqual(r["position_source"], "estimated")
+        self.assertEqual((r["latitude"], r["longitude"]), (0.0, 0.1))
+        self.assertEqual((r["fix_latitude"], r["fix_longitude"]), (0.0009, 0.1))
+        for k in projection.SEGMENT_KEYS:
+            self.assertNotIn(k, r)
 
     def test_no_lines_yet_publishes_every_fix_as_observed(self):
         res = {"vehicles": {"7-9": rec(0.1)}, "departed": []}
@@ -225,6 +238,26 @@ class ReplayTests(unittest.TestCase):
                     self.assertEqual(p[-1], [r["latitude"], r["longitude"]])
                     self.assertLessEqual(len(p), 50)
         self.assertGreater(with_path, 450)
+
+    def test_every_moved_train_is_on_a_line_of_its_number(self):
+        # Lee 2026-10-09 20:38: "snap so train stays on the tracks".
+        routes, checked = {}, 0
+        for _, snap, res, _ in self.frames:
+            number = {o.vehicle_id: o.train for o in snap.observations}
+            for vid, r in res["vehicles"].items():
+                if r["position_source"] != "estimated":
+                    continue
+                off = []
+                for sid in GEOMETRY["trains"][number[vid]]:
+                    if sid not in routes:
+                        routes[sid] = geometry.Route([tuple(q) for q in GEOMETRY["shapes"][sid]])
+                    off.append(routes[sid].project(r["latitude"], r["longitude"])[1])
+                self.assertLess(min(off), 1.0, (vid, min(off)))
+                for q in r.get("track_path") or ():
+                    self.assertLess(min(routes[s].project(*q)[1]
+                                        for s in GEOMETRY["trains"][number[vid]]), 1.0, vid)
+                checked += 1
+        self.assertGreater(checked, 500)
 
     def test_most_moving_trains_are_moved(self):
         est = sum(c["estimated"] for *_, c in self.frames)
