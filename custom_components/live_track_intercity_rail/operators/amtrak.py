@@ -109,6 +109,42 @@ ROUTE_SCHEMES = {
 }
 
 
+# The Maple Leaf (Lee 2026-10-11 16:11): "Blink Maple Leaf the entire
+# length. Both VIA and Amtrak make it look like one train." One physical
+# train, Amtrak 63/64 in the US and VIA 98/97 in Canada; VIA never positions
+# it (Intercity SSOT section 6), so Amtrak's entity carries both badges for
+# the whole run and the card fades between them (06_MAP_CONTRACT.md
+# D4a-alternate). The pairing is VIA's own (GTFS "97-64" / "98-63", and its
+# booking "#97 - #64"): 63 = 98, 64 = 97. Keyed on the number alone: 63 and
+# 64 are the Maple Leaf's and nothing else's.
+# VIA's badge (D4a-maple; Lee 00:02-00:33): the Ontario and Quebec band
+# #323198; ODD numbers a yellow #FFCC00 disc in the band, the leaf outlined
+# black; EVEN numbers swap yellow and the band and outline the leaf white.
+# The number replaces the arrow as a tag in the band colour; its text is set
+# here, black on the yellow tag and white on the blue, because an absent
+# key would keep the Amtrak star's number colour (D4a-alternate).
+VIA_YELLOW, VIA_ONTARIO_QUEBEC, VIA_LEAF = "#FFCC00", "#323198", "#FF0000"
+MAPLE_LEAF_VIA = {"63": "98", "64": "97"}
+
+
+def via_badge(via_number: str) -> dict[str, Any]:
+    """VIA's maple badge for a VIA train number on the Ontario and Quebec
+    band, in the D4a key names."""
+    odd = int(via_number) % 2
+    band, fill = (VIA_ONTARIO_QUEBEC, VIA_YELLOW) if odd else (VIA_YELLOW, VIA_ONTARIO_QUEBEC)
+    return {
+        "marker_shape": "maple",
+        "marker_label": via_number,
+        "marker_color": fill,
+        "marker_ring_color": band,
+        "marker_label_color": "#FFFFFF" if odd else "#000000",
+        "marker_label_outline_color": NO_OUTLINE,
+        "marker_label_placement": "heading",
+        "marker_symbol_color": VIA_LEAF,
+        "marker_symbol_outline_color": "#000000" if odd else FLAG_WHITE,
+    }
+
+
 def route_key(name: str | None) -> str:
     """'Amtrak Cascades', 'Keystone Service', 'New Haven-Springfield' ->
     'cascades', 'keystone', 'new haven springfield'. 'Empire Builder' stays
@@ -130,7 +166,7 @@ def amtrak_styling(number: str | None, line_name: str | None = None,
         return {}
     odd, even, outline = ROUTE_SCHEMES.get(route_key(line_name), FLAG)
     band, fill, figure = odd if int(number) % 2 else even
-    return {
+    styling: dict[str, Any] = {
         "marker_shape": "star",
         "marker_color": fill,
         "marker_ring_color": band,
@@ -139,6 +175,10 @@ def amtrak_styling(number: str | None, line_name: str | None = None,
         "marker_arrow_color": band,
         "marker_arrow_outline_color": FLAG_WHITE,
     }
+    via = MAPLE_LEAF_VIA.get(number)
+    if via:
+        styling["marker_alternate"] = via_badge(via)
+    return styling
 
 
 AMTRAK = Operator(

@@ -56,6 +56,9 @@ PASSTHROUGH = (
     "marker_ring_width",
     # D4a: the marker's shape; "star" draws a star in the colours above.
     "marker_shape",
+    # D4a-alternate: a second look the card fades to and back (the Maple
+    # Leaf, Amtrak's star and VIA's badge; operators/amtrak.py).
+    "marker_alternate",
 )
 
 

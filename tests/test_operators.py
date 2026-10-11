@@ -209,6 +209,46 @@ class AmtrakStarTests(unittest.TestCase):
         self.assertEqual(amtrak.amtrak_styling("5", "Acela", "NYP"),
                          amtrak.amtrak_styling("5", "Acela"))
 
+    def test_the_maple_leaf_carries_vias_badge_as_its_alternate(self):
+        # Lee 2026-10-11 16:11: blink the entire length. 63 = 98, 64 = 97.
+        s63 = amtrak.amtrak_styling("63", "Maple Leaf")
+        self.assertEqual(s63["marker_shape"], "star")
+        self.assertEqual(s63["marker_alternate"], {
+            "marker_shape": "maple", "marker_label": "98", "marker_color": "#323198",
+            "marker_ring_color": "#FFCC00", "marker_label_color": "#000000",
+            "marker_label_outline_color": "none", "marker_label_placement": "heading",
+            "marker_symbol_color": "#FF0000", "marker_symbol_outline_color": "#FFFFFF"})
+        self.assertEqual(amtrak.amtrak_styling("64", "Maple Leaf")["marker_alternate"], {
+            "marker_shape": "maple", "marker_label": "97", "marker_color": "#FFCC00",
+            "marker_ring_color": "#323198", "marker_label_color": "#FFFFFF",
+            "marker_label_outline_color": "none", "marker_label_placement": "heading",
+            "marker_symbol_color": "#FF0000", "marker_symbol_outline_color": "#000000"})
+        # By number, whatever Amtraker calls the route; the primary star is unchanged.
+        self.assertEqual(amtrak.amtrak_styling("63")["marker_alternate"]["marker_label"], "98")
+        without = {k: v for k, v in s63.items() if k != "marker_alternate"}
+        self.assertEqual(without["marker_ring_color"], self.look("63", "Maple Leaf")[0])
+        self.assertEqual(self.look("63", "Maple Leaf"), self.look("1", "Northeast Regional"))
+
+    def test_no_other_train_alternates(self):
+        for n in ("62", "65", "97", "98", "630", "6", "3", "163", "7097"):
+            self.assertNotIn("marker_alternate", amtrak.amtrak_styling(n, "Maple Leaf"), n)
+
+    def test_the_alternate_colours_are_the_contracts_form(self):
+        import re
+        for n in ("63", "64"):
+            for k, v in amtrak.amtrak_styling(n)["marker_alternate"].items():
+                if k.endswith("_color") and v != "none":
+                    self.assertRegex(v, re.compile(r"^#[0-9A-F]{6}$"), (n, k))
+
+    def test_the_alternate_reaches_the_map(self):
+        rec = {"vehicle_id": "63-11", "marker_label": "63", "in_service": True,
+               **amtrak.amtrak_styling("63", "Maple Leaf")}
+        a = attributes.to_attributes(rec, "amtrak")
+        self.assertEqual(a["marker_alternate"]["marker_label"], "98")
+        op = operators.OPERATORS["amtrak"]
+        self.assertEqual(op.marker_keys({"train": "64", "line_name": "Maple Leaf"})
+                         ["marker_alternate"]["marker_label"], "97")
+
     def test_amtrak_uses_it_and_the_map_gets_the_shape(self):
         rec = {"vehicle_id": "5-8", "marker_label": "5", "in_service": True,
                **amtrak.amtrak_styling("5")}
