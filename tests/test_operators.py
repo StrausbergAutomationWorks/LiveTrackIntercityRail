@@ -271,8 +271,9 @@ class BrightlineTests(unittest.TestCase):
         self.assertEqual(op.gtfs_url, "https://feed.gobrightline.com/bl_gtfs.zip")
         self.assertEqual((op.scan_interval_s, op.derive_speed), (60, True))
         self.assertIn("Brightline", op.attribution)
-        # Brightline defines no "late": the card's defaults.
-        self.assertEqual(op.lateness_keys(), {})
+        # Brightline defines no "late"; Lee 2026-10-11 21:58: Amtrak's.
+        self.assertEqual(op.lateness_keys(), {"late_threshold_min": 16, "very_late_threshold_min": 30})
+        self.assertEqual(op.lateness_keys(), operators.OPERATORS["amtrak"].lateness_keys())
 
     def test_amtrak_keeps_its_interval_and_its_reported_speed(self):
         op = operators.OPERATORS["amtrak"]

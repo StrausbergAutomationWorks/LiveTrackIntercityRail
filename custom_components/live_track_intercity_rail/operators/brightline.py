@@ -19,6 +19,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from .amtrak import AMTRAK
 from .base import SOURCE_BRIGHTLINE_RT, Operator
 
 FEED = "https://feed.gobrightline.com/"
@@ -75,6 +76,12 @@ BRIGHTLINE = Operator(
     scan_interval_s=60,
     derive_speed=True,
     # Brightline defines no "late" (it publishes an on-time percentage only;
-    # SSOT 9.1): no thresholds, the card's defaults apply, as before.
+    # SSOT 9.1). Lee 2026-10-11 21:58: "the definition of late probably
+    # relies on the distance or amount of time it takes from one station to
+    # the next. Brightline is more like Amtrak by that standard so let's use
+    # Amtrak late for Brightline." Amtrak's values, operators/amtrak.py:
+    # late from 16 (49 CFR 273.5(a)(1)), red from 30 (Lee's placeholder).
+    late_threshold_min=AMTRAK.late_threshold_min,
+    very_late_threshold_min=AMTRAK.very_late_threshold_min,
     gtfs_url=FEED + "bl_gtfs.zip",
 )
