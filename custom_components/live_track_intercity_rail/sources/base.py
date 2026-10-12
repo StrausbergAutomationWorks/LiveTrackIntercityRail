@@ -23,7 +23,9 @@ from saw_livetrack.gtfs.realtime import Obs  # noqa: F401  (re-exported)
 # allowlist lives in attributes.py; this is only the adapter's side of it.
 # `destination` (the last stop's id) is for the operator's styling only and is
 # NOT in that allowlist: it is not a contract key, so it never reaches the map.
-EXTRA_KEYS = ("line_name", "speed_kmh", "heading_octant", "destination")
+# `marker_status` (06_MAP_CONTRACT.md D4c-status): "Customs" while the train is
+# held at a border inspection (border.py); its delay is then left out.
+EXTRA_KEYS = ("line_name", "speed_kmh", "heading_octant", "destination", "marker_status")
 RECORD_ONLY_KEYS = ("destination",)
 
 

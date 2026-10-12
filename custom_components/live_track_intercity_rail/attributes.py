@@ -31,6 +31,8 @@ PASSTHROUGH = (
     # D4c: this railroad's own definition of late (operators/base.py).
     "late_threshold_min",
     "very_late_threshold_min",
+    # D4c-status: a word in the delay badge's place ("Customs", border.py).
+    "marker_status",
     "next_stop",
     "arrival_estimated_at",
     # D3: "estimated" when the position was moved along the train's route

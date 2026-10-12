@@ -30,6 +30,7 @@ from typing import Any, Iterable
 from saw_livetrack import heading_octant, observed_at, parse_ts, speed_kmh
 from saw_livetrack.gtfs.realtime import Obs
 
+from ..border import CUSTOMS_WORD, customs_stop
 from .base import Snapshot
 
 # lastValTS later than our own clock by more than this is not an observation
@@ -111,6 +112,15 @@ def next_stop(row: dict[str, Any]) -> tuple[str, float | None, int | None] | Non
     return name, eta, delay
 
 
+def at_customs(row: dict[str, Any], lat: float, lon: float, kmh: float | None) -> bool:
+    """Whether the train is held at a border inspection (border.py): from its
+    first and last stations' time zones, its position and its speed."""
+    stations = [s for s in row.get("stations") or () if isinstance(s, dict)]
+    if not stations:
+        return False
+    return customs_stop(lat, lon, kmh, stations[0].get("tz"), stations[-1].get("tz")) is not None
+
+
 def parse(rows: Iterable[dict[str, Any]], now: float) -> Snapshot | None:
     """Rows of one provider -> Snapshot, or None when the source listed NO
     row at all for the provider. `now` is epoch seconds.
@@ -177,21 +187,27 @@ def parse(rows: Iterable[dict[str, Any]], now: float) -> Snapshot | None:
             trip_id=tid,
         ))
 
+        kmh = speed_kmh(row)
+        held = at_customs(row, lat, lon, kmh)
+
         nxt = next_stop(row)
         if nxt is not None:
             name, eta, delay = nxt
             snap.next_stops[tid] = (name, eta)
-            if delay is not None:
+            # Held at the border, the delay is not lateness: Amtraker's
+            # estimate past Lacolle leaves the stop out (border.py).
+            if delay is not None and not held:
                 snap.trip_delays[tid] = delay
             code = next_stop_code(row)
             if code is not None:
                 snap.stop_codes[tid] = code
 
         extra: dict[str, Any] = {}
+        if held:
+            extra["marker_status"] = CUSTOMS_WORD
         route = _text(row.get("routeName"))
         if route:
             extra["line_name"] = " ".join(route.split())
-        kmh = speed_kmh(row)
         if kmh is not None:
             extra["speed_kmh"] = round(kmh, 1)
         octant = heading_octant(row)
