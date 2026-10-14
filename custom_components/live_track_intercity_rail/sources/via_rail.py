@@ -52,6 +52,14 @@ from .base import HELD_SPEED_KEY, Snapshot
 FUTURE_SLACK_S = 60.0
 # Numbers another operator draws (above).
 EXCLUDED_NUMBERS = frozenset({"97", "98"})
+# A run still "departed, not arrived" whose every stop is passed and whose
+# last stop's estimate is older than this is FINISHED, and has no marker.
+# MEASURED: live 2026-10-14 05:51Z, the Ocean of 11 Oct (14) standing at
+# Halifax with a fresh fix, its list cut to one stop estimated 49 h before.
+# In the capture every stop passed while running happened once, train 5 into
+# Prince Rupert, 99 minutes and moving (to 48 km/h): 3 h keeps such a late
+# train and drops the ghost (bin\ltir_via_allarr.txt).
+FINISHED_S = 3 * 3600
 # The feed's "unknown" in a time field (117 fields in the sample), not null.
 UNKNOWN = "&mdash;"
 # A GTFS route name starts with the railroad's name; the hover box shows the
@@ -132,6 +140,17 @@ def next_stop(times: Any) -> tuple[str | None, str, float | None, int | None] | 
     return None
 
 
+def finished(times: Any, now: float) -> bool:
+    """Every listed stop passed, the last one's estimate over FINISHED_S ago."""
+    stops = [s for s in times if isinstance(s, dict)] if isinstance(times, list) else []
+    if not stops or any(s.get("eta") != "ARR" for s in stops):
+        return False
+    last = stops[-1]
+    arrival = last.get("arrival") if isinstance(last.get("arrival"), dict) else {}
+    t = _ts(arrival.get("estimated")) or _ts(last.get("estimated"))
+    return t is not None and now - t > FINISHED_S
+
+
 class ViaRail:
     """Per config entry: remembers each running train's last fix."""
 
@@ -170,6 +189,9 @@ class ViaRail:
                 continue
             if v.get("departed") is not True:
                 skip("predeparture")
+                continue
+            if finished(v.get("times"), now):
+                skip("finished")
                 continue
             tid = identity(number, v.get("instance"))
             if tid in seen:

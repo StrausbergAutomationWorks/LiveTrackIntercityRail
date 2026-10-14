@@ -149,6 +149,21 @@ class SourceTests(unittest.TestCase):
         self.assertNotIn("line_name", snap.extras["692-8"])
         self.assertEqual(snap.extras["1-7"]["speed_kmh"], DATA["1 (10-07)"]["speed"])
 
+    def test_a_run_long_past_its_last_stop_is_finished(self):
+        # Live 2026-10-14: the Ocean of 11 Oct at Halifax, one stop listed,
+        # estimated 49 h before, still "departed, not arrived".
+        ghost = copy.deepcopy(DATA["64"])
+        ghost["times"] = [{"code": "LPOC", "station": "La Pocatiere", "eta": "ARR",
+                           "arrival": {"estimated": "2026-10-08T15:00:00-04:00"}}]
+        late = copy.deepcopy(DATA["64"])
+        late["times"] = [{"code": "TRTO", "station": "Toronto", "eta": "ARR",
+                          "arrival": {"estimated": "2026-10-10T14:00:00-04:00"}}]   # 2 h 14 min before NOW
+        snap, _ = self.parse({"64": ghost, "65": late})
+        self.assertEqual([o.vehicle_id for o in snap.observations], ["65-10"])
+        self.assertEqual(snap.skipped.get("finished"), 1)
+        self.assertFalse(via_src.finished([], NOW))
+        self.assertFalse(via_src.finished([{"eta": "ARR"}], NOW))                  # no time: not finished
+
     def test_a_key_without_a_number_is_skipped(self):
         snap, _ = self.parse({"Bus 3": copy.deepcopy(DATA["1 (10-07)"])})
         self.assertEqual(snap.observations, [])
