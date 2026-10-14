@@ -176,6 +176,24 @@ class AmtrakStarTests(unittest.TestCase):
                      "Borealis", "Wolverine", "Missouri River Runner", None, ""):
             self.assertEqual(self.look("5", line), flag, line)
 
+    def test_valley_flyer_and_vermonter_by_number(self):
+        # Lee 2026-10-13 23:21, his lists; the other direction band and fill
+        # switched (23:3x, option A). By NUMBER, whatever the route name.
+        odd, even = ("#77C375", "#19587B", "#FF6D00"), ("#19587B", "#77C375", "#FF6D00")
+        for n in ("461", "471", "479", "499", "55", "57"):
+            for line in ("Valley Flyer", "Vermonter", "Amtrak Hartford Line", None):
+                self.assertEqual(self.look(n, line), odd, (n, line))
+        for n in ("400", "486", "488", "494", "54", "56"):
+            for line in ("Valley Flyer", "Vermonter", "Amtrak Hartford Line", None):
+                self.assertEqual(self.look(n, line), even, (n, line))
+            self.assertEqual(amtrak.amtrak_styling(n, "Vermonter")["marker_label_outline_color"], "none")
+            self.assertEqual(amtrak.amtrak_styling(n)["marker_arrow_color"], "#19587B")
+        # Not on Lee's lists: the route decides, as before.
+        for n in ("425", "478", "495", "53", "58", "405"):
+            ne = self.look("1" if int(n) % 2 else "2", "Northeast Regional")
+            self.assertEqual(self.look(n, "Valley Flyer"), ne, n)
+        self.assertEqual(self.look("5"), ("#3C3B6E", "#FFFFFF", "#B22234"))
+
     def test_the_arrow_is_the_band_outlined_white(self):
         for n, line in (("5", None), ("6", None), ("501", "Amtrak Cascades"), ("500", "Amtrak Cascades")):
             s = amtrak.amtrak_styling(n, line)

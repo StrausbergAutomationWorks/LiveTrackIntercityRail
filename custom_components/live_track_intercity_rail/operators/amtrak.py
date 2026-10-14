@@ -77,6 +77,22 @@ ACELA = ((PMS_302C, PMS_302C, PMS_306C), (PMS_302C, PMS_306C, PMS_302C), NO_OUTL
 # blue it would otherwise resemble.
 PIEDMONT = (("#001E60", "#9D2235", "#E6DE0A"), ("#9D2235", "#001E60", "#E6DE0A"), NO_OUTLINE)
 GOLD_RUNNER = (("#4741AF", "#FEDB18", "#4741AF"), ("#3DA7E9", "#FEDB18", "#4741AF"), NO_OUTLINE)
+# Valley Flyer and Vermonter (Lee 2026-10-13 23:21: "#77C375 and #19587B and
+# make the number #FF6D00"); the other direction band and fill switched
+# (Lee 23:3x, option A of bin\ltmc_star_pics\vfv_sheet.png). Accepted with
+# its cost: orange on the green inside is 1.3:1 (on the blue 2.7:1).
+VALLEY_GREEN, VALLEY_BLUE, VALLEY_ORANGE = "#77C375", "#19587B", "#FF6D00"
+VALLEY_VERMONTER = ((VALLEY_GREEN, VALLEY_BLUE, VALLEY_ORANGE),
+                    (VALLEY_BLUE, VALLEY_GREEN, VALLEY_ORANGE), NO_OUTLINE)
+
+# By TRAIN NUMBER, before the route (Lee 2026-10-13 23:21, his lists): the
+# Valley Flyer trips 400, 461, 471, 479, 486, 488, 494, 499 and the Vermonter
+# (St. Albans-Washington) 54-57. Not 425, 478 or 495, which Amtrak's GTFS
+# also files under Valley Flyer: Lee's list is the rule.
+TRAIN_SCHEMES = {
+    **{n: VALLEY_VERMONTER for n in ("400", "461", "471", "479", "486", "488", "494", "499")},
+    **{n: VALLEY_VERMONTER for n in ("54", "55", "56", "57")},
+}
 
 # By Amtraker's routeName, normalised by route_key(). MEASURED names
 # (bin\ltir_route_names2.txt, every saved Amtraker answer): "Amtrak
@@ -159,12 +175,13 @@ def route_key(name: str | None) -> str:
 
 def amtrak_styling(number: str | None, line_name: str | None = None,
                    destination: str | None = None) -> dict[str, Any]:
-    """The star for a train number on a route: the route's scheme, else the
-    flag; odd numbers the first set, even the other direction. Nothing for a
-    number that is not all digits (the card then draws its default disc)."""
+    """The star for a train number on a route: the number's own scheme, else
+    the route's, else the flag; odd numbers the first set, even the other
+    direction. Nothing for a number that is not all digits (the card then
+    draws its default disc)."""
     if not isinstance(number, str) or not number.isdigit():
         return {}
-    odd, even, outline = ROUTE_SCHEMES.get(route_key(line_name), FLAG)
+    odd, even, outline = TRAIN_SCHEMES.get(number) or ROUTE_SCHEMES.get(route_key(line_name), FLAG)
     band, fill, figure = odd if int(number) % 2 else even
     styling: dict[str, Any] = {
         "marker_shape": "star",
