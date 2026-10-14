@@ -16,7 +16,9 @@ from typing import Any, Callable, Mapping
 SOURCE_AMTRAKER = "amtraker"
 # Brightline's own GTFS-Realtime (sources/brightline_rt.py).
 SOURCE_BRIGHTLINE_RT = "brightline_rt"
-SOURCES = (SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT)
+# VIA Rail's own train-status JSON (sources/via_rail.py).
+SOURCE_VIA = "via"
+SOURCES = (SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_VIA)
 
 
 @dataclass(frozen=True)
@@ -60,6 +62,25 @@ class Operator:
     # moves a train along its line between fixes (geometry.py). None: every
     # train is published at its fix, as it is.
     gtfs_url: str | None = None
+    # Which GTFS column the source's station codes are: "stop_id" (Amtrak,
+    # Brightline) or "stop_code" (VIA: its live codes are stop_codes, 249 of
+    # 249 measured; its stop_ids are numeric, 20_Research/via_rail).
+    gtfs_stop_key: str = "stop_id"
+    # Lateness that depends on the TRAIN: (train number, line name) -> the D4c
+    # threshold keys. None: lateness_keys() for every train (VIA: 10 minutes
+    # on the corridor, 60 off it; Lee 2026-10-13).
+    lateness: Callable[[str | None, str | None], dict[str, int]] | None = None
+    # A train whose fix is older than geometry.MAX_HORIZON_S, or which has no
+    # fix at all (the source held its last one), moves toward its next stop
+    # arriving at the source's estimate (Lee 2026-10-11 15:28, VIA; measured
+    # better than holding, ltir_via_final.txt). False: it waits at the horizon.
+    timed_without_fix: bool = False
+
+    def lateness_for(self, rec: Mapping[str, Any]) -> dict[str, int]:
+        """The D4c threshold keys for one published train in service."""
+        if self.lateness is not None:
+            return dict(self.lateness(rec.get("train"), rec.get("line_name")))
+        return self.lateness_keys()
 
     def lateness_keys(self) -> dict[str, int]:
         """The D4c threshold keys for a train in service, each only when set."""

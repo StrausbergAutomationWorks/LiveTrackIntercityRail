@@ -9,16 +9,18 @@ the user. Record both in the SSOT.
 entity name. Never change one once released.
 
 Brightline reads Brightline's own GTFS-Realtime, the second source adapter
-(2026-10-10; its identity is the trip, SSOT section 5, item 284).
+(2026-10-10; its identity is the trip, SSOT section 5, item 284). VIA Rail
+reads VIA's own train-status JSON, the third (2026-10-14, SSOT 8.3).
 """
 
 from __future__ import annotations
 
 from .amtrak import AMTRAK
-from .base import REGIONS, SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCES, Operator
+from .base import REGIONS, SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_VIA, SOURCES, Operator
 from .brightline import BRIGHTLINE
+from .via_rail import VIA_RAIL
 
-OPERATORS: dict[str, Operator] = {op.id: op for op in (AMTRAK, BRIGHTLINE)}
+OPERATORS: dict[str, Operator] = {op.id: op for op in (AMTRAK, BRIGHTLINE, VIA_RAIL)}
 
 
 def regions_in_use() -> dict[str, str]:
@@ -37,5 +39,5 @@ def operators_in(region: str) -> list[Operator]:
                   key=lambda op: op.name.lower())
 
 
-__all__ = ["OPERATORS", "REGIONS", "SOURCES", "SOURCE_AMTRAKER", "SOURCE_BRIGHTLINE_RT", "Operator",
+__all__ = ["OPERATORS", "REGIONS", "SOURCES", "SOURCE_AMTRAKER", "SOURCE_BRIGHTLINE_RT", "SOURCE_VIA", "Operator",
            "operators_in", "regions_in_use"]

@@ -19,6 +19,7 @@ copy and is not retried for RETRY_S.
 from __future__ import annotations
 
 import datetime as dt
+import functools
 import json
 import logging
 import os
@@ -124,13 +125,23 @@ class RouteStore:
         self._data = d
         self.projector = geometry.Projector(d)
 
+    async def async_load_cached(self) -> None:
+        """Read the cached copy once, if there is one. Cheap after the first
+        call; the coordinator awaits it before its first poll."""
+        if self._loaded or not self._op.gtfs_url:
+            return
+        self._loaded = True
+        try:
+            d = await self._hass.async_add_executor_job(self._read)
+        except Exception as err:  # noqa: BLE001 - route lines never stop the map
+            _LOGGER.debug("%s cached route lines: %s", self._op.id, type(err).__name__)
+            return
+        if d is not None:
+            self._use(d)
+
     async def _async_refresh(self) -> None:
         op = self._op
-        if not self._loaded:
-            self._loaded = True
-            d = await self._hass.async_add_executor_job(self._read)
-            if d is not None:
-                self._use(d)
+        await self.async_load_cached()
         now = time.time()
         if not self._stale(now) or now < self._next_try:
             return
@@ -149,7 +160,8 @@ class RouteStore:
         if len(raw) > MAX_BYTES:
             _LOGGER.debug("%s GTFS larger than %s bytes; ignored", op.id, MAX_BYTES)
             return
-        d = await self._hass.async_add_executor_job(geometry.distill, raw)
+        d = await self._hass.async_add_executor_job(
+            functools.partial(geometry.distill, raw, stop_key=op.gtfs_stop_key))
         del raw
         if not d.get("shapes") or not d.get("trains"):
             # A zip with no usable lines is not a reason to drop a good copy.

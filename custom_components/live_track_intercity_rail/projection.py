@@ -26,7 +26,7 @@ from __future__ import annotations
 from typing import Any
 
 from .geometry import Projector
-from .sources.base import Snapshot
+from .sources.base import HELD_SPEED_KEY, Snapshot
 
 ESTIMATED = "estimated"
 OBSERVED = "observed"
@@ -38,14 +38,18 @@ SEGMENT_KEYS = ("previous_latitude", "previous_longitude", "previous_observed_at
 
 
 def apply(projector: Projector | None, snap: Snapshot, result: dict[str, Any],
-          now: float, derive_speed: bool = False) -> dict[str, int]:
+          now: float, derive_speed: bool = False, timed: bool = False) -> dict[str, int]:
     """Move each published train in `result` along its route, in place.
     Returns {"estimated": n, "observed": n} for diagnostics.
 
     derive_speed: the source reports no speed (Brightline); a train moves at
     the speed of its last two fixes along its line (Projector.fix_speed), and
     that speed decides moving or at rest. It is never published as
-    speed_kmh, which is the speed the SOURCE reported (D2)."""
+    speed_kmh, which is the speed the SOURCE reported (D2).
+
+    timed: a fix past the horizon moves toward the next stop arriving at the
+    source's estimate for it (Operator.timed_without_fix, VIA;
+    geometry.Projector.estimate)."""
     counts = {ESTIMATED: 0, OBSERVED: 0}
     if projector is not None:
         for vid in result.get("departed") or ():
@@ -57,7 +61,11 @@ def apply(projector: Projector | None, snap: Snapshot, result: dict[str, Any],
             continue
         fix = (rec.get("latitude"), rec.get("longitude"))
         est = None
-        kmh = (snap.extras.get(vid) or {}).get("speed_kmh")
+        extra = snap.extras.get(vid) or {}
+        # A HELD fix (the source has no position now; VIA) keeps the speed it
+        # was reported with for the estimate, never published (D2: speed_kmh
+        # is what the source reports now).
+        kmh = extra.get("speed_kmh", extra.get(HELD_SPEED_KEY))
         # Only a record standing at this poll's own fix is moved: anything
         # else is a position Fleet chose (a held one), and Fleet's call stands.
         if projector is not None and o.train and fix == (o.lat, o.lon):
@@ -66,7 +74,13 @@ def apply(projector: Projector | None, snap: Snapshot, result: dict[str, Any],
                 o.observed_at.timestamp() if o.observed_at is not None else None,
                 snap.stop_codes.get(vid),
                 kmh / 3.6 if kmh is not None else None,
-                now, derive_speed=derive_speed)
+                now, derive_speed=derive_speed,
+                eta=(snap.next_stops.get(vid) or (None, None))[1],
+                # Not a train standing at a platform with an unchanged fix: it
+                # would creep toward its next stop before it leaves. A held
+                # fix (no position now) or a train reported moving.
+                timed=timed and (HELD_SPEED_KEY in extra
+                                 or (kmh is not None and kmh >= MOVING_KMH)))
             if kmh is None and derive_speed and est is not None:
                 derived = projector.fix_speed(vid)
                 if derived is not None:

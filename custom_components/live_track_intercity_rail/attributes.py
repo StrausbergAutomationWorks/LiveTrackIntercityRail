@@ -56,8 +56,14 @@ PASSTHROUGH = (
     "marker_arrow_outline_color",
     "marker_ring_color",
     "marker_ring_width",
-    # D4a: the marker's shape; "star" draws a star in the colours above.
+    # D4a: the marker's shape; "star" draws a star in the colours above,
+    # "maple" VIA's badge (D4a-maple).
     "marker_shape",
+    # D4a-maple: the leaf's fill and outline, and the number as a tag in the
+    # arrow's place (VIA; operators/via_rail.py).
+    "marker_symbol_color",
+    "marker_symbol_outline_color",
+    "marker_label_placement",
     # D4a-alternate: a second look the card fades to and back (the Maple
     # Leaf, Amtrak's star and VIA's badge; operators/amtrak.py).
     "marker_alternate",

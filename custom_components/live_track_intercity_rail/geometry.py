@@ -178,29 +178,48 @@ def simplify(points: list[tuple[float, float]], tol_m: float) -> list[tuple[floa
     return [p for p, k in zip(points, keep) if k]
 
 
-def distill(zip_bytes: bytes, simplify_m: float = SIMPLIFY_M) -> dict[str, Any]:
+def distill(zip_bytes: bytes, simplify_m: float = SIMPLIFY_M,
+            stop_key: str = "stop_id") -> dict[str, Any]:
     """A GTFS zip -> the geometry the estimate needs, JSON-ready:
     stops (code -> [lat, lon]), trains (trip_short_name -> [shape_id]),
-    shapes (shape_id -> [[lat, lon], ...], simplified), feed_info dates."""
+    shapes (shape_id -> [[lat, lon], ...], simplified), feed_info dates,
+    train_routes (trip_short_name -> its route's long name).
+
+    stop_key: the GTFS column the source's station codes are, "stop_id"
+    (Amtrak, Brightline) or "stop_code" (VIA, measured 249 of 249)."""
     z = zipfile.ZipFile(io.BytesIO(zip_bytes))
 
     def rows(name):
         with z.open(name) as f:
             yield from csv.DictReader(io.TextIOWrapper(f, encoding="utf-8-sig"))
 
-    stops = {r["stop_id"].strip(): [round(float(r["stop_lat"]), 6), round(float(r["stop_lon"]), 6)]
-             for r in rows("stops.txt") if r.get("stop_lat") and r.get("stop_lon")}
+    stops = {(r.get(stop_key) or "").strip(): [round(float(r["stop_lat"]), 6), round(float(r["stop_lon"]), 6)]
+             for r in rows("stops.txt")
+             if r.get("stop_lat") and r.get("stop_lon") and (r.get(stop_key) or "").strip()}
     # Station names for the hover box, by stop_id (2026-10-10, Brightline:
     # its realtime feed names stops by id only). Added without bumping
     # GEOMETRY_VERSION: an older cached copy simply has none until its next
     # weekly refresh, and only a source that needs names reads them.
-    stop_names = {r["stop_id"].strip(): (r.get("stop_name") or "").strip()
-                  for r in rows("stops.txt") if (r.get("stop_name") or "").strip()}
+    stop_names = {(r.get(stop_key) or "").strip(): (r.get("stop_name") or "").strip()
+                  for r in rows("stops.txt")
+                  if (r.get("stop_name") or "").strip() and (r.get(stop_key) or "").strip()}
+    # A train number's route, for its line name and its look (VIA: the
+    # route decides the band and the corridor's lateness; 2026-10-14). Added
+    # without bumping GEOMETRY_VERSION, as stop_names was.
+    route_names = {}
+    if "routes.txt" in z.namelist():
+        route_names = {(r.get("route_id") or "").strip():
+                       (r.get("route_long_name") or r.get("route_short_name") or "").strip()
+                       for r in rows("routes.txt")}
     trains: dict[str, set] = {}
+    train_routes: dict[str, str] = {}
     for r in rows("trips.txt"):
         num, sid = (r.get("trip_short_name") or "").strip(), (r.get("shape_id") or "").strip()
         if num and sid:
             trains.setdefault(num, set()).add(sid)
+        route = route_names.get((r.get("route_id") or "").strip())
+        if num and route:
+            train_routes.setdefault(num, route)
     raw: dict[str, list] = {}
     for r in rows("shapes.txt"):
         raw.setdefault(r["shape_id"].strip(), []).append(
@@ -217,7 +236,7 @@ def distill(zip_bytes: bytes, simplify_m: float = SIMPLIFY_M) -> dict[str, Any]:
             break
     return {"v": GEOMETRY_VERSION, **info, "stops": stops, "stop_names": stop_names,
             "trains": {k: sorted(v & shapes.keys()) for k, v in trains.items() if v & shapes.keys()},
-            "shapes": shapes}
+            "train_routes": train_routes, "shapes": shapes}
 
 
 @dataclass
@@ -233,6 +252,7 @@ class _State:
     prev_point: tuple | None = None
     fix_t: float | None = None      # the current fix's time
     prev_fix: tuple | None = None   # (d, time) of the fix before it, for a derived speed
+    last_t: float | None = None     # when last_d was published
 
 
 @dataclass
@@ -314,9 +334,20 @@ class Projector:
 
     def estimate(self, train_id: str, number: str, fix: tuple[float, float], fix_t: float | None,
                  stop_code: str | None, speed_ms: float | None,
-                 now: float, derive_speed: bool = False) -> tuple[float, float] | None:
+                 now: float, derive_speed: bool = False,
+                 eta: float | None = None, timed: bool = False) -> tuple[float, float] | None:
         """(lat, lon) on the route at `now`, or None for "publish the fix".
-        With derive_speed and no speed_ms, the speed of the last two fixes."""
+        With derive_speed and no speed_ms, the speed of the last two fixes.
+
+        timed: once the fix is older than MAX_HORIZON_S (the source has no
+        newer one; VIA holds its last fix, then drops it), the train moves
+        from where it was last drawn toward its next stop, arriving there at
+        `eta`, the source's estimate (Lee 2026-10-11 15:28: "keep the train
+        moving using the speed and/or estimate to the next station so it
+        arrives at the estimated time"). MEASURED on VIA's capture, 30
+        positionless stretches over 10 min replayed against the next real fix
+        (bin\\ltir_via_final.txt): held p50 23.3 km, p90 118.3; timed p50
+        10.7 km, p90 42.2."""
         if fix_t is None or now < fix_t:
             return None
         stop = (self.geometry.get("stops") or {}).get(stop_code) if stop_code else None
@@ -362,20 +393,23 @@ class Projector:
         # whose passed stop the source had not yet marked Departed BACKWARDS
         # (27 of 38 backward arrows in bin\ltir_heading_trial2.txt).
         st.direction = st.motion or 1.0
-        if d_stop is None:
-            # No stop to aim at: on the line where the fix is, held there.
-            step = 0.0
-        elif d_stop != st.d_fix and math.copysign(1.0, d_stop - st.d_fix) != st.direction:
-            # The "next" stop is BEHIND the way the train is going: it has
-            # passed it and the source has not marked it Departed yet
-            # (measured: 22 of 22 backward moves in the first replay came from
-            # this or from a stop overrun; bin\ltir_proj_back.txt). Move on at
-            # the reported speed, no stop to stop at.
-            step = speed * dt
+        if timed and now - fix_t > MAX_HORIZON_S:
+            d = self._timed(st, d_stop, eta, fix_t, now)
         else:
-            # At the reported speed, and never past the next stop.
-            step = min(abs(d_stop - st.d_fix), speed * dt)
-        d = st.d_fix + st.direction * step
+            if d_stop is None:
+                # No stop to aim at: on the line where the fix is, held there.
+                step = 0.0
+            elif d_stop != st.d_fix and math.copysign(1.0, d_stop - st.d_fix) != st.direction:
+                # The "next" stop is BEHIND the way the train is going: it has
+                # passed it and the source has not marked it Departed yet
+                # (measured: 22 of 22 backward moves in the first replay came from
+                # this or from a stop overrun; bin\ltir_proj_back.txt). Move on at
+                # the reported speed, no stop to stop at.
+                step = speed * dt
+            else:
+                # At the reported speed, and never past the next stop.
+                step = min(abs(d_stop - st.d_fix), speed * dt)
+            d = st.d_fix + st.direction * step
         # Never backwards along the direction of travel: a fix that arrives
         # behind the last estimate holds the marker until the train passes it.
         if st.last_d is not None and st.direction and (d - st.last_d) * st.direction < 0 \
@@ -385,8 +419,25 @@ class Projector:
         # "snap so train stays on the tracks"; 06_MAP_CONTRACT.md D3d).
         p = route.point(d)
         st.prev_d, st.prev_point = st.last_d, st.last_point
-        st.last_d, st.last_point = d, p
+        st.last_d, st.last_point, st.last_t = d, p, now
         return p
+
+    def _timed(self, st: _State, d_stop: float | None, eta: float | None,
+               fix_t: float, now: float) -> float:
+        """Where a train with no usable fix is along its line at `now`: from
+        where it was last drawn (or its fix, the first time), toward its next
+        stop, arriving at `eta`. A stop not ahead, or no estimate: it waits
+        where it is. A stop whose estimate has passed: at the stop."""
+        if st.last_d is not None and st.last_t is not None and st.last_t >= fix_t:
+            a_d, a_t = st.last_d, st.last_t
+        else:
+            a_d, a_t = st.d_fix, fix_t
+        if d_stop is None or (d_stop - a_d) * st.direction <= 0 or eta is None:
+            return a_d
+        if eta <= a_t:
+            return d_stop
+        # At the stop once its estimate has passed (the clamp).
+        return a_d + (d_stop - a_d) * min(1.0, (now - a_t) / (eta - a_t))
 
     def path(self, train_id: str) -> list[list[float]] | None:
         """The train's line from where estimate() placed it the time before

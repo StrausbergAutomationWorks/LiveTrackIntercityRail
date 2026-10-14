@@ -19,6 +19,7 @@ files per poll through Home Assistant's aiohttp session, on the loop.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import time
 from datetime import timedelta
@@ -39,12 +40,13 @@ from .const import (
     USER_AGENT,
 )
 from . import projection
-from .operators import SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, Operator
+from .operators import SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_VIA, Operator
 from .route_store import RouteStore
 from .shared_coordinator import get_shared_client, release_shared_client
 from .sources import amtraker
 from .sources.base import EXTRA_KEYS, Snapshot, hold_last, trains_in_service
 from .sources.brightline_rt import BrightlineRealtime
+from .sources.via_rail import ViaRail
 
 # One GTFS-Realtime file, whole; Brightline's are ~1-3 KB.
 RT_TIMEOUT = aiohttp.ClientTimeout(total=30)
@@ -80,12 +82,15 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.placement: dict[str, int] = {}
         self._amtraker = None
         self._brightline: BrightlineRealtime | None = None
+        self._via: ViaRail | None = None
         self._session = async_get_clientsession(hass)
         if op.source == SOURCE_AMTRAKER:
             # On the event loop, as shared_coordinator requires.
             self._amtraker = get_shared_client(hass, USER_AGENT)
         elif op.source == SOURCE_BRIGHTLINE_RT:
             self._brightline = BrightlineRealtime()
+        elif op.source == SOURCE_VIA:
+            self._via = ViaRail()
         else:  # pragma: no cover - an operator naming a source not built
             raise ValueError(f"unknown source {op.source!r} for {op.id}")
 
@@ -127,8 +132,24 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         names = (projector.geometry.get("stop_names") if projector else None) or {}
         return self._brightline.parse(vp, tu, time.time(), names)
 
+    async def _fetch_via(self) -> Snapshot | None:
+        """VIA's own train-status JSON (~280 KB), decoded in the executor."""
+        raw = await self._get_rt(self.operator.source_options["url"])
+        if raw is None:
+            return None
+        try:
+            data = await self.hass.async_add_executor_job(json.loads, raw)
+        except ValueError:
+            _LOGGER.debug("%s answer would not decode", self.operator.id)
+            return None
+        projector = self.routes.projector
+        routes = (projector.geometry.get("train_routes") if projector else None) or {}
+        return self._via.parse(data, time.time(), routes)
+
     async def _fetch(self) -> Snapshot | None:
         op = self.operator
+        if self._via is not None:
+            return await self._fetch_via()
         if self._brightline is not None:
             return await self._fetch_brightline()
         if self._amtraker is None:
@@ -153,6 +174,10 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def _async_update_data(self) -> dict[str, Any]:
         op = self.operator
+        # The cached route lines before the first poll, so a train's route
+        # name (VIA's look and its lateness) and its line are there from the
+        # start; a fresh download stays in the background.
+        await self.routes.async_load_cached()
         fresh = await self._fetch()
         now = time.time()
         snap, held = hold_last(fresh, self._last_snap, self._last_ok_t, now, SOURCE_GAP_S)
@@ -174,14 +199,15 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             next_stops=snap.next_stops, trip_delays=snap.trip_delays)
         # One per run, not per train number (sources/base.py, measured).
         result["trains_in_service"] = trains_in_service(snap)
-        late_keys = op.lateness_keys()
         for vid, rec in result["vehicles"].items():
             extra = snap.extras.get(vid)
             if extra:
                 rec.update({k: v for k, v in extra.items() if k in EXTRA_KEYS})
             rec.update(op.marker_keys(rec))
             if rec.get("in_service"):
-                rec.update(late_keys)
+                # By railroad, or by train where the railroad's rule depends
+                # on the route (VIA's corridor; Operator.lateness_for).
+                rec.update(op.lateness_for(rec))
         if self.routes.due():
             self.config_entry.async_create_background_task(
                 self.hass, self.routes.async_refresh(), f"{op.id} route lines")
@@ -190,6 +216,7 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # SSOT section 9). In the executor: placing a train seen for the first
         # time walks every line its number runs on.
         self.placement = await self.hass.async_add_executor_job(
-            projection.apply, self.routes.projector, snap, result, now, op.derive_speed)
+            projection.apply, self.routes.projector, snap, result, now, op.derive_speed,
+            op.timed_without_fix)
         self.placement["source_failures"] = self._failures
         return result

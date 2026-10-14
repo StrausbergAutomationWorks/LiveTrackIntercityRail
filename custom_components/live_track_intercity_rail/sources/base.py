@@ -27,6 +27,10 @@ from saw_livetrack.gtfs.realtime import Obs  # noqa: F401  (re-exported)
 # held at a border inspection (border.py); its delay is then left out.
 EXTRA_KEYS = ("line_name", "speed_kmh", "heading_octant", "destination", "marker_status")
 RECORD_ONLY_KEYS = ("destination",)
+# In an adapter's extras only, never copied to the record (not in EXTRA_KEYS):
+# the speed a HELD fix was reported with, for the along-route estimate
+# (projection.py). VIA holds a train's last fix while it has no position.
+HELD_SPEED_KEY = "held_speed_kmh"
 
 
 @dataclass

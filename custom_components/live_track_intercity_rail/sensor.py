@@ -20,7 +20,8 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import DOMAIN
 from .coordinator import IntercityRailCoordinator
 
-SOURCE_MODEL = {"amtraker": "Amtraker feed"}
+SOURCE_MODEL = {"amtraker": "Amtraker feed", "brightline_rt": "Brightline GTFS-Realtime",
+                "via": "VIA Rail train-status feed"}
 
 
 async def async_setup_entry(
