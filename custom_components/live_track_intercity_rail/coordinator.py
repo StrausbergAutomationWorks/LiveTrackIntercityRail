@@ -34,6 +34,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from saw_livetrack import AmtrakerError, RateLimited
 from saw_livetrack.gtfs import Fleet, decode
 
+from .fetch import read_capped
 from .const import (
     CONF_SCAN_INTERVAL,
     SOURCE_GAP_S,
@@ -73,6 +74,8 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # which carries the line name the route colours need.
         self.fleet = Fleet(**dict(op.fleet))
         self._failures = 0
+        # Why the last fetch failed, said where someone will see it (05 B16).
+        self._last_reason: str | None = None
         self._last_snap: Snapshot | None = None
         self._last_ok_t: float | None = None
         self.skipped: dict[str, int] = {}
@@ -101,18 +104,25 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             release_shared_client(self.hass)
 
     async def _get_rt(self, url: str) -> bytes | None:
-        """One GTFS-Realtime file, or None on any failure (logged at debug)."""
+        """One whole file, or None on any failure; the reason is kept.
+
+        ! The WHOLE body (fetch.read_capped). `resp.content.read(n)` returned
+        only what had arrived - half of VIA's answer, measured 2026-10-14.
+        """
         try:
             async with self._session.get(url, headers={"User-Agent": USER_AGENT},
                                          timeout=RT_TIMEOUT) as resp:
                 if resp.status != 200:
+                    self._last_reason = f"HTTP {resp.status}"
                     _LOGGER.debug("%s answered HTTP %s", url, resp.status)
                     return None
-                raw = await resp.content.read(RT_MAX_BYTES + 1)
+                raw = await read_capped(resp.content, RT_MAX_BYTES)
         except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+            self._last_reason = type(err).__name__
             _LOGGER.debug("%s failed: %s", url, type(err).__name__)
             return None
-        if len(raw) > RT_MAX_BYTES:
+        if raw is None:
+            self._last_reason = f"larger than {RT_MAX_BYTES} bytes"
             _LOGGER.debug("%s larger than %s bytes; ignored", url, RT_MAX_BYTES)
             return None
         return raw
@@ -126,6 +136,7 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         vp = await self.hass.async_add_executor_job(decode, vp_raw)
         tu = await self.hass.async_add_executor_job(decode, tu_raw) if tu_raw else None
         if vp is None:
+            self._last_reason = f"positions would not decode ({len(vp_raw)} bytes)"
             _LOGGER.debug("%s positions would not decode", self.operator.id)
             return None
         projector = self.routes.projector
@@ -140,6 +151,7 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         try:
             data = await self.hass.async_add_executor_job(json.loads, raw)
         except ValueError:
+            self._last_reason = f"answer would not decode ({len(raw)} bytes)"
             _LOGGER.debug("%s answer would not decode", self.operator.id)
             return None
         projector = self.routes.projector
@@ -178,13 +190,20 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # name (VIA's look and its lateness) and its line are there from the
         # start; a fresh download stays in the background.
         await self.routes.async_load_cached()
+        self._last_reason = None
         fresh = await self._fetch()
         now = time.time()
+        if fresh is None and self._failures == 0:
+            # Once per failure streak: the last answer is held (hold_last)
+            # and nothing else would say why the source stopped answering.
+            _LOGGER.warning("%s: fetch failed (%s); holding the last answer for up to %s s",
+                            op.name, self._last_reason or "no answer", SOURCE_GAP_S)
         snap, held = hold_last(fresh, self._last_snap, self._last_ok_t, now, SOURCE_GAP_S)
         if snap is None:
             self._failures += 1
             raise UpdateFailed(
-                f"{op.name} positions unavailable ({self._failures} consecutive failures)")
+                f"{op.name} positions unavailable ({self._failures} consecutive failures; "
+                f"last: {self._last_reason or 'no answer'})")
         if held:
             # The source failed: its last good answer again, at the current
             # time, so the trains keep moving along their lines (hold_last).
