@@ -19,8 +19,9 @@ LABEL: the type and number as the passenger GTFS writes them ("IC 23",
 line (Lee 02:55: "type plus number").
 
 LEFT OUT: V, a varikkojuna (depot or yard train, non-commercial; Lee 21:10),
-and MV, empty stock (the client already sends MV to Freight Trains): neither
-carries passengers. A cancelled train. A train before its first departure and
+and MV, empty stock: neither carries passengers. Since saw-livetrack 0.2.7 the
+client sends both to Freight Trains (Lee 21:55); the check here stays as a
+second line. A cancelled train. A train before its first departure and
 after its last commercial stop, as for Amtrak and VIA.
 
 NO BEARING: the feed has none (measured: none on any train). The marker's
@@ -70,10 +71,14 @@ def departed(train: Mapping[str, Any] | None) -> bool:
 
 def read(client: Any, consumer: str = "intercity") -> tuple[list[dict], dict]:
     """One snapshot from the shared client: this consumer's records and, for
-    each, its train from the table. Blocking: run in the executor. Raises the
-    client's DigitrafficError on any failure (the coordinator rides it out)."""
+    each, its train. Blocking: run in the executor. Raises the client's
+    DigitrafficError on any failure (the coordinator rides it out).
+
+    The train comes from its RECORD (saw-livetrack 0.2.7 joins it under the
+    client's lock), never from client.table, which another integration's
+    refresh may be changing on another thread."""
     records = client.for_consumer(consumer)
-    return records, {r["key"]: client.table.get(r["key"]) for r in records}
+    return records, {r["key"]: r.get("train") for r in records}
 
 
 class DigitrafficRail:

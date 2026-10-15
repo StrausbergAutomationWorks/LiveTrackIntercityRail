@@ -180,14 +180,13 @@ class AdapterTests(unittest.TestCase):
 
     def test_read_takes_one_consumer_and_its_trains(self):
         class Client:
+            # No `table`: read() must take each train from its record.
             def __init__(self):
                 self.asked = None
-                self.table = dr.TrainTable()
-                self.table.update([train()])
 
             def for_consumer(self, consumer):
                 self.asked = consumer
-                return [rec()]
+                return [dict(rec(), train=train())]
         c = Client()
         records, trains = src.read(c)
         self.assertEqual(c.asked, "intercity")
@@ -446,7 +445,8 @@ class ProjectionKeyTests(unittest.TestCase):
 
 
 class SharedClientTests(unittest.TestCase):
-    """shared_digitraffic_rail.py, byte-copied from LiveTrackCore's reference."""
+    """shared_digitraffic_rail.py, byte-copied from LiveTrackCore's reference
+    (saw-livetrack 0.2.7: each integration registers its consumer)."""
 
     class Hass:
         def __init__(self):
@@ -454,27 +454,36 @@ class SharedClientTests(unittest.TestCase):
 
     def test_one_client_whoever_comes_first_and_the_last_removes_it(self):
         hass = self.Hass()
-        a = shared.get_shared_rail_client(hass, dr.DEFAULT_USER)
-        b = shared.get_shared_rail_client(hass, dr.DEFAULT_USER)
+        a = shared.get_shared_rail_client(hass, "intercity")
+        b = shared.get_shared_rail_client(hass, "commuter")
         self.assertIs(a, b)
         self.assertEqual(a.user, "StrausbergAutomationWorks/saw-livetrack")
+        self.assertEqual(a.consumers, frozenset({"intercity", "commuter"}))
         self.assertEqual(hass.data[dr.SHARED_KEY]["refcount"], 2)
-        shared.release_shared_rail_client(hass)
-        self.assertIn(dr.SHARED_KEY, hass.data)
-        shared.release_shared_rail_client(hass)
+        shared.release_shared_rail_client(hass, "commuter")
+        self.assertEqual(a.consumers, frozenset({"intercity"}))
+        shared.release_shared_rail_client(hass, "intercity")
         self.assertNotIn(dr.SHARED_KEY, hass.data)
 
-    def test_a_single_integration_alone_has_its_own_client(self):
+    def test_a_single_integration_alone_keeps_only_its_own_trains(self):
         hass = self.Hass()
-        c = shared.get_shared_rail_client(hass, dr.DEFAULT_USER)
+        c = shared.get_shared_rail_client(hass, "intercity")
         self.assertIsInstance(c, dr.DigitrafficRailClient)
-        shared.release_shared_rail_client(hass)
+        self.assertEqual(c.consumers, frozenset({"intercity"}))
+        shared.release_shared_rail_client(hass, "intercity")
         self.assertEqual(hass.data, {})
+
+    def test_the_client_routes_v_and_mv_to_freight(self):
+        self.assertEqual(dr.consumer_of("Long-distance", "V"), dr.FREIGHT)
+        self.assertEqual(dr.consumer_of("Long-distance", "MV"), dr.FREIGHT)
+
+    def test_vr_registers_intercity(self):
+        self.assertEqual(operators.OPERATORS["vr"].source_options["consumer"], dr.INTERCITY)
 
     def test_a_foreign_entry_is_left_alone(self):
         hass = self.Hass()
         hass.data[dr.SHARED_KEY] = "something else"
-        c = shared.get_shared_rail_client(hass, dr.DEFAULT_USER)
+        c = shared.get_shared_rail_client(hass, "intercity")
         self.assertIsInstance(c, dr.DigitrafficRailClient)
         self.assertEqual(hass.data[dr.SHARED_KEY], "something else")
 

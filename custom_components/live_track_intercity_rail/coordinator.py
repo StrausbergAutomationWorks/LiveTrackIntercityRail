@@ -32,7 +32,6 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from saw_livetrack import AmtrakerError, RateLimited
-from saw_livetrack.digitraffic_rail import DEFAULT_USER as DIGITRAFFIC_USER
 from saw_livetrack.digitraffic_rail import DigitrafficError
 from saw_livetrack.gtfs import Fleet, decode
 
@@ -102,11 +101,12 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._via = ViaRail()
         elif op.source == SOURCE_DIGITRAFFIC:
             # On the event loop, as shared_digitraffic_rail requires. One
-            # poller for every Live Track rail integration in Finland; the
-            # client's own Digitraffic-User, never this integration's name,
-            # so the header is the same whoever created the client (Lee
-            # 2026-10-14 21:10).
-            self._rail = get_shared_rail_client(hass, DIGITRAFFIC_USER)
+            # poller for every Live Track rail integration in Finland; this
+            # integration REGISTERS what it draws, and the client keeps only
+            # the registered consumers' trains (saw-livetrack 0.2.7; Lee
+            # 2026-10-14 21:55). The header is the client's own DEFAULT_USER,
+            # the same whoever created it (Lee 21:10).
+            self._rail = get_shared_rail_client(hass, op.source_options["consumer"])
             self._digitraffic = digitraffic_rail.DigitrafficRail()
         else:  # pragma: no cover - an operator naming a source not built
             raise ValueError(f"unknown source {op.source!r} for {op.id}")
@@ -118,7 +118,7 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             release_shared_client(self.hass)
         if self._rail is not None:
             self._rail = None
-            release_shared_rail_client(self.hass)
+            release_shared_rail_client(self.hass, self.operator.source_options["consumer"])
 
     async def _get_rt(self, url: str) -> bytes | None:
         """One whole file, or None on any failure; the reason is kept.
