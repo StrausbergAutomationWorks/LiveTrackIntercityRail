@@ -12,6 +12,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
+from . import web
 from .const import CONF_OPERATOR, DOMAIN
 from .coordinator import IntercityRailCoordinator
 from .operators import OPERATORS
@@ -24,6 +25,8 @@ PLATFORMS: list[Platform] = [Platform.GEO_LOCATION, Platform.SENSOR]
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up one railroad."""
     op = OPERATORS[entry.data[CONF_OPERATOR]]
+    # The marker pictures (pictures.py); once per Home Assistant run.
+    web.register(hass)
     coordinator = IntercityRailCoordinator(hass, entry, op)
     try:
         await coordinator.async_config_entry_first_refresh()

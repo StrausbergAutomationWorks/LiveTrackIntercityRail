@@ -5,6 +5,9 @@
     "@LeeS773-prog"
   ],
   "config_flow": true,
+  "dependencies": [
+    "http"
+  ],
   "documentation": "https://github.com/StrausbergAutomationWorks/LiveTrackIntercityRail",
   "integration_type": "service",
   "iot_class": "cloud_polling",

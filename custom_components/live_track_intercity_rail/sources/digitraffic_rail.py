@@ -26,6 +26,17 @@ after its last commercial stop, as for Amtrak and VIA.
 
 NO BEARING: the feed has none (measured: none on any train). The marker's
 course is its line's (projection.py).
+
+THE SANTA CLAUS EXPRESS (Lee 2026-10-15 02:42; Intercity SSOT 8.4): "a night
+train from Helsinki or Turku to Rovaniemi, Kolari or Kemijarvi", and back: a
+PYO whose first and last stations are one of each. The Turku legs, option 3:
+PYO 933 (Turku harbour to Tampere) counts when PYO 265 (Helsinki-Kemijarvi)
+runs on the same departure date, and PYO 904 (Tampere to Turku harbour) when
+PYO 274 (Kemijarvi-Helsinki) ran from the evening before, both by the GTFS
+calendar (the dated route keys), so a cancellation does not count. The
+coupling at Tampere behind option 3 is INFERRED from the timetable
+(bin\\vr_pyo_tpe.txt). Which season shows it is the operator's
+(operators/vr.py).
 """
 
 from __future__ import annotations
@@ -46,6 +57,14 @@ EXCLUDED_TYPES = frozenset({"V", "MV"})
 # observation time and is left out (D0), as for Amtraker and VIA.
 FUTURE_SLACK_S = 60.0
 
+# The Santa Claus Express (above): night trains between these.
+NIGHT_TYPE = "PYO"
+SANTA_SOUTH = frozenset({"HKI", "TKU", "TUS"})          # Helsinki, Turku, Turku harbour
+SANTA_NORTH = frozenset({"ROI", "KLI", "KJ\u00c4"})     # Rovaniemi, Kolari, Kemijarvi
+# The Turku legs: number -> (the Lapland train it rides with, that train's
+# departure date relative to this one's, in days).
+TURKU_LEGS = {"933": ("265", 0), "904": ("274", -1)}
+
 
 def identity(number: str, departure_date: str) -> str:
     """'22', '2026-10-14' -> '22-14'; the bare number without a usable date."""
@@ -60,6 +79,35 @@ def label(train_type: str | None, number: str) -> str:
     without a type."""
     t = (train_type or "").strip()
     return f"{t} {number}" if t else number
+
+
+def ends(train: Mapping[str, Any] | None) -> tuple[str | None, str | None]:
+    """The first and last stations of a train's timetable, or None each."""
+    rows = train.get("timeTableRows") if isinstance(train, Mapping) else None
+    if not isinstance(rows, list) or not rows:
+        return None, None
+    first, last = rows[0], rows[-1]
+    code = lambda r: r.get("stationShortCode") if isinstance(r, Mapping) else None
+    return code(first), code(last)
+
+
+def santa_express(train_type: str | None, number: str, departure_date: str | None,
+                  train: Mapping[str, Any] | None, routes: Mapping[str, str]) -> bool:
+    """Whether this run is the Santa Claus Express (above). `routes` holds the
+    dated GTFS keys of the trains that run (geometry.dated_key)."""
+    if train_type != NIGHT_TYPE:
+        return False
+    first, last = ends(train)
+    if (first in SANTA_SOUTH and last in SANTA_NORTH) or (first in SANTA_NORTH and last in SANTA_SOUTH):
+        return True
+    leg = TURKU_LEGS.get(number)
+    if leg is None or not departure_date:
+        return False
+    try:
+        day = dt.date.fromisoformat(departure_date) + dt.timedelta(days=leg[1])
+    except (TypeError, ValueError):
+        return False
+    return dated_key(label(NIGHT_TYPE, leg[0]), day.isoformat()) in routes
 
 
 def departed(train: Mapping[str, Any] | None) -> bool:
@@ -149,6 +197,10 @@ class DigitrafficRail:
             key = dated_key(text, date)
             snap.route_keys[tid] = key
             extra: dict[str, Any] = {}
+            if isinstance(date, str) and date:
+                extra["departure_date"] = date
+            if santa_express(ttype, number, date, train, routes):
+                extra["santa_express"] = True
             if rec.get("speed_kmh") is not None:
                 extra["speed_kmh"] = float(rec["speed_kmh"])
             name = routes.get(key)

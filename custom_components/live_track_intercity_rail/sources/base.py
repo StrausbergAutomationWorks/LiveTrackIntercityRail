@@ -25,8 +25,12 @@ from saw_livetrack.gtfs.realtime import Obs  # noqa: F401  (re-exported)
 # NOT in that allowlist: it is not a contract key, so it never reaches the map.
 # `marker_status` (06_MAP_CONTRACT.md D4c-status): "Customs" while the train is
 # held at a border inspection (border.py); its delay is then left out.
-EXTRA_KEYS = ("line_name", "speed_kmh", "heading_octant", "destination", "marker_status")
-RECORD_ONLY_KEYS = ("destination",)
+# `departure_date` and `santa_express` (VR, Intercity SSOT 8.4): the train's
+# Finnish departure date, which picks its season, and whether it is the Santa
+# Claus Express; for the operator's look only.
+EXTRA_KEYS = ("line_name", "speed_kmh", "heading_octant", "destination", "marker_status",
+              "departure_date", "santa_express")
+RECORD_ONLY_KEYS = ("destination", "departure_date", "santa_express")
 # In an adapter's extras only, never copied to the record (not in EXTRA_KEYS):
 # the speed a HELD fix was reported with, for the along-route estimate
 # (projection.py). VIA holds a train's last fix while it has no position.

@@ -70,6 +70,11 @@ PASSTHROUGH = (
 )
 
 
+# Left off a train drawn as a picture (entity_picture, published by the
+# entity itself, geo_location.py).
+PICTURE_DROPS = ("icon_rotation_deg", "icon_rotation_basis")
+
+
 def to_attributes(rec: dict[str, Any], operator_id: str) -> dict[str, Any]:
     """extra_state_attributes for one train.
 
@@ -90,7 +95,12 @@ def to_attributes(rec: dict[str, Any], operator_id: str) -> dict[str, Any]:
         "operator": operator_id,
         "map_layer": MAP_LAYER,
     }
+    # A picture marker carries no bearing to turn it by (Lee 2026-10-15: the
+    # figures stay upright); course_deg, the data, stays (D4a).
+    picture = bool(rec.get("entity_picture"))
     for key in PASSTHROUGH:
+        if picture and key in PICTURE_DROPS:
+            continue
         value = rec.get(key)
         if value is not None:
             attrs[key] = value

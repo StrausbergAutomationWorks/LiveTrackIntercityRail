@@ -49,6 +49,10 @@ class Operator:
     # route's colours need its line name and Fleet's styling hook sees only
     # the Obs (2026-10-10, route colours); Brightline's need the destination.
     styling: Callable[[str | None, str | None, str | None], dict[str, Any]] | None = None
+    # The whole published record -> its marker keys, when the look depends on
+    # more than the three above (VR: the departure date's season, the route,
+    # how late; Intercity SSOT 8.4). Wins over `styling` when set.
+    record_styling: Callable[[Mapping[str, Any]], dict[str, Any]] | None = None
     # The poll interval a new entry starts with (the user may change it).
     # Brightline's feed changes every 60 s (measured, RECORD 5).
     scan_interval_s: int = 30
@@ -112,6 +116,8 @@ class Operator:
         """The marker styling for a published record, from its train number,
         line name and destination stop (Brightline colours by destination).
         Empty without a styling function."""
+        if self.record_styling is not None:
+            return dict(self.record_styling(rec))
         if self.styling is None:
             return {}
         return self.styling(rec.get("train"), rec.get("line_name"), rec.get("destination"))

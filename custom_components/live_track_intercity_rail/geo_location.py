@@ -103,6 +103,15 @@ class IntercityTrain(GeolocationEvent):
         return None if metres is None else metres / 1000
 
     @property
+    def entity_picture(self) -> str | None:
+        """The operator's picture for this train, when it has one (VR's
+        night trains and the mokki, pictures.py); served by web.py. None: the
+        card draws the label marker."""
+        rec = self._rec()
+        picture = rec.get("entity_picture") if rec else None
+        return picture if isinstance(picture, str) and picture else None
+
+    @property
     def extra_state_attributes(self) -> dict[str, Any]:
         rec = self._rec()
         if not rec:

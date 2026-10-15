@@ -103,7 +103,8 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(snap.next_stops["22-14"], ("Tikkurila", NOW + 600))
         self.assertEqual(snap.stop_codes["22-14"], "TKL")
         self.assertEqual(snap.trip_delays["22-14"], 180)
-        self.assertEqual(snap.extras["22-14"], {"speed_kmh": 120.0, "line_name": "Helsinki - Tampere"})
+        self.assertEqual(snap.extras["22-14"], {"speed_kmh": 120.0, "line_name": "Helsinki - Tampere",
+                                                "departure_date": "2026-10-14"})
         self.assertEqual(snap.skipped, {})
 
     def test_the_stop_name_falls_back_to_the_code(self):
