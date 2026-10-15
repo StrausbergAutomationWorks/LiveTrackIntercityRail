@@ -51,6 +51,10 @@ class Snapshot:
     # Trains the source listed but this adapter did not publish, by reason
     # ("predeparture", "completed", "no_position", ...), for diagnostics.
     skipped: dict[str, int] = field(default_factory=dict)
+    # vehicle_id -> the key its line is looked up by in the route geometry,
+    # when that is not the train number (Operator.gtfs_dated: the number AND
+    # its departure date, geometry.dated_key). Absent: the train number.
+    route_keys: dict[str, str] = field(default_factory=dict)
 
 
 def hold_last(snap: Snapshot | None, last: Snapshot | None, last_ok_t: float | None,

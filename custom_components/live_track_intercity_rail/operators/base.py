@@ -18,7 +18,10 @@ SOURCE_AMTRAKER = "amtraker"
 SOURCE_BRIGHTLINE_RT = "brightline_rt"
 # VIA Rail's own train-status JSON (sources/via_rail.py).
 SOURCE_VIA = "via"
-SOURCES = (SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_VIA)
+# Fintraffic Digitraffic rail, Finland, through the shared client
+# saw_livetrack.digitraffic_rail (sources/digitraffic_rail.py).
+SOURCE_DIGITRAFFIC = "digitraffic_rail"
+SOURCES = (SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_VIA, SOURCE_DIGITRAFFIC)
 
 
 @dataclass(frozen=True)
@@ -75,6 +78,20 @@ class Operator:
     # arriving at the source's estimate (Lee 2026-10-11 15:28, VIA; measured
     # better than holding, ltir_via_final.txt). False: it waits at the horizon.
     timed_without_fix: bool = False
+    # Headers sent with this railroad's GTFS download, beside the User-Agent
+    # (Digitraffic asks callers to identify themselves; VR).
+    request_headers: Mapping[str, str] = field(default_factory=dict)
+    # How often the GTFS is fetched again. A week for a feed whose lines
+    # rarely change; a day for one that drops ended timetable periods (VR).
+    gtfs_refresh_s: int = 7 * 24 * 3600
+    # A train's line is the trip the GTFS CALENDAR runs on its departure date,
+    # not the nearest of every trip of its number (VR: a number has a trip per
+    # timetable period, up to 122; exactly one runs on any date, measured
+    # 2026-10-14). The source names the date (Snapshot.route_keys).
+    gtfs_dated: bool = False
+    # Only these GTFS route_types (strings), e.g. ("102",): VR's passenger
+    # GTFS also holds the commuter trains. Empty: every route.
+    gtfs_route_types: tuple[str, ...] = ()
 
     def lateness_for(self, rec: Mapping[str, Any]) -> dict[str, int]:
         """The D4c threshold keys for one published train in service."""
@@ -104,5 +121,6 @@ class Operator:
 # intercity railroad crosses state and national borders (SSOT section 0).
 REGIONS: dict[str, str] = {
     "CA": "Canada",
+    "FI": "Finland",
     "US": "United States",
 }

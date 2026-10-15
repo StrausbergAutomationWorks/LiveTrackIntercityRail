@@ -32,6 +32,8 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from saw_livetrack import AmtrakerError, RateLimited
+from saw_livetrack.digitraffic_rail import DEFAULT_USER as DIGITRAFFIC_USER
+from saw_livetrack.digitraffic_rail import DigitrafficError
 from saw_livetrack.gtfs import Fleet, decode
 
 from .fetch import read_capped
@@ -41,13 +43,15 @@ from .const import (
     USER_AGENT,
 )
 from . import projection
-from .operators import SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_VIA, Operator
+from .operators import SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_DIGITRAFFIC, SOURCE_VIA, Operator
 from .route_store import RouteStore
 from .shared_coordinator import get_shared_client, release_shared_client
+from .shared_digitraffic_rail import get_shared_rail_client, release_shared_rail_client
 from .sources import amtraker
 from .sources.base import EXTRA_KEYS, Snapshot, hold_last, trains_in_service
 from .sources.brightline_rt import BrightlineRealtime
 from .sources.via_rail import ViaRail
+from .sources import digitraffic_rail
 
 # One GTFS-Realtime file, whole; Brightline's are ~1-3 KB.
 RT_TIMEOUT = aiohttp.ClientTimeout(total=30)
@@ -86,6 +90,8 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._amtraker = None
         self._brightline: BrightlineRealtime | None = None
         self._via: ViaRail | None = None
+        self._rail = None
+        self._digitraffic: digitraffic_rail.DigitrafficRail | None = None
         self._session = async_get_clientsession(hass)
         if op.source == SOURCE_AMTRAKER:
             # On the event loop, as shared_coordinator requires.
@@ -94,6 +100,14 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._brightline = BrightlineRealtime()
         elif op.source == SOURCE_VIA:
             self._via = ViaRail()
+        elif op.source == SOURCE_DIGITRAFFIC:
+            # On the event loop, as shared_digitraffic_rail requires. One
+            # poller for every Live Track rail integration in Finland; the
+            # client's own Digitraffic-User, never this integration's name,
+            # so the header is the same whoever created the client (Lee
+            # 2026-10-14 21:10).
+            self._rail = get_shared_rail_client(hass, DIGITRAFFIC_USER)
+            self._digitraffic = digitraffic_rail.DigitrafficRail()
         else:  # pragma: no cover - an operator naming a source not built
             raise ValueError(f"unknown source {op.source!r} for {op.id}")
 
@@ -102,6 +116,9 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if self._amtraker is not None:
             self._amtraker = None
             release_shared_client(self.hass)
+        if self._rail is not None:
+            self._rail = None
+            release_shared_rail_client(self.hass)
 
     async def _get_rt(self, url: str) -> bytes | None:
         """One whole file, or None on any failure; the reason is kept.
@@ -158,8 +175,26 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         routes = (projector.geometry.get("train_routes") if projector else None) or {}
         return self._via.parse(data, time.time(), routes)
 
+    async def _fetch_digitraffic(self) -> Snapshot | None:
+        """This railroad's trains from the shared Digitraffic client, in the
+        executor (synchronous urllib). The first call loads three days of the
+        train list (4 requests, about 4 s; measured 2026-10-14)."""
+        try:
+            records, trains = await self.hass.async_add_executor_job(
+                digitraffic_rail.read, self._rail, self.operator.source_options["consumer"])
+        except DigitrafficError as err:
+            self._last_reason = f"{type(err).__name__}: {err}"[:200]
+            _LOGGER.debug("%s fetch failed: %s", self.operator.id, self._last_reason)
+            return None
+        projector = self.routes.projector
+        geo = projector.geometry if projector else {}
+        return self._digitraffic.parse(records, trains, time.time(),
+                                       geo.get("stop_names") or {}, geo.get("train_routes") or {})
+
     async def _fetch(self) -> Snapshot | None:
         op = self.operator
+        if self._digitraffic is not None:
+            return await self._fetch_digitraffic()
         if self._via is not None:
             return await self._fetch_via()
         if self._brightline is not None:

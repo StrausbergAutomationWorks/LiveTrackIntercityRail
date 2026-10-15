@@ -70,7 +70,9 @@ def apply(projector: Projector | None, snap: Snapshot, result: dict[str, Any],
         # else is a position Fleet chose (a held one), and Fleet's call stands.
         if projector is not None and o.train and fix == (o.lat, o.lon):
             est = projector.estimate(
-                vid, o.train, fix,
+                # The train number, or the key the source names for its line
+                # (VR: the number on its departure date; Snapshot.route_keys).
+                vid, snap.route_keys.get(vid, o.train), fix,
                 o.observed_at.timestamp() if o.observed_at is not None else None,
                 snap.stop_codes.get(vid),
                 kmh / 3.6 if kmh is not None else None,

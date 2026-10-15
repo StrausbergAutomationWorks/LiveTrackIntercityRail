@@ -10,9 +10,12 @@ Modelled on Live Track Commuter Rail's statics.py. Fetched in the background
 and never awaited by a poll: until a copy exists, and whenever a train cannot
 be placed on its route, the train is published at its fix, as before.
 
-Refreshed weekly, or as soon as the cached feed's last valid date has passed
-(Amtrak's feed is rebuilt daily and each copy is valid a week, so the lines
-almost never change between copies). A failed refresh keeps the last good
+Refreshed every Operator.gtfs_refresh_s (a week by default), or as soon as the
+cached feed's last valid date has passed (Amtrak's feed is rebuilt daily and
+each copy is valid a week, so the lines almost never change between copies).
+A DATED copy (Operator.gtfs_dated, VR) is fetched daily and again as soon as it
+no longer covers UTC tomorrow's departures (geometry.covers): VR's feed drops a
+timetable period once it has ended. A failed refresh keeps the last good
 copy and is not retried for RETRY_S.
 """
 
@@ -36,7 +39,6 @@ from .operators import Operator
 
 _LOGGER = logging.getLogger(__name__)
 
-REFRESH_S = 7 * 24 * 3600
 RETRY_S = 6 * 3600
 FETCH_TIMEOUT = 180
 # Amtrak's zip was 19,082,826 bytes on 2026-10-09; Live Track Commuter Rail's
@@ -81,9 +83,12 @@ class RouteStore:
         d = self._data
         if d is None:
             return True
-        if now - float(d.get("fetched_at", 0)) >= REFRESH_S:
+        if now - float(d.get("fetched_at", 0)) >= self._op.gtfs_refresh_s:
             return True
-        return _expired(d, dt.datetime.fromtimestamp(now, dt.timezone.utc).date())
+        today = dt.datetime.fromtimestamp(now, dt.timezone.utc).date()
+        if self._op.gtfs_dated and not geometry.covers(d, today):
+            return True
+        return _expired(d, today)
 
     def due(self) -> bool:
         """Worth starting async_refresh: never loaded, or stale and not waiting."""
@@ -147,7 +152,7 @@ class RouteStore:
             return
         self._next_try = now + RETRY_S
         async with self._session.get(
-            op.gtfs_url, headers={"User-Agent": USER_AGENT},
+            op.gtfs_url, headers={"User-Agent": USER_AGENT, **dict(op.request_headers)},
             timeout=aiohttp.ClientTimeout(total=FETCH_TIMEOUT),
         ) as resp:
             if resp.status != 200:
@@ -160,8 +165,11 @@ class RouteStore:
         if len(raw) > MAX_BYTES:
             _LOGGER.debug("%s GTFS larger than %s bytes; ignored", op.id, MAX_BYTES)
             return
+        today = dt.datetime.fromtimestamp(now, dt.timezone.utc).date()
         d = await self._hass.async_add_executor_job(
-            functools.partial(geometry.distill, raw, stop_key=op.gtfs_stop_key))
+            functools.partial(geometry.distill, raw, stop_key=op.gtfs_stop_key,
+                              dated_from=geometry.first_dated_day(today) if op.gtfs_dated else None,
+                              route_types=tuple(op.gtfs_route_types)))
         del raw
         if not d.get("shapes") or not d.get("trains"):
             # A zip with no usable lines is not a reason to drop a good copy.

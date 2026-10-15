@@ -34,6 +34,7 @@ train is put on its line where its fix is, and held there.
 from __future__ import annotations
 
 import csv
+import datetime as dt
 import io
 import math
 import zipfile
@@ -178,15 +179,78 @@ def simplify(points: list[tuple[float, float]], tol_m: float) -> list[tuple[floa
     return [p for p, k in zip(points, keep) if k]
 
 
+def dated_key(number: str, departure_date: str) -> str:
+    """The key of a train number's line ON a date ('IC 22', '2026-10-14' ->
+    'IC 22|2026-10-14'), for a railroad whose line is picked by the GTFS
+    calendar (Operator.gtfs_dated)."""
+    return f"{number}|{departure_date}"
+
+
+def first_dated_day(today: dt.date) -> dt.date:
+    """The first date a dated copy covers: UTC yesterday. A departure date is
+    the railroad's local date (Finland's runs up to three hours ahead of UTC)
+    and a night train runs into the next day, so a train in service has a
+    departure date of UTC yesterday, today or tomorrow (the shared client
+    loads exactly those three)."""
+    return today - dt.timedelta(days=1)
+
+
+def covers(d: dict[str, Any], today: dt.date) -> bool:
+    """A dated copy still covers UTC tomorrow's departures."""
+    until = d.get("dated_until")
+    return isinstance(until, str) and until >= (today + dt.timedelta(days=1)).isoformat()
+
+
+_WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+
+
+def service_days(rows, names, dates: list[dt.date]) -> dict[str, set[str]]:
+    """service_id -> the ISO dates among `dates` it runs on: calendar.txt's
+    weekdays and date range, then calendar_dates.txt (1 adds the date, 2
+    removes it). The GTFS rule, as measured for VR on 2026-10-14
+    (35_Dependencies/third_party/digitraffic/SSOT.md section 3)."""
+    days: dict[str, set[str]] = {}
+    if "calendar.txt" in names:
+        for r in rows("calendar.txt"):
+            sid = (r.get("service_id") or "").strip()
+            try:
+                start = dt.datetime.strptime((r.get("start_date") or "").strip(), "%Y%m%d").date()
+                end = dt.datetime.strptime((r.get("end_date") or "").strip(), "%Y%m%d").date()
+            except ValueError:
+                continue
+            days[sid] = {d.isoformat() for d in dates if start <= d <= end
+                         and (r.get(_WEEKDAYS[d.weekday()]) or "").strip() == "1"}
+    if "calendar_dates.txt" in names:
+        wanted = {d.strftime("%Y%m%d"): d.isoformat() for d in dates}
+        for r in rows("calendar_dates.txt"):
+            iso = wanted.get((r.get("date") or "").strip())
+            if iso is None:
+                continue
+            sid = (r.get("service_id") or "").strip()
+            kind = (r.get("exception_type") or "").strip()
+            if kind == "1":
+                days.setdefault(sid, set()).add(iso)
+            elif kind == "2" and sid in days:
+                days[sid].discard(iso)
+    return days
+
+
 def distill(zip_bytes: bytes, simplify_m: float = SIMPLIFY_M,
-            stop_key: str = "stop_id") -> dict[str, Any]:
+            stop_key: str = "stop_id", dated_from: dt.date | None = None,
+            dated_days: int = 4, route_types: tuple[str, ...] = ()) -> dict[str, Any]:
     """A GTFS zip -> the geometry the estimate needs, JSON-ready:
     stops (code -> [lat, lon]), trains (trip_short_name -> [shape_id]),
     shapes (shape_id -> [[lat, lon], ...], simplified), feed_info dates,
     train_routes (trip_short_name -> its route's long name).
 
     stop_key: the GTFS column the source's station codes are, "stop_id"
-    (Amtrak, Brightline) or "stop_code" (VIA, measured 249 of 249)."""
+    (Amtrak, Brightline) or "stop_code" (VIA, measured 249 of 249).
+
+    dated_from: keys `trains` and `train_routes` by dated_key(number, date)
+    for `dated_days` dates from it, each number holding only the trips its
+    calendar runs that date (VR), and records the last date as
+    `dated_until`; only the shapes those trips use are kept. route_types:
+    only routes of these GTFS route_types (strings); empty, every route."""
     z = zipfile.ZipFile(io.BytesIO(zip_bytes))
 
     def rows(name):
@@ -213,7 +277,28 @@ def distill(zip_bytes: bytes, simplify_m: float = SIMPLIFY_M,
                        for r in rows("routes.txt")}
     trains: dict[str, set] = {}
     train_routes: dict[str, str] = {}
+    route_type = {}
+    if route_types and "routes.txt" in z.namelist():
+        route_type = {(r.get("route_id") or "").strip(): (r.get("route_type") or "").strip()
+                      for r in rows("routes.txt")}
+    dated_until = None
+    days: dict[str, set[str]] = {}
+    if dated_from is not None:
+        dates = [dated_from + dt.timedelta(days=i) for i in range(max(1, dated_days))]
+        dated_until = dates[-1].isoformat()
+        days = service_days(rows, z.namelist(), dates)
     for r in rows("trips.txt"):
+        if route_types and route_type.get((r.get("route_id") or "").strip()) not in route_types:
+            continue
+        if dated_from is not None:
+            num, sid = (r.get("trip_short_name") or "").strip(), (r.get("shape_id") or "").strip()
+            route = route_names.get((r.get("route_id") or "").strip())
+            for iso in days.get((r.get("service_id") or "").strip(), ()):
+                if num and sid:
+                    trains.setdefault(dated_key(num, iso), set()).add(sid)
+                if num and route:
+                    train_routes.setdefault(dated_key(num, iso), route)
+            continue
         num, sid = (r.get("trip_short_name") or "").strip(), (r.get("shape_id") or "").strip()
         if num and sid:
             trains.setdefault(num, set()).add(sid)
@@ -229,14 +314,21 @@ def distill(zip_bytes: bytes, simplify_m: float = SIMPLIFY_M,
         line = [(a, b) for _, a, b in sorted(pts)]
         if len(line) >= 2:
             shapes[sid] = [[round(a, 6), round(b, 6)] for a, b in simplify(line, simplify_m)]
+    if dated_from is not None:
+        # Only the lines the dated trips use: the rest is another period's.
+        used = set().union(*trains.values()) if trains else set()
+        shapes = {k: v for k, v in shapes.items() if k in used}
     info = {}
     if "feed_info.txt" in z.namelist():
         for r in rows("feed_info.txt"):
             info = {k: (r.get(k) or "").strip() or None for k in ("feed_version", "feed_start_date", "feed_end_date")}
             break
-    return {"v": GEOMETRY_VERSION, **info, "stops": stops, "stop_names": stop_names,
-            "trains": {k: sorted(v & shapes.keys()) for k, v in trains.items() if v & shapes.keys()},
-            "train_routes": train_routes, "shapes": shapes}
+    out = {"v": GEOMETRY_VERSION, **info, "stops": stops, "stop_names": stop_names,
+           "trains": {k: sorted(v & shapes.keys()) for k, v in trains.items() if v & shapes.keys()},
+           "train_routes": train_routes, "shapes": shapes}
+    if dated_until is not None:
+        out["dated_until"] = dated_until
+    return out
 
 
 @dataclass
