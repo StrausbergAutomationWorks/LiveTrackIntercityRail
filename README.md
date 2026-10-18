@@ -47,7 +47,15 @@ integrations that use Amtraker are installed.
 
 ## Map card
 
-Any map card that shows `geo_location` entities works. With
-[auto-entities](https://github.com/thomasloven/lovelace-auto-entities), filter
-on `domain: geo_location` and `attributes: {source: live_track_intercity_rail}`,
-and use `marker_label` as the displayed attribute.
+Trains are drawn by [LiveTrackMapCard](https://github.com/StrausbergAutomationWorks/LiveTrackMapCard)
+(`custom:live-track-map-card`), the one map every Live Track integration
+renders on. It shows each railroad's colours and pictures, labels a train with
+its `marker_label`, and slides it between real fixes along the track.
+
+Give it the trains with
+[auto-entities](https://github.com/thomasloven/lovelace-auto-entities),
+filtering on `domain: geo_location` and
+`attributes: {source: live_track_intercity_rail}`.
+
+Any other map card that shows `geo_location` entities shows the trains too,
+as plain markers.
