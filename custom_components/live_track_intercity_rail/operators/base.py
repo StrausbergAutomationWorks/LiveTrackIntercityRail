@@ -24,7 +24,11 @@ SOURCE_DIGITRAFFIC = "digitraffic_rail"
 # Transport for NSW's nswtrains feed, through the shared client saw_livetrack.tfnsw
 # (sources/tfnsw.py).
 SOURCE_TFNSW = "tfnsw"
-SOURCES = (SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_VIA, SOURCE_DIGITRAFFIC, SOURCE_TFNSW)
+# Transport Victoria's V/Line feeds, through the shared client
+# saw_livetrack.transport_vic (sources/vline.py).
+SOURCE_TRANSPORT_VIC = "transport_vic"
+SOURCES = (SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_VIA, SOURCE_DIGITRAFFIC, SOURCE_TFNSW,
+           SOURCE_TRANSPORT_VIC)
 
 
 @dataclass(frozen=True)
@@ -80,11 +84,17 @@ class Operator:
     # threshold keys. None: lateness_keys() for every train (VIA: 10 minutes
     # on the corridor, 60 off it; Lee 2026-10-13).
     lateness: Callable[[str | None, str | None], dict[str, int]] | None = None
+    # The same from the whole published record, when the rule hangs on more than
+    # those two (V/Line: the line's code, Intercity SSOT 8.5). Wins when set.
+    record_lateness: Callable[[Mapping[str, Any]], dict[str, int]] | None = None
     # A train whose fix is older than geometry.MAX_HORIZON_S, or which has no
     # fix at all (the source held its last one), moves toward its next stop
     # arriving at the source's estimate (Lee 2026-10-11 15:28, VIA; measured
     # better than holding, ltir_via_final.txt). False: it waits at the horizon.
     timed_without_fix: bool = False
+    # When the last speed gives way to that timed rule, in seconds of fix age. None:
+    # geometry.MAX_HORIZON_S, 30 minutes. V/Line 600 (Lee 2026-11-01, decision 2).
+    timed_after_s: float | None = None
     # Headers sent with this railroad's GTFS download, beside the User-Agent
     # (Digitraffic asks callers to identify themselves; VR).
     request_headers: Mapping[str, str] = field(default_factory=dict)
@@ -108,9 +118,14 @@ class Operator:
     # gtfs_url; distilled by TRIP, since a trip's own shape is its line and its
     # own stop times give the next stop (geometry.distill, trip_keys; NSW TrainLink).
     gtfs_from_source: bool = False
+    # That timetable is read one shape at a time, the whole publication, with its lines
+    # and stop tables merged (geometry.distill_stream; V/Line).
+    gtfs_stream: bool = False
 
     def lateness_for(self, rec: Mapping[str, Any]) -> dict[str, int]:
         """The D4c threshold keys for one published train in service."""
+        if self.record_lateness is not None:
+            return dict(self.record_lateness(rec))
         if self.lateness is not None:
             return dict(self.lateness(rec.get("train"), rec.get("line_name")))
         return self.lateness_keys()

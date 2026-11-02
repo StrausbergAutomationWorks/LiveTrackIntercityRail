@@ -461,11 +461,11 @@ class Operator(unittest.TestCase):
 
     def test_region_offered(self):
         self.assertEqual(operators.regions_in_use()["AU"], "Australia")
-        self.assertEqual([o.id for o in operators.operators_in("AU")], ["nsw_trainlink"])
+        self.assertEqual([o.id for o in operators.operators_in("AU")], ["nsw_trainlink", "vline"])
 
     def test_other_railroads_need_no_key(self):
         for op in operators.OPERATORS.values():
-            if op.id != "nsw_trainlink":
+            if op.id not in ("nsw_trainlink", "vline"):
                 self.assertFalse(op.needs_key or op.gtfs_from_source, op.id)
 
 

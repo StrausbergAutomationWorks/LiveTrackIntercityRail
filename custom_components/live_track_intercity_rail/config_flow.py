@@ -45,8 +45,8 @@ from .const import (
     MAX_SCAN_INTERVAL,
     MIN_SCAN_INTERVAL,
 )
-from .operators import OPERATORS, Operator, operators_in, regions_in_use
-from .sources import tfnsw
+from .operators import OPERATORS, SOURCE_TRANSPORT_VIC, Operator, operators_in, regions_in_use
+from .sources import tfnsw, vline
 
 
 def _dropdown(options: list[SelectOptionDict]) -> SelectSelector:
@@ -68,8 +68,8 @@ class IntercityRailConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def _check_key(self, op: Operator, key: str) -> str | None:
         """None when the key reads the feed, else the form's error."""
-        return await self.hass.async_add_executor_job(
-            tfnsw.check_key, op.source_options["consumer"], key)
+        check = vline.check_key if op.source == SOURCE_TRANSPORT_VIC else tfnsw.check_key
+        return await self.hass.async_add_executor_job(check, op.source_options["consumer"], key)
 
     def _available(self, region: str) -> list[Operator]:
         taken = self._async_current_ids()

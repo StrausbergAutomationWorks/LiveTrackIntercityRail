@@ -35,7 +35,9 @@ from __future__ import annotations
 
 import csv
 import datetime as dt
+import hashlib
 import io
+import json
 import math
 import zipfile
 from dataclasses import dataclass, field
@@ -84,6 +86,13 @@ MAX_FIX_GAP_S = 300.0
 # bound (RECORD 5); Brightline's top speed, 125 mph, is 56 m/s, and the
 # fastest pair measured on the fixture was 56.1 m/s.
 MAX_FIX_SPEED_MS = 70.0
+# A line within this of where it was at least FOLD_MIN_M earlier along it has folded back
+# (unfold, V/Line). 60 m: parallel tracks; checked every FOLD_STEP_M. A stop this far from what
+# is left means the loop was real.
+FOLD_TOL_M = 60.0
+FOLD_MIN_M = 1000.0
+FOLD_STEP_M = 100.0
+FOLD_STOP_M = 300.0
 
 
 def bearing(a: tuple[float, float], b: tuple[float, float]) -> float:
@@ -378,6 +387,193 @@ def distill(zip_bytes: bytes, simplify_m: float = SIMPLIFY_M,
     return out
 
 
+def _fold(points: list[tuple[float, float]]) -> tuple[list[tuple[float, float]], float] | None:
+    """The first place a line comes back to where it has been: (the line without that loop, km
+    cut), or None. Sampled every FOLD_STEP_M. The earliest point any later part of the line comes
+    back to, then the LAST time it does: a Z-fold has passes over the same track three times, and
+    the middle one and the first are what go."""
+    lat0 = math.radians(sum(p[0] for p in points) / len(points))
+    kx = R * math.cos(lat0) * math.pi / 180
+    ky = R * math.pi / 180
+    xy = [(p[1] * kx, p[0] * ky) for p in points]
+    cum = [0.0]
+    for a, b in zip(xy, xy[1:]):
+        cum.append(cum[-1] + math.dist(a, b))
+    samples: list[tuple[float, float, float]] = []
+    k = 0
+    d = 0.0
+    while d < cum[-1]:
+        while k + 2 < len(cum) and cum[k + 1] < d:
+            k += 1
+        seg = cum[k + 1] - cum[k]
+        f = 0.0 if seg <= 0 else (d - cum[k]) / seg
+        samples.append((xy[k][0] + (xy[k + 1][0] - xy[k][0]) * f, xy[k][1] + (xy[k + 1][1] - xy[k][1]) * f, d))
+        d += FOLD_STEP_M
+    grid: dict[tuple[int, int], list[tuple[float, float, float]]] = {}
+    first = None
+    for x, y, d in samples:
+        cx, cy = int(x // FOLD_TOL_M), int(y // FOLD_TOL_M)
+        for gx in (cx - 1, cx, cx + 1):
+            for gy in (cy - 1, cy, cy + 1):
+                for x2, y2, d2 in grid.get((gx, gy), ()):
+                    if d - d2 > FOLD_MIN_M and math.hypot(x - x2, y - y2) < FOLD_TOL_M and (first is None or d2 < first[2]):
+                        first = (x2, y2, d2)
+        grid.setdefault((cx, cy), []).append((x, y, d))
+    if first is None:
+        return None
+    last = max(d for x, y, d in samples
+               if d - first[2] > FOLD_MIN_M and math.hypot(x - first[0], y - first[1]) < FOLD_TOL_M)
+    kept = [p for p, c in zip(points, cum) if c < first[2]]
+    i = next(n for n, c in enumerate(cum) if c >= last)
+    return kept + list(points[i:]), (cum[i] - first[2]) / 1000.0
+
+
+def unfold(points: list[tuple[float, float]], stops: Any = ()) -> tuple[list[tuple[float, float]], float]:
+    """(the line with its folds taken out, km cut). A loop that has a stop nowhere else on the line
+    is a real out-and-back and stays, with anything after it.
+
+    MEASURED 2026-11-02 (bin\\ltir_vl_folds.txt, ltir_vl_fold_aby.png): every Albury line runs from
+    km 141 to 154, back to 167 and on to 180 over the same track, 26 km that no train travels. On
+    that stretch the nearest point of the line jumps between passes (684 moves of over 5 km in one
+    poll on the replay) and a train timed along the line would be drawn running back and forth."""
+    total = 0.0
+    line = list(points)
+    while True:
+        cut = _fold(line) if len(line) >= 2 else None
+        if cut is None:
+            return line, total
+        new, km = cut
+        if len(new) < 2 or len(new) >= len(line):
+            return line, total
+        before, after = Route(line), Route(new)
+        if any(after.project(*s)[1] > FOLD_STOP_M >= before.project(*s)[1] for s in stops):
+            return line, total
+        line, total = new, total + km
+
+
+def _digest(value: Any) -> str:
+    return hashlib.sha1(json.dumps(value, separators=(",", ":")).encode()).hexdigest()[:12]
+
+
+def distill_stream(path: str, simplify_m: float = SIMPLIFY_M) -> dict[str, Any]:
+    """A GTFS zip ON DISK -> the geometry the estimate needs, for a whole publication, one shape
+    and one trip at a time (V/Line; Intercity SSOT 8.5).
+
+    distill() holds every shape before simplifying: 458 MB of heap on V/Line's 2,868,931 points.
+    Here each shape is simplified and dropped as it ends, and identical lines and stop tables are
+    kept once. MEASURED on the 2 November 2026 publication (bin\\ltir_vl0_stream3.txt): 6,988 trips,
+    1,416 shapes, 60 distinct lines, 696 distinct stop tables; 946 KB of JSON, 5.4 MB loaded. A
+    four-day window of the same copy was 711 KB, so a dated cut would save 235 KB and cost a daily
+    distill (Lee 2026-11-02 03:14: whole publication).
+
+    `shapes` and `stop_tables` are keyed by a hash of their contents, so a line keeps its id across
+    publications (`stable_lines`; Projector.adopt). `trains` and `trip_tables` are keyed by trip_id.
+    Stop names are as published (D5); `route_names` is by route_id, which the feed carries.
+
+    A shape's folds are taken out (unfold), the trips' own stops deciding what is a fold.
+
+    A shape that comes back after another has started raises ValueError: shapes.txt is contiguous
+    in both publications measured, and a shape met twice would silently lose a part."""
+    with zipfile.ZipFile(path) as z:
+        def rows(name):
+            with z.open(name) as f:
+                yield from csv.DictReader(io.TextIOWrapper(f, encoding="utf-8-sig"))
+
+        tables: dict[str, list] = {}
+        trip_tables: dict[str, str] = {}
+        used_stops: set[str] = set()
+        current: str | None = None
+        buffer: list = []
+
+        def close_trip() -> None:
+            if current is None or not buffer:
+                return
+            table = sorted(buffer, key=lambda x: x[0])
+            digest = _digest(table)
+            tables.setdefault(digest, table)
+            trip_tables[current] = digest
+
+        for r in rows("stop_times.txt"):
+            trip = (r.get("trip_id") or "").strip()
+            if trip != current:
+                close_trip()
+                current = trip
+                # A trip met again goes on from what it had, so nothing is lost.
+                buffer = list(tables[trip_tables[trip]]) if trip in trip_tables else []
+            if (r.get("pickup_type") or "").strip() == "1" and (r.get("drop_off_type") or "").strip() == "1":
+                continue
+            stop = (r.get("stop_id") or "").strip()
+            used_stops.add(stop)
+            buffer.append([int(r["stop_sequence"]), stop, _seconds(r.get("arrival_time")),
+                           _seconds(r.get("departure_time"))])
+        close_trip()
+
+        trip_shape = {(r.get("trip_id") or "").strip(): (r.get("shape_id") or "").strip()
+                      for r in rows("trips.txt")}
+        wanted = {s for s in trip_shape.values() if s}
+
+        stops: dict[str, list] = {}
+        stop_names: dict[str, str] = {}
+        for r in rows("stops.txt"):
+            stop = (r.get("stop_id") or "").strip()
+            if stop not in used_stops:
+                continue
+            if r.get("stop_lat") and r.get("stop_lon"):
+                stops[stop] = [round(float(r["stop_lat"]), 6), round(float(r["stop_lon"]), 6)]
+            name = (r.get("stop_name") or "").strip()
+            if name:
+                stop_names[stop] = name
+        shape_stops: dict[str, set] = {}
+        for trip, digest in trip_tables.items():
+            sid = trip_shape.get(trip)
+            if sid:
+                shape_stops.setdefault(sid, set()).update(x[1] for x in tables[digest])
+
+        lines: dict[str, list] = {}
+        line_of: dict[str, str] = {}
+        finished: set[str] = set()
+        shape: str | None = None
+        points: list = []
+        # 1,416 shapes are 60 lines before anything is done to them.
+        memo: dict[tuple, tuple[str, float]] = {}
+        cut_km: dict[str, float] = {}
+
+        def close_shape() -> None:
+            if len(points) < 2:
+                return
+            raw = [(a, b) for _, a, b in sorted(points)]
+            own = frozenset(shape_stops.get(shape, ()))
+            key = (_digest(raw), own)
+            if key not in memo:
+                flat, km = unfold(raw, [stops[s] for s in sorted(own) if s in stops])
+                line = [[round(a, 6), round(b, 6)] for a, b in simplify(flat, simplify_m)]
+                digest = _digest(line)
+                lines.setdefault(digest, line)
+                memo[key] = (digest, km)
+                if km:
+                    cut_km[digest] = round(km, 1)
+            line_of[shape] = memo[key][0]
+
+        for r in rows("shapes.txt"):
+            sid = (r.get("shape_id") or "").strip()
+            if sid != shape:
+                close_shape()
+                if sid in finished:
+                    raise ValueError(f"shapes.txt is not contiguous at shape {sid}")
+                finished.add(sid)
+                shape, points = sid, []
+            if sid in wanted:
+                points.append((int(r["shape_pt_sequence"]), float(r["shape_pt_lat"]), float(r["shape_pt_lon"])))
+        close_shape()
+        route_names = {(r.get("route_id") or "").strip():
+                       " ".join((r.get("route_long_name") or r.get("route_short_name") or "").split())
+                       for r in rows("routes.txt")}
+    return {"v": GEOMETRY_VERSION, "stable_lines": True, "stops": stops, "stop_names": stop_names,
+            "route_names": route_names,
+            "trains": {t: [line_of[s]] for t, s in trip_shape.items() if s in line_of},
+            "shapes": lines, "stop_tables": tables, "trip_tables": trip_tables, "folds_cut_km": cut_km}
+
+
 @dataclass
 class _State:
     shape_id: str
@@ -413,6 +609,17 @@ class Projector:
 
     def forget(self, train_id: str) -> None:
         self._state.pop(train_id, None)
+
+    def adopt(self, old: "Projector") -> None:
+        """Running trains go on from the copy before, when both copies name their lines by a
+        hash of their points, so a line id means the same line (distill_stream). A train whose
+        line has gone starts again from its next fix. V/Line's trip ids change between
+        publications (3,031 of 6,988 shared over 17 days), so a train running across a new copy
+        may no longer have a trip there: its state is what keeps it on its line."""
+        if not (self.geometry.get("stable_lines") and old.geometry.get("stable_lines")):
+            return
+        shapes = self.geometry.get("shapes") or {}
+        self._state = {k: s for k, s in old._state.items() if s.shape_id in shapes}
 
     def course(self, train_id: str) -> float | None:
         """The train's course where estimate() last placed it: its route
@@ -474,7 +681,8 @@ class Projector:
     def estimate(self, train_id: str, number: str, fix: tuple[float, float], fix_t: float | None,
                  stop_code: str | None, speed_ms: float | None,
                  now: float, derive_speed: bool = False,
-                 eta: float | None = None, timed: bool = False) -> tuple[float, float] | None:
+                 eta: float | None = None, timed: bool = False,
+                 horizon: float = MAX_HORIZON_S) -> tuple[float, float] | None:
         """(lat, lon) on the route at `now`, or None for "publish the fix".
         With derive_speed and no speed_ms, the speed of the last two fixes.
 
@@ -486,7 +694,10 @@ class Projector:
         arrives at the estimated time"). MEASURED on VIA's capture, 30
         positionless stretches over 10 min replayed against the next real fix
         (bin\\ltir_via_final.txt): held p50 23.3 km, p90 118.3; timed p50
-        10.7 km, p90 42.2."""
+        10.7 km, p90 42.2.
+
+        horizon: when the last speed gives way to the timed rule, per railroad
+        (Operator.timed_after_s; V/Line 600 s, Lee 2026-11-01, decision 2)."""
         if fix_t is None or now < fix_t:
             return None
         stop = (self.geometry.get("stops") or {}).get(stop_code) if stop_code else None
@@ -519,7 +730,7 @@ class Projector:
             d_stop, stop_off = self._stop_d[skey]
             if stop_off > MAX_STOP_OFF_M:
                 d_stop = None
-        dt = min(now - fix_t, MAX_HORIZON_S)
+        dt = min(now - fix_t, horizon)
         if speed_ms is None and derive_speed:
             # A source with no speed (Brightline): the speed of its last two
             # fixes along the line (fix_speed).
@@ -532,7 +743,7 @@ class Projector:
         # whose passed stop the source had not yet marked Departed BACKWARDS
         # (27 of 38 backward arrows in bin\ltir_heading_trial2.txt).
         st.direction = st.motion or 1.0
-        if timed and now - fix_t > MAX_HORIZON_S:
+        if timed and now - fix_t > horizon:
             d = self._timed(st, d_stop, eta, fix_t, now)
         else:
             if d_stop is None:

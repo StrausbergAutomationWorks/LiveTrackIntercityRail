@@ -25,8 +25,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from .geometry import Projector
-from .sources.base import HELD_SPEED_KEY, Snapshot
+from .geometry import MAX_HORIZON_S, Projector
+from .sources.base import HELD_SPEED_KEY, TIMED_AFTER_KEY, Snapshot
 
 ESTIMATED = "estimated"
 OBSERVED = "observed"
@@ -38,7 +38,8 @@ SEGMENT_KEYS = ("previous_latitude", "previous_longitude", "previous_observed_at
 
 
 def apply(projector: Projector | None, snap: Snapshot, result: dict[str, Any],
-          now: float, derive_speed: bool = False, timed: bool = False) -> dict[str, int]:
+          now: float, derive_speed: bool = False, timed: bool = False,
+          horizon: float | None = None) -> dict[str, int]:
     """Move each published train in `result` along its route, in place.
     Returns {"estimated": n, "observed": n} for diagnostics.
 
@@ -49,7 +50,8 @@ def apply(projector: Projector | None, snap: Snapshot, result: dict[str, Any],
 
     timed: a fix past the horizon moves toward the next stop arriving at the
     source's estimate for it (Operator.timed_without_fix, VIA;
-    geometry.Projector.estimate)."""
+    geometry.Projector.estimate). horizon: when, by railroad
+    (Operator.timed_after_s); None, geometry.MAX_HORIZON_S."""
     counts = {ESTIMATED: 0, OBSERVED: 0}
     if projector is not None:
         for vid in result.get("departed") or ():
@@ -78,6 +80,7 @@ def apply(projector: Projector | None, snap: Snapshot, result: dict[str, Any],
                 kmh / 3.6 if kmh is not None else None,
                 now, derive_speed=derive_speed,
                 eta=(snap.next_stops.get(vid) or (None, None))[1],
+                horizon=extra.get(TIMED_AFTER_KEY, MAX_HORIZON_S if horizon is None else horizon),
                 # Not a train standing at a platform with an unchanged fix: it
                 # would creep toward its next stop before it leaves. A held
                 # fix (no position now) or a train reported moving.

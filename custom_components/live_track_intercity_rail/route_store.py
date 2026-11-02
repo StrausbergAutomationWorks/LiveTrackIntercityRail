@@ -13,7 +13,9 @@ be placed on its route, the train is published at its fix, as before.
 A railroad whose source's shared client holds the timetable (Operator.gtfs_from_source,
 NSW TrainLink; saw_livetrack.tfnsw keeps it on disk, checked daily) is distilled again when
 the client's version changes, cut to its route_types first: the whole zip is 40 MB, its
-regional trains 2.8 MB (DESIGN_319, section 3).
+regional trains 2.8 MB (DESIGN_319, section 3). V/Line's folder is read from disk one shape at
+a time, the whole publication with its lines and stop tables merged (Operator.gtfs_stream,
+geometry.distill_stream), and running trains go on across a new copy (Projector.adopt).
 
 Refreshed every Operator.gtfs_refresh_s (a week by default), or as soon as the
 cached feed's last valid date has passed (Amtrak's feed is rebuilt daily and
@@ -149,7 +151,10 @@ class RouteStore:
 
     def _use(self, d: dict[str, Any]) -> None:
         self._data = d
-        self.projector = geometry.Projector(d)
+        new = geometry.Projector(d)
+        if self.projector is not None:
+            new.adopt(self.projector)
+        self.projector = new
 
     async def async_load_cached(self) -> None:
         """Read the cached copy once, if there is one. Cheap after the first
@@ -173,6 +178,10 @@ class RouteStore:
         path = client.static_path()
         if path is None:
             return None
+        if self._op.gtfs_stream:
+            d = geometry.distill_stream(path)
+            d["source_version"] = version
+            return d
         with open(path, "rb") as fh:
             raw = fh.read()
         cut = keep_route_types(raw, tuple(self._op.gtfs_route_types))
@@ -189,7 +198,12 @@ class RouteStore:
             return
         self._next_try = now + RETRY_S
         if self.static_client is not None:
-            d = await self._hass.async_add_executor_job(self._distill_from_client)
+            try:
+                d = await self._hass.async_add_executor_job(self._distill_from_client)
+            except ValueError as err:
+                # Said where someone will see it: until a timetable reads, nothing moves.
+                _LOGGER.warning("%s timetable not read: %s; kept the last copy", op.id, err)
+                return
             if d is None or not d.get("shapes") or not d.get("trains"):
                 _LOGGER.debug("%s timetable had no route lines; kept the last copy", op.id)
                 return

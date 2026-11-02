@@ -123,6 +123,9 @@ class TfnswRealtime:
     """Per config entry: which runs have had a fresh fix, where each last moved,
     and the last answer of the updates."""
 
+    # The zone a service day's times are in (sources/vline.py has its own).
+    time_zone = TIME_ZONE
+
     def __init__(self) -> None:
         self._fresh: dict[str, float] = {}
         self._still: dict[str, tuple[float, float, float]] = {}
@@ -138,7 +141,7 @@ class TfnswRealtime:
             if len(self._origins) > 32:
                 self._origins.clear()
             if self._zone is None:
-                self._zone = ZoneInfo(TIME_ZONE)
+                self._zone = ZoneInfo(self.time_zone)
             try:
                 day = dt.datetime.strptime(start_date, "%Y%m%d")
                 noon = dt.datetime(day.year, day.month, day.day, 12, tzinfo=self._zone)

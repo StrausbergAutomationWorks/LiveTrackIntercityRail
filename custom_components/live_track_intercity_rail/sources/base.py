@@ -30,12 +30,18 @@ from saw_livetrack.gtfs.realtime import Obs  # noqa: F401  (re-exported)
 # Claus Express; for the operator's look only.
 # `stalled` (D4c): a source that decides it itself (sources/tfnsw.py, rule C); Fleet
 # decides it only with a timetable it is not given here.
+# `route_code` (V/Line, Intercity SSOT 8.5): the line, for the operator's lateness only.
 EXTRA_KEYS = ("line_name", "speed_kmh", "heading_octant", "destination", "marker_status",
-              "departure_date", "santa_express", "stalled")
-RECORD_ONLY_KEYS = ("destination", "departure_date", "santa_express")
+              "departure_date", "santa_express", "stalled", "route_code")
+RECORD_ONLY_KEYS = ("destination", "departure_date", "santa_express", "route_code")
 # In an adapter's extras only, never copied to the record (not in EXTRA_KEYS):
 # the speed a HELD fix was reported with, for the along-route estimate
-# (projection.py). VIA holds a train's last fix while it has no position.
+# (projection.py). VIA holds a train's last fix while it has no position. Its presence
+# is what allows the timed rule; V/Line sets it to None, having no speed to give, and
+# the estimate derives one (Operator.derive_speed).
+# TIMED_AFTER_KEY: when this train's estimate turns to the timed rule, where it is not the
+# railroad's own (V/Line: a train with no row at all).
+TIMED_AFTER_KEY = "timed_after_s"
 HELD_SPEED_KEY = "held_speed_kmh"
 
 

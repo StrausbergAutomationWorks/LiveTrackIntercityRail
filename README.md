@@ -16,7 +16,11 @@ the railroads it shows, or by Amtraker. It is original work, MIT-licensed.
 | Railroad | Area | Source | Key needed | Terms |
 |---|---|---|---|---|
 | Amtrak | United States, and its routes into Canada | [Amtraker](https://amtraker.com), a community API relaying Amtrak's own train tracking | No | ODC-By v1.0, attribution required: see [amtraker.com](https://amtraker.com) |
+| Brightline | Florida | [Brightline's own GTFS and GTFS-Realtime](https://www.gobrightline.com) | No | None published |
 | NSW TrainLink, regional trains | New South Wales, and its routes into Queensland, Victoria and the ACT | [Transport for NSW](https://opendata.transport.nsw.gov.au/) | Yes, your own, free | CC BY 4.0, Transport for NSW attributed: see [its data licence](https://opendata.transport.nsw.gov.au/datalicence) |
+| V/Line, trains | Victoria, and its route into New South Wales | [Transport Victoria](https://opendata.transport.vic.gov.au/) | Yes, your own, free | CC BY 4.0, Transport Victoria attributed: see [the dataset](https://discover.data.vic.gov.au/dataset/gtfs-realtime) |
+| VIA Rail | Canada | [VIA Rail's own train status and GTFS](https://www.viarail.ca/en/developer-resources) | No | Its GTFS: Open Government Licence - Canada 2.0 |
+| VR | Finland | [Fintraffic Digitraffic](https://www.digitraffic.fi/en/) | No | CC BY 4.0, Fintraffic attributed |
 
 Read each source's terms before you use its data; they bind you, as the
 person receiving it. Amtraker's attribution travels with every entity this
@@ -37,7 +41,9 @@ integrations that use Amtraker are installed.
 * Each entity carries `observed_at` (when its position was true) where the
   source dates it and, between two observed positions, `previous_latitude`,
   `previous_longitude`, `previous_observed_at` and `segment_duration_s`, so a
-  map card can move the marker between real fixes. Nothing is extrapolated.
+  map card can move the marker between real fixes. Where the railroad's timetable gives a
+  line, the train is moved along it between fixes and says so: `position_source: estimated`,
+  with the fix beside it in `fix_latitude` and `fix_longitude`.
 * `course_deg` while the train moves, from two observed positions; at rest it
   is left out, and `icon_rotation_deg` with `icon_rotation_basis: held` keeps
   the last direction for the marker's arrow.
