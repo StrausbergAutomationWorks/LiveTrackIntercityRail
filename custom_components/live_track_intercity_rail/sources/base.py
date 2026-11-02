@@ -28,8 +28,10 @@ from saw_livetrack.gtfs.realtime import Obs  # noqa: F401  (re-exported)
 # `departure_date` and `santa_express` (VR, Intercity SSOT 8.4): the train's
 # Finnish departure date, which picks its season, and whether it is the Santa
 # Claus Express; for the operator's look only.
+# `stalled` (D4c): a source that decides it itself (sources/tfnsw.py, rule C); Fleet
+# decides it only with a timetable it is not given here.
 EXTRA_KEYS = ("line_name", "speed_kmh", "heading_octant", "destination", "marker_status",
-              "departure_date", "santa_express")
+              "departure_date", "santa_express", "stalled")
 RECORD_ONLY_KEYS = ("destination", "departure_date", "santa_express")
 # In an adapter's extras only, never copied to the record (not in EXTRA_KEYS):
 # the speed a HELD fix was reported with, for the along-route estimate

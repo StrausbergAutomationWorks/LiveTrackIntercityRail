@@ -10,6 +10,11 @@ Modelled on Live Track Commuter Rail's statics.py. Fetched in the background
 and never awaited by a poll: until a copy exists, and whenever a train cannot
 be placed on its route, the train is published at its fix, as before.
 
+A railroad whose source's shared client holds the timetable (Operator.gtfs_from_source,
+NSW TrainLink; saw_livetrack.tfnsw keeps it on disk, checked daily) is distilled again when
+the client's version changes, cut to its route_types first: the whole zip is 40 MB, its
+regional trains 2.8 MB (DESIGN_319, section 3).
+
 Refreshed every Operator.gtfs_refresh_s (a week by default), or as soon as the
 cached feed's last valid date has passed (Amtrak's feed is rebuilt daily and
 each copy is valid a week, so the lines almost never change between copies).
@@ -30,6 +35,7 @@ import time
 from typing import Any
 
 import aiohttp
+from saw_livetrack.gtfs.filter import keep_route_types
 
 from homeassistant.core import HomeAssistant
 
@@ -67,6 +73,18 @@ class RouteStore:
         self._loaded = False
         self._busy = False
         self._next_try = 0.0
+        # Operator.gtfs_from_source: the source's shared client, set by the
+        # coordinator, and its timetable's version at the last poll.
+        self.static_client: Any = None
+        self._static_version: str | None = None
+
+    def note_static(self, version: str | None) -> None:
+        """The client's timetable version, from the poll that just ran."""
+        self._static_version = version
+
+    @property
+    def _enabled(self) -> bool:
+        return bool(self._op.gtfs_url or self.static_client is not None)
 
     @property
     def info(self) -> dict[str, Any] | None:
@@ -81,6 +99,9 @@ class RouteStore:
 
     def _stale(self, now: float) -> bool:
         d = self._data
+        if self.static_client is not None:
+            return self._static_version is not None and (
+                d is None or d.get("source_version") != self._static_version)
         if d is None:
             return True
         if now - float(d.get("fetched_at", 0)) >= self._op.gtfs_refresh_s:
@@ -92,7 +113,7 @@ class RouteStore:
 
     def due(self) -> bool:
         """Worth starting async_refresh: never loaded, or stale and not waiting."""
-        if not self._op.gtfs_url or self._busy:
+        if not self._enabled or self._busy:
             return False
         if not self._loaded:
             return True
@@ -133,7 +154,7 @@ class RouteStore:
     async def async_load_cached(self) -> None:
         """Read the cached copy once, if there is one. Cheap after the first
         call; the coordinator awaits it before its first poll."""
-        if self._loaded or not self._op.gtfs_url:
+        if self._loaded or not self._enabled:
             return
         self._loaded = True
         try:
@@ -144,6 +165,22 @@ class RouteStore:
         if d is not None:
             self._use(d)
 
+    def _distill_from_client(self) -> dict[str, Any] | None:
+        """The client's zip, cut and distilled by trip; None before it has one.
+        Blocking."""
+        client = self.static_client
+        version = client.static_version()
+        path = client.static_path()
+        if path is None:
+            return None
+        with open(path, "rb") as fh:
+            raw = fh.read()
+        cut = keep_route_types(raw, tuple(self._op.gtfs_route_types))
+        del raw
+        d = geometry.distill(cut, trip_keys=True)
+        d["source_version"] = version
+        return d
+
     async def _async_refresh(self) -> None:
         op = self._op
         await self.async_load_cached()
@@ -151,6 +188,18 @@ class RouteStore:
         if not self._stale(now) or now < self._next_try:
             return
         self._next_try = now + RETRY_S
+        if self.static_client is not None:
+            d = await self._hass.async_add_executor_job(self._distill_from_client)
+            if d is None or not d.get("shapes") or not d.get("trains"):
+                _LOGGER.debug("%s timetable had no route lines; kept the last copy", op.id)
+                return
+            d["fetched_at"] = now
+            d["source"] = "shared client"
+            await self._hass.async_add_executor_job(self._write, d)
+            self._use(d)
+            _LOGGER.debug("%s route lines from the shared client: %s shapes, %s trips, version %s",
+                          op.id, len(d["shapes"]), len(d["trains"]), d.get("source_version"))
+            return
         async with self._session.get(
             op.gtfs_url, headers={"User-Agent": USER_AGENT, **dict(op.request_headers)},
             timeout=aiohttp.ClientTimeout(total=FETCH_TIMEOUT),

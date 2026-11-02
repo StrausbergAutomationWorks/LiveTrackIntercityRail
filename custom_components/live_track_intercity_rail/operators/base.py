@@ -21,7 +21,10 @@ SOURCE_VIA = "via"
 # Fintraffic Digitraffic rail, Finland, through the shared client
 # saw_livetrack.digitraffic_rail (sources/digitraffic_rail.py).
 SOURCE_DIGITRAFFIC = "digitraffic_rail"
-SOURCES = (SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_VIA, SOURCE_DIGITRAFFIC)
+# Transport for NSW's nswtrains feed, through the shared client saw_livetrack.tfnsw
+# (sources/tfnsw.py).
+SOURCE_TFNSW = "tfnsw"
+SOURCES = (SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_VIA, SOURCE_DIGITRAFFIC, SOURCE_TFNSW)
 
 
 @dataclass(frozen=True)
@@ -96,6 +99,15 @@ class Operator:
     # Only these GTFS route_types (strings), e.g. ("102",): VR's passenger
     # GTFS also holds the commuter trains. Empty: every route.
     gtfs_route_types: tuple[str, ...] = ()
+    # The source wants each user's own key: the setup flow asks for it, the entry
+    # holds it (CONF_API_KEY), and the coordinator hands it to the shared client
+    # (Lee 2026-11-02, D1). key_url: where a user gets one.
+    needs_key: bool = False
+    key_url: str | None = None
+    # The timetable comes from the source's shared client, on disk, not from
+    # gtfs_url; distilled by TRIP, since a trip's own shape is its line and its
+    # own stop times give the next stop (geometry.distill, trip_keys; NSW TrainLink).
+    gtfs_from_source: bool = False
 
     def lateness_for(self, rec: Mapping[str, Any]) -> dict[str, int]:
         """The D4c threshold keys for one published train in service."""
@@ -126,6 +138,7 @@ class Operator:
 # Region codes and the label the setup list shows: ISO 3166-1, because an
 # intercity railroad crosses state and national borders (SSOT section 0).
 REGIONS: dict[str, str] = {
+    "AU": "Australia",
     "CA": "Canada",
     "FI": "Finland",
     "US": "United States",

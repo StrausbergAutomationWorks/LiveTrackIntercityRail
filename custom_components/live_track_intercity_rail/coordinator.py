@@ -28,25 +28,29 @@ from typing import Any
 import aiohttp
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from saw_livetrack import AmtrakerError, RateLimited
 from saw_livetrack.digitraffic_rail import DigitrafficError
 from saw_livetrack.gtfs import Fleet, decode
+from saw_livetrack.tfnsw import AuthRefused, KeyedError
 
 from .fetch import read_capped
 from .const import (
+    CONF_API_KEY,
     CONF_SCAN_INTERVAL,
     SOURCE_GAP_S,
     USER_AGENT,
 )
 from . import projection
-from .operators import SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_DIGITRAFFIC, SOURCE_VIA, Operator
+from .operators import SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_DIGITRAFFIC, SOURCE_TFNSW, SOURCE_VIA, Operator
 from .route_store import RouteStore
 from .shared_coordinator import get_shared_client, release_shared_client
 from .shared_digitraffic_rail import get_shared_rail_client, release_shared_rail_client
-from .sources import amtraker
+from .shared_tfnsw import get_shared_tfnsw_client, release_shared_tfnsw_client
+from .sources import amtraker, tfnsw
 from .sources.base import EXTRA_KEYS, Snapshot, hold_last, trains_in_service
 from .sources.brightline_rt import BrightlineRealtime
 from .sources.via_rail import ViaRail
@@ -91,6 +95,8 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._via: ViaRail | None = None
         self._rail = None
         self._digitraffic: digitraffic_rail.DigitrafficRail | None = None
+        self._tfnsw_client = None
+        self._tfnsw: tfnsw.TfnswRealtime | None = None
         self._session = async_get_clientsession(hass)
         if op.source == SOURCE_AMTRAKER:
             # On the event loop, as shared_coordinator requires.
@@ -108,6 +114,15 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # the same whoever created it (Lee 21:10).
             self._rail = get_shared_rail_client(hass, op.source_options["consumer"])
             self._digitraffic = digitraffic_rail.DigitrafficRail()
+        elif op.source == SOURCE_TFNSW:
+            # On the event loop, as shared_tfnsw requires. One poller for every
+            # Live Track integration on this feed, polling with the oldest
+            # registered key; this entry registers what it draws and its own key
+            # (Lee 2026-11-02, D1). The timetable is the client's.
+            self._tfnsw_client = get_shared_tfnsw_client(
+                hass, op.source_options["consumer"], entry.data[CONF_API_KEY])
+            self._tfnsw = tfnsw.TfnswRealtime()
+            self.routes.static_client = self._tfnsw_client
         else:  # pragma: no cover - an operator naming a source not built
             raise ValueError(f"unknown source {op.source!r} for {op.id}")
 
@@ -119,6 +134,10 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if self._rail is not None:
             self._rail = None
             release_shared_rail_client(self.hass, self.operator.source_options["consumer"])
+        if self._tfnsw_client is not None:
+            self._tfnsw_client = None
+            self.routes.static_client = None
+            release_shared_tfnsw_client(self.hass, self.operator.source_options["consumer"])
 
     async def _get_rt(self, url: str) -> bytes | None:
         """One whole file, or None on any failure; the reason is kept.
@@ -191,8 +210,28 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return self._digitraffic.parse(records, trains, time.time(),
                                        geo.get("stop_names") or {}, geo.get("train_routes") or {})
 
+    async def _fetch_tfnsw(self) -> Snapshot | None:
+        """This railroad's two feeds from the shared client, in the executor
+        (synchronous urllib). Every registered key refused for 10 minutes asks the
+        user for a new one (saw_livetrack._keyed); anything else is ridden out."""
+        try:
+            positions, updates, version = await self.hass.async_add_executor_job(
+                tfnsw.read, self._tfnsw_client, self.operator.source_options["consumer"])
+        except AuthRefused as err:
+            raise ConfigEntryAuthFailed(str(err)) from None
+        except KeyedError as err:
+            self._last_reason = f"{type(err).__name__}: {err}"[:200]
+            _LOGGER.debug("%s fetch failed: %s", self.operator.id, self._last_reason)
+            return None
+        self.routes.note_static(version)
+        projector = self.routes.projector
+        return await self.hass.async_add_executor_job(
+            self._tfnsw.parse, positions, updates, time.time(), projector.geometry if projector else {})
+
     async def _fetch(self) -> Snapshot | None:
         op = self.operator
+        if self._tfnsw is not None:
+            return await self._fetch_tfnsw()
         if self._digitraffic is not None:
             return await self._fetch_digitraffic()
         if self._via is not None:

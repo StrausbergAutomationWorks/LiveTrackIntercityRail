@@ -10,6 +10,9 @@ DOMAIN = "live_track_intercity_rail"
 CONF_OPERATOR = "operator"
 CONF_REGION = "region"
 CONF_SCAN_INTERVAL = "scan_interval"
+# A user's own key, for a source that wants one (Operator.needs_key). Redacted from
+# diagnostics.
+CONF_API_KEY = "api_key"
 
 DEFAULT_SCAN_INTERVAL = 30
 MIN_SCAN_INTERVAL = 15

@@ -1,14 +1,17 @@
-"""Config flow: region, then railroad. Live Track Commuter Rail's shape.
+"""Config flow: region, railroad, and a key for a railroad whose source wants one.
+Live Track Commuter Rail's shape, with the key step.
 
 A region appears only if at least one railroad serves it, and a railroad
-already set up is not offered again. No source here needs a key, so there is
-no credentials step; the first refresh tells Home Assistant whether the
-source answers (ConfigEntryNotReady retries on its own).
+already set up is not offered again. A key is checked with one read before it is
+kept (Lee 2026-11-02, D1: each config entry holds its own), and the reauth step
+asks for a new one when the client has given up on every key it holds. For the rest
+the first refresh tells Home Assistant whether the source answers
+(ConfigEntryNotReady retries on its own).
 """
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Mapping
 
 import voluptuous as vol
 
@@ -27,9 +30,13 @@ from homeassistant.helpers.selector import (
     SelectSelector,
     SelectSelectorConfig,
     SelectSelectorMode,
+    TextSelector,
+    TextSelectorConfig,
+    TextSelectorType,
 )
 
 from .const import (
+    CONF_API_KEY,
     CONF_OPERATOR,
     CONF_REGION,
     CONF_SCAN_INTERVAL,
@@ -39,6 +46,7 @@ from .const import (
     MIN_SCAN_INTERVAL,
 )
 from .operators import OPERATORS, Operator, operators_in, regions_in_use
+from .sources import tfnsw
 
 
 def _dropdown(options: list[SelectOptionDict]) -> SelectSelector:
@@ -46,11 +54,22 @@ def _dropdown(options: list[SelectOptionDict]) -> SelectSelector:
         options=options, mode=SelectSelectorMode.DROPDOWN, sort=False))
 
 
+def _key_schema() -> vol.Schema:
+    return vol.Schema({vol.Required(CONF_API_KEY): TextSelector(
+        TextSelectorConfig(type=TextSelectorType.PASSWORD))})
+
+
 class IntercityRailConfigFlow(ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
     def __init__(self) -> None:
         self._region: str | None = None
+        self._operator: Operator | None = None
+
+    async def _check_key(self, op: Operator, key: str) -> str | None:
+        """None when the key reads the feed, else the form's error."""
+        return await self.hass.async_add_executor_job(
+            tfnsw.check_key, op.source_options["consumer"], key)
 
     def _available(self, region: str) -> list[Operator]:
         taken = self._async_current_ids()
@@ -76,11 +95,47 @@ class IntercityRailConfigFlow(ConfigFlow, domain=DOMAIN):
             op = OPERATORS[user_input[CONF_OPERATOR]]
             await self.async_set_unique_id(op.id)
             self._abort_if_unique_id_configured()
+            if op.needs_key:
+                self._operator = op
+                return await self.async_step_key()
             return self.async_create_entry(title=op.name,
                                            data={CONF_OPERATOR: op.id})
         schema = vol.Schema({vol.Required(CONF_OPERATOR): _dropdown(
             [SelectOptionDict(value=op.id, label=op.name) for op in choices])})
         return self.async_show_form(step_id="operator", data_schema=schema)
+
+    async def async_step_key(self, user_input: dict[str, Any] | None = None
+                             ) -> ConfigFlowResult:
+        op = self._operator
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            key = user_input[CONF_API_KEY].strip()
+            error = await self._check_key(op, key) if key else "invalid_key"
+            if error is None:
+                return self.async_create_entry(title=op.name,
+                                               data={CONF_OPERATOR: op.id, CONF_API_KEY: key})
+            errors["base"] = error
+        return self.async_show_form(
+            step_id="key", data_schema=_key_schema(), errors=errors,
+            description_placeholders={"name": op.name, "url": op.key_url or ""})
+
+    async def async_step_reauth(self, entry_data: Mapping[str, Any]) -> ConfigFlowResult:
+        return await self.async_step_reauth_confirm()
+
+    async def async_step_reauth_confirm(self, user_input: dict[str, Any] | None = None
+                                        ) -> ConfigFlowResult:
+        entry = self._get_reauth_entry()
+        op = OPERATORS[entry.data[CONF_OPERATOR]]
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            key = user_input[CONF_API_KEY].strip()
+            error = await self._check_key(op, key) if key else "invalid_key"
+            if error is None:
+                return self.async_update_reload_and_abort(entry, data_updates={CONF_API_KEY: key})
+            errors["base"] = error
+        return self.async_show_form(
+            step_id="reauth_confirm", data_schema=_key_schema(), errors=errors,
+            description_placeholders={"name": op.name, "url": op.key_url or ""})
 
     @staticmethod
     @callback

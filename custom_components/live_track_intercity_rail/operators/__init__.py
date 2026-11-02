@@ -12,19 +12,21 @@ Brightline reads Brightline's own GTFS-Realtime, the second source adapter
 (2026-10-10; its identity is the trip, SSOT section 5, item 284). VIA Rail
 reads VIA's own train-status JSON, the third (2026-10-14, SSOT 8.3). VR
 (Finland) reads Fintraffic Digitraffic through the shared client, the fourth
-(2026-10-14, SSOT 8.4, backlog 287).
+(2026-10-14, SSOT 8.4, backlog 287). NSW TrainLink reads Transport for NSW's feed
+through the shared client, the fifth (2026-11-02, SSOT 8.6, backlog 319).
 """
 
 from __future__ import annotations
 
 from .amtrak import AMTRAK
-from .base import (REGIONS, SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_DIGITRAFFIC, SOURCE_VIA,
-                   SOURCES, Operator)
+from .base import (REGIONS, SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_DIGITRAFFIC, SOURCE_TFNSW,
+                   SOURCE_VIA, SOURCES, Operator)
 from .brightline import BRIGHTLINE
+from .nsw_trainlink import NSW_TRAINLINK
 from .via_rail import VIA_RAIL
 from .vr import VR
 
-OPERATORS: dict[str, Operator] = {op.id: op for op in (AMTRAK, BRIGHTLINE, VIA_RAIL, VR)}
+OPERATORS: dict[str, Operator] = {op.id: op for op in (AMTRAK, BRIGHTLINE, NSW_TRAINLINK, VIA_RAIL, VR)}
 
 
 def regions_in_use() -> dict[str, str]:
@@ -44,5 +46,5 @@ def operators_in(region: str) -> list[Operator]:
 
 
 __all__ = ["OPERATORS", "REGIONS", "SOURCES", "SOURCE_AMTRAKER", "SOURCE_BRIGHTLINE_RT", "SOURCE_DIGITRAFFIC",
-           "SOURCE_VIA", "Operator",
+           "SOURCE_TFNSW", "SOURCE_VIA", "Operator",
            "operators_in", "regions_in_use"]

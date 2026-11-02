@@ -235,9 +235,19 @@ def service_days(rows, names, dates: list[dt.date]) -> dict[str, set[str]]:
     return days
 
 
+def _seconds(text: str | None) -> int | None:
+    """'25:10:00' -> 90600; None when empty or not a time."""
+    try:
+        h, m, s = (text or "").strip().split(":")
+        return int(h) * 3600 + int(m) * 60 + int(s)
+    except ValueError:
+        return None
+
+
 def distill(zip_bytes: bytes, simplify_m: float = SIMPLIFY_M,
             stop_key: str = "stop_id", dated_from: dt.date | None = None,
-            dated_days: int = 4, route_types: tuple[str, ...] = ()) -> dict[str, Any]:
+            dated_days: int = 4, route_types: tuple[str, ...] = (),
+            trip_keys: bool = False) -> dict[str, Any]:
     """A GTFS zip -> the geometry the estimate needs, JSON-ready:
     stops (code -> [lat, lon]), trains (trip_short_name -> [shape_id]),
     shapes (shape_id -> [[lat, lon], ...], simplified), feed_info dates,
@@ -250,7 +260,15 @@ def distill(zip_bytes: bytes, simplify_m: float = SIMPLIFY_M,
     for `dated_days` dates from it, each number holding only the trips its
     calendar runs that date (VR), and records the last date as
     `dated_until`; only the shapes those trips use are kept. route_types:
-    only routes of these GTFS route_types (strings); empty, every route."""
+    only routes of these GTFS route_types (strings); empty, every route.
+
+    trip_keys: keys `trains` and `train_routes` by trip_id, a trip's own shape being
+    its line, with no choosing among a number's lines (NSW TrainLink: no fix over
+    1 km from its own trip's line, 35,028 measured). It adds `trip_stops` (trip_id ->
+    [[sequence, stop_id, arrival s, departure s], ...], seconds from the GTFS service
+    day, with no row where pickup_type and drop_off_type are both 1: no rider stops
+    there, as at NSW's border stops) and `trip_numbers` (trip_id -> route_short_name),
+    and `stop_names` become the parent station's where there is one."""
     z = zipfile.ZipFile(io.BytesIO(zip_bytes))
 
     def rows(name):
@@ -267,6 +285,10 @@ def distill(zip_bytes: bytes, simplify_m: float = SIMPLIFY_M,
     stop_names = {(r.get(stop_key) or "").strip(): (r.get("stop_name") or "").strip()
                   for r in rows("stops.txt")
                   if (r.get("stop_name") or "").strip() and (r.get(stop_key) or "").strip()}
+    if trip_keys:
+        parent = {(r.get(stop_key) or "").strip(): (r.get("parent_station") or "").strip()
+                  for r in rows("stops.txt")}
+        stop_names = {s: stop_names.get(parent.get(s) or "") or n for s, n in stop_names.items()}
     # A train number's route, for its line name and its look (VIA: the
     # route decides the band and the corridor's lateness; 2026-10-14). Added
     # without bumping GEOMETRY_VERSION, as stop_names was.
@@ -277,6 +299,11 @@ def distill(zip_bytes: bytes, simplify_m: float = SIMPLIFY_M,
                        for r in rows("routes.txt")}
     trains: dict[str, set] = {}
     train_routes: dict[str, str] = {}
+    trip_numbers: dict[str, str] = {}
+    route_short = {}
+    if trip_keys and "routes.txt" in z.namelist():
+        route_short = {(r.get("route_id") or "").strip(): (r.get("route_short_name") or "").strip()
+                       for r in rows("routes.txt")}
     route_type = {}
     if route_types and "routes.txt" in z.namelist():
         route_type = {(r.get("route_id") or "").strip(): (r.get("route_type") or "").strip()
@@ -299,7 +326,14 @@ def distill(zip_bytes: bytes, simplify_m: float = SIMPLIFY_M,
                 if num and route:
                     train_routes.setdefault(dated_key(num, iso), route)
             continue
-        num, sid = (r.get("trip_short_name") or "").strip(), (r.get("shape_id") or "").strip()
+        if trip_keys:
+            num = (r.get("trip_id") or "").strip()
+            short = route_short.get((r.get("route_id") or "").strip())
+            if num and short:
+                trip_numbers[num] = short
+        else:
+            num = (r.get("trip_short_name") or "").strip()
+        sid = (r.get("shape_id") or "").strip()
         if num and sid:
             trains.setdefault(num, set()).add(sid)
         route = route_names.get((r.get("route_id") or "").strip())
@@ -328,6 +362,19 @@ def distill(zip_bytes: bytes, simplify_m: float = SIMPLIFY_M,
            "train_routes": train_routes, "shapes": shapes}
     if dated_until is not None:
         out["dated_until"] = dated_until
+    if trip_keys:
+        trip_rows: dict[str, list] = {}
+        for r in rows("stop_times.txt"):
+            trip = (r.get("trip_id") or "").strip()
+            if trip not in out["trains"]:
+                continue
+            if (r.get("pickup_type") or "").strip() == "1" and (r.get("drop_off_type") or "").strip() == "1":
+                continue
+            trip_rows.setdefault(trip, []).append(
+                [int(r["stop_sequence"]), (r.get("stop_id") or "").strip(),
+                 _seconds(r.get("arrival_time")), _seconds(r.get("departure_time"))])
+        out["trip_stops"] = {k: sorted(v, key=lambda x: x[0]) for k, v in trip_rows.items()}
+        out["trip_numbers"] = {k: v for k, v in trip_numbers.items() if k in out["trains"]}
     return out
 
 

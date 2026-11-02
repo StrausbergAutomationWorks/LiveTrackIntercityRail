@@ -16,6 +16,7 @@ the railroads it shows, or by Amtraker. It is original work, MIT-licensed.
 | Railroad | Area | Source | Key needed | Terms |
 |---|---|---|---|---|
 | Amtrak | United States, and its routes into Canada | [Amtraker](https://amtraker.com), a community API relaying Amtrak's own train tracking | No | ODC-By v1.0, attribution required: see [amtraker.com](https://amtraker.com) |
+| NSW TrainLink, regional trains | New South Wales, and its routes into Queensland, Victoria and the ACT | [Transport for NSW](https://opendata.transport.nsw.gov.au/) | Yes, your own, free | CC BY 4.0, Transport for NSW attributed: see [its data licence](https://opendata.transport.nsw.gov.au/datalicence) |
 
 Read each source's terms before you use its data; they bind you, as the
 person receiving it. Amtraker's attribution travels with every entity this
@@ -24,7 +25,7 @@ integration creates, so it appears wherever a card shows entity attribution.
 ## Setup
 
 Settings → Devices & services → Add integration → **Live Track Intercity
-Rail**. Choose a region, then a railroad. Options: the poll interval (default
+Rail**. Choose a region, then a railroad, and enter your key if it needs one. Options: the poll interval (default
 30 s). The source is read once per interval however many Live Track
 integrations that use Amtraker are installed.
 

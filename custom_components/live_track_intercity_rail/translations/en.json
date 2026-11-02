@@ -14,11 +14,30 @@
         "data": {
           "operator": "Railroad"
         }
+      },
+      "key": {
+        "title": "Your API key",
+        "description": "{name} needs your own key, free from {url}. It stays in this entry and goes only to that source.",
+        "data": {
+          "api_key": "API key"
+        }
+      },
+      "reauth_confirm": {
+        "title": "{name}: a new API key",
+        "description": "The source has been refusing the key for ten minutes. Enter a key from {url}.",
+        "data": {
+          "api_key": "API key"
+        }
       }
+    },
+    "error": {
+      "invalid_key": "The source refused that key.",
+      "cannot_connect": "The source did not answer. Try again in a minute."
     },
     "abort": {
       "already_configured": "This railroad is already set up.",
-      "all_configured": "Every supported railroad is already set up."
+      "all_configured": "Every supported railroad is already set up.",
+      "reauth_successful": "The new key works."
     }
   },
   "options": {
