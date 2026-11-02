@@ -503,6 +503,92 @@ class Held(unittest.TestCase):
         self.assertEqual(snap.stop_codes["8605-20"], "B")
 
 
+OTHER = "01-GEL--1-T0-8701"
+
+
+class FrozenFeed(unittest.TestCase):
+    """Every train stopping at once: the rows count as no row, by the feed and not by a clock."""
+
+    def two(self, a, b):
+        return positions((TRIP, START, -37.4, 145.0, a), (OTHER, START, -38.0, 144.5, b))
+
+    def start(self):
+        r = rt()
+        self.t0 = T(10, 30)
+        r.parse(self.two(self.t0, self.t0), None, self.t0 + 5, GEO)
+        return r
+
+    def test_every_fix_old_is_frozen(self):
+        snap = self.start().parse(self.two(self.t0, self.t0), None, self.t0 + 181, GEO)
+        self.assertEqual(snap.skipped, {"feed_frozen": 1})
+        e = snap.extras["8605-20"]
+        self.assertIn(HELD, e)
+        self.assertEqual(e[base.TIMED_AFTER_KEY], 120.0)
+        self.assertEqual(len(snap.observations), 2)
+
+    def test_at_180_s_not_yet(self):
+        snap = self.start().parse(self.two(self.t0, self.t0), None, self.t0 + 180, GEO)
+        self.assertEqual(snap.skipped, {})
+        self.assertNotIn(HELD, snap.extras["8605-20"])
+
+    def test_the_newest_fix_decides(self):
+        snap = self.start().parse(self.two(self.t0, self.t0 + 100), None, self.t0 + 200, GEO)
+        self.assertEqual(snap.skipped, {})
+        self.assertNotIn(HELD, snap.extras["8605-20"])
+
+    def test_one_row_is_not_a_feed(self):
+        r = rt()
+        t0 = T(10, 30)
+        r.parse(row(ts=t0), None, t0 + 5, GEO)
+        snap = r.parse(row(ts=t0), None, t0 + 300, GEO)
+        self.assertEqual(snap.skipped, {})
+        self.assertNotIn(HELD, snap.extras["8605-20"])
+
+    def test_a_row_with_no_time_does_not_vote(self):
+        f = positions((TRIP, START, -37.4, 145.0, T(10, 30)), (OTHER, START, -38.0, 144.5, None))
+        self.assertFalse(src.VLineRealtime._feed_frozen(f, T(10, 40)))
+
+    def test_a_row_with_no_position_does_not_vote(self):
+        f = positions((TRIP, START, -37.4, 145.0, T(10, 30)), (OTHER, START, None, None, T(10, 40)))
+        self.assertFalse(src.VLineRealtime._feed_frozen(f, T(10, 40)))
+        g = positions((TRIP, START, -37.4, 145.0, T(10, 30)), (OTHER, START, -38.0, 144.5, T(10, 30)), ("01-ABY--1-T0-8607", START, None, None, T(10, 40)))
+        self.assertTrue(src.VLineRealtime._feed_frozen(g, T(10, 40)))
+
+    def test_empty_is_not_frozen(self):
+        self.assertFalse(src.VLineRealtime._feed_frozen(empty(), T(10, 40)))
+
+    def test_no_stall_is_said_of_a_frozen_train(self):
+        r = rt()
+        t0 = T(10, 0)
+        r.parse(self.two(t0, t0), None, t0 + 5, GEO)
+        r.parse(self.two(t0 + 500, t0 + 500), None, t0 + 505, GEO)
+        snap = r.parse(self.two(t0 + 500, t0 + 500), None, t0 + 700, GEO)
+        self.assertNotIn("stalled", snap.extras["8605-20"])
+
+    def test_it_lifts_when_a_new_fix_comes(self):
+        r = self.start()
+        r.parse(self.two(self.t0, self.t0), None, self.t0 + 200, GEO)
+        snap = r.parse(self.two(self.t0, self.t0 + 205), None, self.t0 + 210, GEO)
+        self.assertEqual(snap.skipped, {})
+        self.assertNotIn(base.TIMED_AFTER_KEY, snap.extras["8605-20"])
+
+    def test_first_sight_and_finished_are_as_before(self):
+        snap = rt().parse(self.two(T(10, 30), T(10, 30)), None, T(10, 40), GEO)
+        self.assertEqual(snap.skipped, {"feed_frozen": 1, "stale_first_sight": 2})
+
+    def test_a_frozen_row_is_timed_through_the_estimate(self):
+        op = operators.OPERATORS["vline"]
+        r, f, p = rt(), Fleet(**dict(op.fleet)), geometry.Projector(GEO)
+        t0 = T(10, 30)
+        path_through(r, f, p, op, self.two(t0 - 60, t0 - 60), None, t0 - 55)
+        rec, _ = path_through(r, f, p, op, self.two(t0, t0), None, t0 + 5)
+        before = rec["latitude"]
+        path_through(r, f, p, op, self.two(t0, t0), None, t0 + 170)
+        rec, snap = path_through(r, f, p, op, self.two(t0, t0), None, T(11, 0))
+        self.assertAlmostEqual(rec["latitude"], -37.0, places=3)
+        self.assertGreater(rec["latitude"], before)
+
+
 class Stalled(unittest.TestCase):
     """Decision 7's rule, tfnsw's code; here, that it is not said of a train nobody can see."""
 
@@ -892,8 +978,8 @@ class OperatorSettings(unittest.TestCase):
                 self.assertFalse(op.gtfs_stream, op.id)
 
     def test_constants(self):
-        self.assertEqual((src.MAX_FIRST_AGE_S, src.FINISHED_AGE_S, src.TIMED_AFTER_S, src.MAX_FIX_MS, src.CONFIRM_S, src.UPDATES_GONE_S, src.ROW_GONE_TIMED_S),
-                         (300.0, 300.0, 600.0, 70.0, 1800.0, 180.0, 120.0))
+        self.assertEqual((src.MAX_FIRST_AGE_S, src.FINISHED_AGE_S, src.TIMED_AFTER_S, src.MAX_FIX_MS, src.CONFIRM_S, src.UPDATES_GONE_S, src.ROW_GONE_TIMED_S, src.FROZEN_FEED_S, src.FROZEN_FEED_ROWS),
+                         (300.0, 300.0, 600.0, 70.0, 1800.0, 180.0, 120.0, 180.0, 2))
 
     def test_entity_key_goes_to_the_map_only_as_allowed(self):
         self.assertIn("route_code", base.EXTRA_KEYS)

@@ -23,6 +23,14 @@ report on the train once its row has ended, only on these hidden stretches (INFE
 running, strongly: section 4). The state is in memory: after a restart these trains are gone until
 their next run.
 
+A FROZEN FEED COUNTS AS NO ROW (Lee 2026-11-02 14:03). The first midnight on the box: a frozen row
+stood at its next stop, then raced at 10 minutes (8817, 176 km/h for five minutes). Timing every
+stale row sooner is wrong: at 300 s a real stale fix, 300-600 s old, went from p50 1,324 m to 2,406
+(bin\\ltir_vl_t_show.txt). A freeze can be told without a clock, every train stopping at once: when
+the newest fix in the whole feed is over FROZEN_FEED_S old with FROZEN_FEED_ROWS or more rows. In 67.6
+hours, both midnights and two single polls by day (bin\\ltir_vl_t_feedwide.txt); every other spell
+had one row, a lone train or the frozen last Geelong run.
+
 IDENTITY "<service number>-<day of start date>": 1,151 runs, no collisions; the trip id repeats
 across dates (377). NOT the vehicle: 46 trips had two, 50 an empty one, and 3 sat on two trips at
 once. LABEL the service number (decision 10): the last four digits of trip_id on 6,988 of 6,988,
@@ -74,6 +82,8 @@ CONFIRM_S = 1800.0
 # The answers in the capture are about 60 s apart.
 UPDATES_GONE_S = 180.0
 ROW_GONE_TIMED_S = 120.0
+FROZEN_FEED_S = 180.0
+FROZEN_FEED_ROWS = 2
 CANCELED = 3
 
 
@@ -200,6 +210,17 @@ class VLineRealtime(TfnswRealtime):
                 return True
         return False
 
+    @staticmethod
+    def _feed_frozen(positions: Any, now: float) -> bool:
+        """Every dated fix in the feed old at once, with at least FROZEN_FEED_ROWS of them."""
+        stamps = []
+        for ent in positions.entity:
+            if ent.HasField("vehicle") and position_of(ent.vehicle) is not None:
+                when = vehicle_time(ent.vehicle)
+                if when is not None:
+                    stamps.append(when.timestamp())
+        return len(stamps) >= FROZEN_FEED_ROWS and now - max(stamps) > FROZEN_FEED_S
+
     def _ended(self, run: _Run, update: Any, now: float) -> bool:
         """A run with no row: whether it stops being reported."""
         if run.when is None:
@@ -273,6 +294,9 @@ class VLineRealtime(TfnswRealtime):
                 trip = ent.trip_update.trip
                 by_run.setdefault((trip.trip_id.strip(), trip.start_date.strip()), ent.trip_update)
 
+        frozen = self._feed_frozen(positions, now)
+        if frozen:
+            skip("feed_frozen")
         seen: set[str] = set()
         for ent in positions.entity:
             if not ent.HasField("vehicle"):
@@ -314,7 +338,7 @@ class VLineRealtime(TfnswRealtime):
                 skip("fix_refused")
             self._runs[key] = run
             seen.add(key)
-            self._report(snap, key, run, now, geo, held=False)
+            self._report(snap, key, run, now, geo, held=frozen)
 
         for key, run in list(self._runs.items()):
             if key in seen:
