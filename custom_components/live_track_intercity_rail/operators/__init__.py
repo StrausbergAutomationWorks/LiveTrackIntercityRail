@@ -15,20 +15,24 @@ reads VIA's own train-status JSON, the third (2026-10-14, SSOT 8.3). VR
 (2026-10-14, SSOT 8.4, backlog 287). NSW TrainLink reads Transport for NSW's feed
 through the shared client, the fifth (2026-11-02, SSOT 8.6, backlog 319). V/Line reads
 Transport Victoria's feeds through the shared client, the sixth (2026-11-02, SSOT 8.5).
+Renfe's regional trains in Catalonia read Renfe's GTFS-Realtime through the shared client,
+the seventh (2026-11-05, SSOT 8.7, backlog 294).
 """
 
 from __future__ import annotations
 
 from .amtrak import AMTRAK
-from .base import (REGIONS, SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_DIGITRAFFIC, SOURCE_TFNSW,
-                   SOURCE_TRANSPORT_VIC, SOURCE_VIA, SOURCES, Operator)
+from .base import (REGIONS, SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_DIGITRAFFIC, SOURCE_RENFE,
+                   SOURCE_TFNSW, SOURCE_TRANSPORT_VIC, SOURCE_VIA, SOURCES, Operator)
 from .brightline import BRIGHTLINE
 from .nsw_trainlink import NSW_TRAINLINK
+from .renfe_regionals import RENFE_REGIONALS
 from .via_rail import VIA_RAIL
 from .vline import VLINE
 from .vr import VR
 
-OPERATORS: dict[str, Operator] = {op.id: op for op in (AMTRAK, BRIGHTLINE, NSW_TRAINLINK, VIA_RAIL, VLINE, VR)}
+OPERATORS: dict[str, Operator] = {op.id: op for op in (AMTRAK, BRIGHTLINE, NSW_TRAINLINK, RENFE_REGIONALS,
+                                                       VIA_RAIL, VLINE, VR)}
 
 
 def regions_in_use() -> dict[str, str]:
@@ -48,5 +52,5 @@ def operators_in(region: str) -> list[Operator]:
 
 
 __all__ = ["OPERATORS", "REGIONS", "SOURCES", "SOURCE_AMTRAKER", "SOURCE_BRIGHTLINE_RT", "SOURCE_DIGITRAFFIC",
-           "SOURCE_TFNSW", "SOURCE_TRANSPORT_VIC", "SOURCE_VIA", "Operator",
+           "SOURCE_RENFE", "SOURCE_TFNSW", "SOURCE_TRANSPORT_VIC", "SOURCE_VIA", "Operator",
            "operators_in", "regions_in_use"]

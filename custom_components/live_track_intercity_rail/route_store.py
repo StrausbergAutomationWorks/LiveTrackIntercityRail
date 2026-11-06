@@ -15,7 +15,8 @@ NSW TrainLink; saw_livetrack.tfnsw keeps it on disk, checked daily) is distilled
 the client's version changes, cut to its route_types first: the whole zip is 40 MB, its
 regional trains 2.8 MB (DESIGN_319, section 3). V/Line's folder is read from disk one shape at
 a time, the whole publication with its lines and stop tables merged (Operator.gtfs_stream,
-geometry.distill_stream), and running trains go on across a new copy (Projector.adopt).
+geometry.distill_stream), and running trains go on across a new copy (Projector.adopt). A view
+that distills its own (distill_geometry(); Renfe's regionals, sources/renfe.py) is asked for it.
 
 Refreshed every Operator.gtfs_refresh_s (a week by default), or as soon as the
 cached feed's last valid date has passed (Amtrak's feed is rebuilt daily and
@@ -178,6 +179,14 @@ class RouteStore:
         Blocking."""
         client = self.static_client
         version = client.static_version()
+        distill_own = getattr(client, "distill_geometry", None)
+        if distill_own is not None:
+            # The view cuts and distills its own (sources/renfe.py: Renfe's zip is held in
+            # memory by the client, every network, padded fields).
+            d = distill_own()
+            if d is not None:
+                d["source_version"] = version
+            return d
         path = client.static_path()
         if path is None:
             return None

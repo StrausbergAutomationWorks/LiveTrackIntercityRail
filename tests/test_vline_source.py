@@ -974,7 +974,9 @@ class OperatorSettings(unittest.TestCase):
     def test_the_others_keep_their_horizon_and_their_distill(self):
         for op in operators.OPERATORS.values():
             if op.id != "vline":
-                self.assertIsNone(op.timed_after_s, op.id)
+                # Renfe's regionals have their own: a station's departure, else 120 s (Intercity SSOT 8.7).
+                if op.id != "renfe_regionals_catalunya":
+                    self.assertIsNone(op.timed_after_s, op.id)
                 self.assertFalse(op.gtfs_stream, op.id)
 
     def test_constants(self):

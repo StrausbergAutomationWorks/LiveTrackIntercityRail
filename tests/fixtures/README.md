@@ -29,3 +29,21 @@ on the maintainer's disk.
 no `feed_info.txt`) distilled by `geometry.distill`, whole: 6 stops, 107
 train numbers, 2 route lines. Rebuilt with `bin\ltir_bl_fixture.py`.
 Source: Brightline. Brightline publishes no terms for these feeds.
+
+`renfe_regionals_geometry_20261106.json.gz`: Renfe's GTFS timetable
+(`https://ssl.renfe.com/ftransit/Fichero_CER_FOMENTO/fomento_transit.zip`,
+fetched 2026-11-06 04:0x UTC) cut and distilled by `sources/renfe.py`'s
+`StaticView.distill_geometry` for Spain's date 2026-11-06: network 51's rail
+trips on R11-R17 running 2026-11-05 to 11-07, 401 trips, 12 route lines, 81
+stops, with each trip's date and each line's colour. Rebuilt with
+`bin\es294_fixture.py`.
+
+`renfe_rt_20261106.json.gz`: Renfe's GTFS-Realtime as the shared client
+`saw_livetrack.renfe` hands it to the `intercity` consumer (R11-R17 only,
+cleaned), polled every 30 s on 2026-11-06 from 04:2x UTC (05:2x in Spain,
+the first departures of the day), each poll's two FeedMessages serialized,
+base64. Rebuilt with `bin\es294_bundle.py` from the capture
+(`bin\es294_capture.py`), which stays on the maintainer's disk.
+
+Data: Renfe (data.renfe.com), licensed under
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).

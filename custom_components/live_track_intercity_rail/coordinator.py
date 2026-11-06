@@ -35,6 +35,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from saw_livetrack import AmtrakerError, RateLimited
 from saw_livetrack.digitraffic_rail import DigitrafficError
 from saw_livetrack.gtfs import Fleet, decode
+from saw_livetrack.renfe import RenfeError
 from saw_livetrack.tfnsw import AuthRefused, KeyedError
 
 from .fetch import read_capped
@@ -45,14 +46,15 @@ from .const import (
     USER_AGENT,
 )
 from . import projection
-from .operators import (SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_DIGITRAFFIC, SOURCE_TFNSW,
-                        SOURCE_TRANSPORT_VIC, SOURCE_VIA, Operator)
+from .operators import (SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_DIGITRAFFIC, SOURCE_RENFE,
+                        SOURCE_TFNSW, SOURCE_TRANSPORT_VIC, SOURCE_VIA, Operator)
 from .route_store import RouteStore
 from .shared_coordinator import get_shared_client, release_shared_client
 from .shared_digitraffic_rail import get_shared_rail_client, release_shared_rail_client
+from .shared_renfe import get_shared_renfe_client, release_shared_renfe_client
 from .shared_tfnsw import get_shared_tfnsw_client, release_shared_tfnsw_client
 from .shared_transport_vic import get_shared_transport_vic_client, release_shared_transport_vic_client
-from .sources import amtraker, tfnsw, vline
+from .sources import amtraker, renfe, tfnsw, vline
 from .sources.base import EXTRA_KEYS, Snapshot, hold_last, trains_in_service
 from .sources.brightline_rt import BrightlineRealtime
 from .sources.via_rail import ViaRail
@@ -101,6 +103,9 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._tfnsw: tfnsw.TfnswRealtime | None = None
         self._vic_client = None
         self._vline: vline.VLineRealtime | None = None
+        self._renfe_client = None
+        self._renfe_view: renfe.StaticView | None = None
+        self._renfe: renfe.RenfeRealtime | None = None
         self._session = async_get_clientsession(hass)
         if op.source == SOURCE_AMTRAKER:
             # On the event loop, as shared_coordinator requires.
@@ -134,6 +139,15 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._vic_client = get_shared_transport_vic_client(hass, consumer, entry.data[CONF_API_KEY])
             self._vline = vline.VLineRealtime()
             self.routes.static_client = vline.StaticView(self._vic_client, consumer)
+        elif op.source == SOURCE_RENFE:
+            # On the event loop, as shared_renfe requires. One poller for every Live Track
+            # integration on Renfe's feed (Commuter Rail draws its commuter lines); this
+            # entry registers what it draws. Keyless; the timetable is the client's, in
+            # memory, cut here (sources/renfe.py).
+            self._renfe_client = get_shared_renfe_client(hass, op.source_options["consumer"])
+            self._renfe_view = renfe.StaticView(self._renfe_client)
+            self._renfe = renfe.RenfeRealtime(op.source_options.get("hub", ""))
+            self.routes.static_client = self._renfe_view
         else:  # pragma: no cover - an operator naming a source not built
             raise ValueError(f"unknown source {op.source!r} for {op.id}")
 
@@ -153,6 +167,10 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._vic_client = None
             self.routes.static_client = None
             release_shared_transport_vic_client(self.hass, self.operator.source_options["consumer"])
+        if self._renfe_client is not None:
+            self._renfe_client = None
+            self.routes.static_client = None
+            release_shared_renfe_client(self.hass, self.operator.source_options["consumer"])
 
     async def _get_rt(self, url: str) -> bytes | None:
         """One whole file, or None on any failure; the reason is kept.
@@ -261,8 +279,26 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return await self.hass.async_add_executor_job(
             self._vline.parse, positions, updates, time.time(), projector.geometry if projector else {})
 
+    async def _fetch_renfe(self) -> Snapshot | None:
+        """This railroad's two feeds from the shared Renfe client, in the executor
+        (synchronous urllib). A 429 or a failed file is ridden out by hold_last."""
+        try:
+            positions, updates, version = await self.hass.async_add_executor_job(
+                renfe.read, self._renfe_client, self.operator.source_options["consumer"],
+                self._renfe_view)
+        except RenfeError as err:
+            self._last_reason = f"{type(err).__name__}: {err}"[:200]
+            _LOGGER.debug("%s fetch failed: %s", self.operator.id, self._last_reason)
+            return None
+        self.routes.note_static(version)
+        projector = self.routes.projector
+        return await self.hass.async_add_executor_job(
+            self._renfe.parse, positions, updates, time.time(), projector.geometry if projector else {})
+
     async def _fetch(self) -> Snapshot | None:
         op = self.operator
+        if self._renfe is not None:
+            return await self._fetch_renfe()
         if self._vline is not None:
             return await self._fetch_vline()
         if self._tfnsw is not None:

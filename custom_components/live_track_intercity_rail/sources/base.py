@@ -31,9 +31,13 @@ from saw_livetrack.gtfs.realtime import Obs  # noqa: F401  (re-exported)
 # `stalled` (D4c): a source that decides it itself (sources/tfnsw.py, rule C); Fleet
 # decides it only with a timetable it is not given here.
 # `route_code` (V/Line, Intercity SSOT 8.5): the line, for the operator's lateness only.
+# `route_color` and `toward_hub` (Renfe's regionals, Intercity SSOT 8.7): the line's colour
+# from the timetable and whether the trip runs to its hub (True), from it (False); for the
+# operator's look only.
 EXTRA_KEYS = ("line_name", "speed_kmh", "heading_octant", "destination", "marker_status",
-              "departure_date", "santa_express", "stalled", "route_code")
-RECORD_ONLY_KEYS = ("destination", "departure_date", "santa_express", "route_code")
+              "departure_date", "santa_express", "stalled", "route_code", "route_color", "toward_hub")
+RECORD_ONLY_KEYS = ("destination", "departure_date", "santa_express", "route_code", "route_color",
+                    "toward_hub")
 # In an adapter's extras only, never copied to the record (not in EXTRA_KEYS):
 # the speed a HELD fix was reported with, for the along-route estimate
 # (projection.py). VIA holds a train's last fix while it has no position. Its presence

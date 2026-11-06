@@ -27,8 +27,11 @@ SOURCE_TFNSW = "tfnsw"
 # Transport Victoria's V/Line feeds, through the shared client
 # saw_livetrack.transport_vic (sources/vline.py).
 SOURCE_TRANSPORT_VIC = "transport_vic"
+# Renfe's GTFS-Realtime (Spain), through the shared client saw_livetrack.renfe
+# (sources/renfe.py).
+SOURCE_RENFE = "renfe"
 SOURCES = (SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_VIA, SOURCE_DIGITRAFFIC, SOURCE_TFNSW,
-           SOURCE_TRANSPORT_VIC)
+           SOURCE_TRANSPORT_VIC, SOURCE_RENFE)
 
 
 @dataclass(frozen=True)
@@ -155,6 +158,7 @@ class Operator:
 REGIONS: dict[str, str] = {
     "AU": "Australia",
     "CA": "Canada",
+    "ES": "Spain",
     "FI": "Finland",
     "US": "United States",
 }
