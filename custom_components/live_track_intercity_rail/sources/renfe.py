@@ -319,6 +319,13 @@ class RenfeRealtime:
         self._updates_t = 0.0
         self._zone = None
         self._origins: dict[str, float | None] = {}
+        # Every train number in the last feed parsed, published or not: what Renfe (Spain) leaves to this
+        # entry (sources/renfe_ld.py Handoff; Lee 2026-11-06, "Live hand-off").
+        self.last_numbers: frozenset[str] = frozenset()
+        # The train numbers of the timetable last parsed with ("12 h + timetable", Lee 2026-11-06): owned from the
+        # start, before the commuter feed first lists a train.
+        self.timetable_numbers: frozenset[str] = frozenset()
+        self._numbers_of: Any = None
 
     def _origin(self, date: str) -> float | None:
         """The GTFS service day's origin as an epoch: local noon less 12 hours."""
@@ -390,6 +397,7 @@ class RenfeRealtime:
         names = geo.get("stop_names") or {}
         lines = geo.get("trip_numbers") or {}
         colours = geo.get("line_colours") or {}
+        numbers: set[str] = set()
         for ent in positions.entity:
             if not ent.HasField("vehicle"):
                 continue
@@ -400,6 +408,9 @@ class RenfeRealtime:
             if not trip_number or not label:
                 skip("no_number")
                 continue
+            # The label's number, the one the long-distance feed carries (5109V30530R15 runs there as 15030:
+            # 59 of 61 regional labels seen live matched its numbers, bin\\es324_reg3.txt).
+            numbers.add(label)
             date = dates.get(trip_id)
             key = identity(trip_number, date)
             pos = position_of(v)
@@ -463,4 +474,9 @@ class RenfeRealtime:
                 snap.trip_delays[key] = delay
         for k in [k for k, t in self._trusted.items() if now - t[3] > FORGET_S]:
             self._trusted.pop(k, None)
+        self.last_numbers = frozenset(numbers)
+        if geometry is not self._numbers_of:
+            self._numbers_of = geometry
+            self.timetable_numbers = frozenset(
+                n for n in (parse_trip_id(t)[1] for t in (geo.get("trip_stops") or ())) if n)
         return snap

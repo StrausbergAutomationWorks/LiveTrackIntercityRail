@@ -47,14 +47,14 @@ from .const import (
 )
 from . import projection
 from .operators import (SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_DIGITRAFFIC, SOURCE_RENFE,
-                        SOURCE_TFNSW, SOURCE_TRANSPORT_VIC, SOURCE_VIA, Operator)
+                        SOURCE_RENFE_LD, SOURCE_TFNSW, SOURCE_TRANSPORT_VIC, SOURCE_VIA, Operator)
 from .route_store import RouteStore
 from .shared_coordinator import get_shared_client, release_shared_client
 from .shared_digitraffic_rail import get_shared_rail_client, release_shared_rail_client
 from .shared_renfe import get_shared_renfe_client, release_shared_renfe_client
 from .shared_tfnsw import get_shared_tfnsw_client, release_shared_tfnsw_client
 from .shared_transport_vic import get_shared_transport_vic_client, release_shared_transport_vic_client
-from .sources import amtraker, renfe, tfnsw, vline
+from .sources import amtraker, renfe, renfe_ld, tfnsw, vline
 from .sources.base import EXTRA_KEYS, Snapshot, hold_last, trains_in_service
 from .sources.brightline_rt import BrightlineRealtime
 from .sources.via_rail import ViaRail
@@ -106,6 +106,10 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._renfe_client = None
         self._renfe_view: renfe.StaticView | None = None
         self._renfe: renfe.RenfeRealtime | None = None
+        self._ld_client: renfe_ld.RenfeLdClient | None = None
+        self._ld: renfe_ld.RenfeLdRealtime | None = None
+        # Renfe's two operators share which train numbers Renfe Regionals (Catalunya) owns (Lee 2026-11-06).
+        self._handoff: renfe_ld.Handoff | None = None
         self._session = async_get_clientsession(hass)
         if op.source == SOURCE_AMTRAKER:
             # On the event loop, as shared_coordinator requires.
@@ -148,6 +152,15 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._renfe_view = renfe.StaticView(self._renfe_client)
             self._renfe = renfe.RenfeRealtime(op.source_options.get("hub", ""))
             self.routes.static_client = self._renfe_view
+            self._handoff = renfe_ld.handoff_for(hass.data)
+        elif op.source == SOURCE_RENFE_LD:
+            # This integration's own client for Renfe's long-distance feed (the shared one polls the commuter
+            # feed only), one per entry; keyless. Its lines are shipped (sources/renfe_ld_lines.py), the
+            # timetable is the client's, in memory, distilled here.
+            self._ld_client = renfe_ld.RenfeLdClient()
+            self._ld = renfe_ld.RenfeLdRealtime()
+            self.routes.static_client = renfe_ld.StaticView(self._ld_client)
+            self._handoff = renfe_ld.handoff_for(hass.data)
         else:  # pragma: no cover - an operator naming a source not built
             raise ValueError(f"unknown source {op.source!r} for {op.id}")
 
@@ -171,6 +184,12 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._renfe_client = None
             self.routes.static_client = None
             release_shared_renfe_client(self.hass, self.operator.source_options["consumer"])
+            if self._handoff is not None:
+                # Renfe Regionals is going: Renfe (Spain) draws R11-R17 until it is back.
+                self._handoff.clear()
+        if self._ld_client is not None:
+            self._ld_client = None
+            self.routes.static_client = None
 
     async def _get_rt(self, url: str) -> bytes | None:
         """One whole file, or None on any failure; the reason is kept.
@@ -292,13 +311,36 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return None
         self.routes.note_static(version)
         projector = self.routes.projector
-        return await self.hass.async_add_executor_job(
+        snap = await self.hass.async_add_executor_job(
             self._renfe.parse, positions, updates, time.time(), projector.geometry if projector else {})
+        if snap is not None and self._handoff is not None:
+            self._handoff.note(self._renfe.last_numbers, time.time())
+            self._handoff.set_timetable(self._renfe.timetable_numbers)
+        return snap
+
+    async def _fetch_renfe_ld(self) -> Snapshot | None:
+        """Renfe's long-distance feed from this entry's own client, in the executor (synchronous urllib),
+        less the numbers Renfe Regionals (Catalunya) owns. A 429 or a failed file is ridden out by hold_last."""
+        try:
+            positions, updates, version = await self.hass.async_add_executor_job(
+                renfe_ld.read, self._ld_client, self.routes.static_client)
+        except RenfeError as err:
+            self._last_reason = f"{type(err).__name__}: {err}"[:200]
+            _LOGGER.debug("%s fetch failed: %s", self.operator.id, self._last_reason)
+            return None
+        self.routes.note_static(version)
+        projector = self.routes.projector
+        now = time.time()
+        return await self.hass.async_add_executor_job(
+            self._ld.parse, positions, updates, now, projector.geometry if projector else {},
+            self._handoff.owned(now) if self._handoff is not None else frozenset())
 
     async def _fetch(self) -> Snapshot | None:
         op = self.operator
         if self._renfe is not None:
             return await self._fetch_renfe()
+        if self._ld is not None:
+            return await self._fetch_renfe_ld()
         if self._vline is not None:
             return await self._fetch_vline()
         if self._tfnsw is not None:

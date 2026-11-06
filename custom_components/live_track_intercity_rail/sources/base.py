@@ -34,10 +34,13 @@ from saw_livetrack.gtfs.realtime import Obs  # noqa: F401  (re-exported)
 # `route_color` and `toward_hub` (Renfe's regionals, Intercity SSOT 8.7): the line's colour
 # from the timetable and whether the trip runs to its hub (True), from it (False); for the
 # operator's look only.
+# `service_family` and `trip_km` (Renfe (Spain), Intercity SSOT 8.7): the trip's service in Renfe's timetable
+# ("AVLO"), for the look, and its line's length in km, for its lateness by scheduled distance.
 EXTRA_KEYS = ("line_name", "speed_kmh", "heading_octant", "destination", "marker_status",
-              "departure_date", "santa_express", "stalled", "route_code", "route_color", "toward_hub")
+              "departure_date", "santa_express", "stalled", "route_code", "route_color", "toward_hub",
+              "service_family", "trip_km")
 RECORD_ONLY_KEYS = ("destination", "departure_date", "santa_express", "route_code", "route_color",
-                    "toward_hub")
+                    "toward_hub", "service_family", "trip_km")
 # In an adapter's extras only, never copied to the record (not in EXTRA_KEYS):
 # the speed a HELD fix was reported with, for the along-route estimate
 # (projection.py). VIA holds a train's last fix while it has no position. Its presence

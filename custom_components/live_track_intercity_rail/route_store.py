@@ -97,7 +97,7 @@ class RouteStore:
             return None
         return {k: d.get(k) for k in ("feed_version", "feed_start_date", "feed_end_date",
                                       "fetched_at")} | {
-            "shapes": len(d.get("shapes") or {}), "train_numbers": len(d.get("trains") or {}),
+            "shapes": len(d.get("shapes") or d.get("shape_legs") or {}), "train_numbers": len(d.get("trains") or {}),
             "stops": len(d.get("stops") or {})}
 
     def _stale(self, now: float) -> bool:
@@ -216,7 +216,8 @@ class RouteStore:
                 # Said where someone will see it: until a timetable reads, nothing moves.
                 _LOGGER.warning("%s timetable not read: %s; kept the last copy", op.id, err)
                 return
-            if d is None or not d.get("shapes") or not d.get("trains"):
+            # A line may be stored as legs of shared lines (geometry.line_from_legs; Renfe (Spain)).
+            if d is None or not (d.get("shapes") or d.get("shape_legs")) or not d.get("trains"):
                 _LOGGER.debug("%s timetable had no route lines; kept the last copy", op.id)
                 return
             d["fetched_at"] = now
@@ -224,7 +225,7 @@ class RouteStore:
             await self._hass.async_add_executor_job(self._write, d)
             self._use(d)
             _LOGGER.debug("%s route lines from the shared client: %s shapes, %s trips, version %s",
-                          op.id, len(d["shapes"]), len(d["trains"]), d.get("source_version"))
+                          op.id, len(d.get("shapes") or d.get("shape_legs") or {}), len(d["trains"]), d.get("source_version"))
             return
         async with self._session.get(
             op.gtfs_url, headers={"User-Agent": USER_AGENT, **dict(op.request_headers)},

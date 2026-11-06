@@ -30,8 +30,11 @@ SOURCE_TRANSPORT_VIC = "transport_vic"
 # Renfe's GTFS-Realtime (Spain), through the shared client saw_livetrack.renfe
 # (sources/renfe.py).
 SOURCE_RENFE = "renfe"
+# Renfe's long-distance GTFS-Realtime (AV, LD and MD), through this integration's own client
+# (sources/renfe_ld.py).
+SOURCE_RENFE_LD = "renfe_ld"
 SOURCES = (SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_VIA, SOURCE_DIGITRAFFIC, SOURCE_TFNSW,
-           SOURCE_TRANSPORT_VIC, SOURCE_RENFE)
+           SOURCE_TRANSPORT_VIC, SOURCE_RENFE, SOURCE_RENFE_LD)
 
 
 @dataclass(frozen=True)

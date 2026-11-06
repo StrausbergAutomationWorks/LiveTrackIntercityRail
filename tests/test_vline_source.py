@@ -975,7 +975,7 @@ class OperatorSettings(unittest.TestCase):
         for op in operators.OPERATORS.values():
             if op.id != "vline":
                 # Renfe's regionals have their own: a station's departure, else 120 s (Intercity SSOT 8.7).
-                if op.id != "renfe_regionals_catalunya":
+                if op.id not in ("renfe_regionals_catalunya", "renfe_spain"):
                     self.assertIsNone(op.timed_after_s, op.id)
                 self.assertFalse(op.gtfs_stream, op.id)
 

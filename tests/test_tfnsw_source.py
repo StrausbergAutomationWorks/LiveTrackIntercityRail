@@ -468,7 +468,7 @@ class Operator(unittest.TestCase):
             if op.id not in ("nsw_trainlink", "vline"):
                 self.assertFalse(op.needs_key, op.id)
                 # Renfe's regionals take the timetable from the shared client too (SSOT 8.7).
-                self.assertEqual(op.gtfs_from_source, op.id == "renfe_regionals_catalunya", op.id)
+                self.assertEqual(op.gtfs_from_source, op.id in ("renfe_regionals_catalunya", "renfe_spain"), op.id)
 
 
 class Manifest(unittest.TestCase):

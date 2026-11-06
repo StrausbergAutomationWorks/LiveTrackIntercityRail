@@ -1,0 +1,1281 @@
+{
+ "meta": {
+  "built": "2026-11-06T18:28:33+00:00",
+  "sources": "municipality: OpenStreetMap boundaries (ODbL 1.0); population: Wikidata P1082 (CC0), else OpenStreetMap",
+  "timetable": "av_ld_md_20261105.zip"
+ },
+ "stops": {
+  "01007": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Osuna",
+   "population": 17396,
+   "population_source": "wikidata",
+   "stop": "Osuna",
+   "trips": 13,
+   "wikidata": "Q586018"
+  },
+  "02030": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Antequera",
+   "population": 41849,
+   "population_source": "wikidata",
+   "stop": "Antequera AV",
+   "trips": 14,
+   "wikidata": "Q572041"
+  },
+  "03001": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Mengíbar",
+   "population": 10250,
+   "population_source": "wikidata",
+   "stop": "Mengíbar-Artichuela",
+   "trips": 21,
+   "wikidata": "Q1645553"
+  },
+  "03100": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Jaén",
+   "population": 112235,
+   "population_source": "wikidata",
+   "stop": "Jaén",
+   "trips": 155,
+   "wikidata": "Q15681"
+  },
+  "03213": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Requena",
+   "population": 20982,
+   "population_source": "wikidata",
+   "stop": "Requena-Utiel",
+   "trips": 61,
+   "wikidata": "Q302099"
+  },
+  "03216": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "València",
+   "population": 840792,
+   "population_source": "wikidata",
+   "stop": "València-Joaquín Sorolla",
+   "trips": 74,
+   "wikidata": "Q8818"
+  },
+  "04040": {
+   "admin_level": "8",
+   "as_of": "2025-00-00",
+   "municipality": "Zaragoza",
+   "population": 693091,
+   "population_source": "wikidata",
+   "stop": "Zaragoza Delicias",
+   "trips": 290,
+   "wikidata": "Q10305"
+  },
+  "04307": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Figueres",
+   "population": 49689,
+   "population_source": "wikidata",
+   "serves": "Figueres",
+   "stop": "Figueres-Vilafant",
+   "trips": 165,
+   "wikidata": "Q6839"
+  },
+  "05000": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Granada",
+   "population": 233975,
+   "population_source": "wikidata",
+   "stop": "Granada",
+   "trips": 40,
+   "wikidata": "Q8810"
+  },
+  "05193": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Ribadeo",
+   "population": 10022,
+   "population_source": "wikidata",
+   "stop": "Ribadeo",
+   "trips": 4,
+   "wikidata": "Q824076"
+  },
+  "05451": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Bilbao",
+   "population": 351124,
+   "population_source": "wikidata",
+   "stop": "Bilbao la Concordia",
+   "trips": 8,
+   "wikidata": "Q8692"
+  },
+  "05571": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Llanes",
+   "population": 13486,
+   "population_source": "wikidata",
+   "stop": "Llanes",
+   "trips": 8,
+   "wikidata": "Q503094"
+  },
+  "05778": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "León",
+   "population": 123446,
+   "population_source": "wikidata",
+   "stop": "Feve-León",
+   "trips": 2,
+   "wikidata": "Q15699"
+  },
+  "06006": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Lorca",
+   "population": 98969,
+   "population_source": "wikidata",
+   "stop": "Lorca-Sutullena",
+   "trips": 12,
+   "wikidata": "Q47571"
+  },
+  "07004": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Águilas",
+   "population": 37811,
+   "population_source": "wikidata",
+   "stop": "Águilas",
+   "trips": 9,
+   "wikidata": "Q249941"
+  },
+  "08004": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Segovia",
+   "population": 52375,
+   "population_source": "wikidata",
+   "stop": "Segovia-Guiomar",
+   "trips": 54,
+   "wikidata": "Q15684"
+  },
+  "08223": {
+   "admin_level": "8",
+   "as_of": "2025-00-00",
+   "municipality": "Vigo",
+   "population": 294489,
+   "population_source": "wikidata",
+   "stop": "Vigo Urzaiz",
+   "trips": 124,
+   "wikidata": "Q8745"
+  },
+  "10400": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Ávila",
+   "population": 59107,
+   "population_source": "wikidata",
+   "stop": "Ávila",
+   "trips": 21,
+   "wikidata": "Q15688"
+  },
+  "10500": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Medina del Campo",
+   "population": 20215,
+   "population_source": "wikidata",
+   "stop": "Medina del Campo",
+   "trips": 154,
+   "wikidata": "Q693913"
+  },
+  "10600": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Valladolid",
+   "population": 302614,
+   "population_source": "wikidata",
+   "stop": "Valladolid-Campo Grande",
+   "trips": 363,
+   "wikidata": "Q8356"
+  },
+  "10610": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Valladolid",
+   "population": 302614,
+   "population_source": "wikidata",
+   "stop": "Valladolid Universidad",
+   "trips": 14,
+   "wikidata": "Q8356"
+  },
+  "11000": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Venta de Baños",
+   "population": 6372,
+   "population_source": "wikidata",
+   "stop": "Venta de Baños",
+   "trips": 6,
+   "wikidata": "Q1657213"
+  },
+  "11014": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Burgos",
+   "population": 177402,
+   "population_source": "wikidata",
+   "stop": "Burgos-Rosa Manzano",
+   "trips": 20,
+   "wikidata": "Q9580"
+  },
+  "11200": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Miranda de Ebro",
+   "population": 36622,
+   "population_source": "wikidata",
+   "stop": "Miranda de Ebro",
+   "trips": 111,
+   "wikidata": "Q11994"
+  },
+  "11208": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Vitoria-Gasteiz",
+   "population": 260699,
+   "population_source": "wikidata",
+   "stop": "Vitoria-Gasteiz",
+   "trips": 26,
+   "wikidata": "Q14318"
+  },
+  "11300": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Altsasu / Alsasua",
+   "population": 7717,
+   "population_source": "wikidata",
+   "stop": "Altsasu",
+   "trips": 24,
+   "wikidata": "Q1635681"
+  },
+  "11511": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Donostia / San Sebastián",
+   "population": 189866,
+   "population_source": "wikidata",
+   "stop": "San Sebastián-Donostia",
+   "trips": 28,
+   "wikidata": "Q10313"
+  },
+  "11600": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Irun",
+   "population": 63835,
+   "population_source": "wikidata",
+   "stop": "Irun",
+   "trips": 14,
+   "wikidata": "Q200201"
+  },
+  "12006": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Cercedilla",
+   "population": 7772,
+   "population_source": "wikidata",
+   "stop": "Cercedilla",
+   "trips": 10,
+   "wikidata": "Q1646215"
+  },
+  "12100": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Segovia",
+   "population": 52375,
+   "population_source": "wikidata",
+   "stop": "Segovia",
+   "trips": 10,
+   "wikidata": "Q15684"
+  },
+  "13200": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Bilbao",
+   "population": 351124,
+   "population_source": "wikidata",
+   "stop": "Bilbao-Intermod. Abando Indalecio Prieto",
+   "trips": 32,
+   "wikidata": "Q8692"
+  },
+  "14100": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Palencia",
+   "population": 77466,
+   "population_source": "wikidata",
+   "stop": "Palencia",
+   "trips": 107,
+   "wikidata": "Q8378"
+  },
+  "14223": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Santander",
+   "population": 175425,
+   "population_source": "wikidata",
+   "stop": "Santander",
+   "trips": 39,
+   "wikidata": "Q12233"
+  },
+  "15100": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "León",
+   "population": 123446,
+   "population_source": "wikidata",
+   "stop": "León",
+   "trips": 102,
+   "wikidata": "Q15699"
+  },
+  "15211": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Oviedo",
+   "population": 223968,
+   "population_source": "wikidata",
+   "stop": "Oviedo",
+   "trips": 16,
+   "wikidata": "Q14317"
+  },
+  "15410": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Gijón",
+   "population": 269894,
+   "population_source": "wikidata",
+   "stop": "Gijón-Sanz Crespo",
+   "trips": 43,
+   "wikidata": "Q12273"
+  },
+  "20200": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Ponferrada",
+   "population": 63186,
+   "population_source": "wikidata",
+   "stop": "Ponferrada",
+   "trips": 31,
+   "wikidata": "Q12164"
+  },
+  "20300": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Monforte de Lemos",
+   "population": 18933,
+   "population_source": "wikidata",
+   "stop": "Monforte de Lemos",
+   "trips": 2,
+   "wikidata": "Q818341"
+  },
+  "20309": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Lugo",
+   "population": 100143,
+   "population_source": "wikidata",
+   "stop": "Lugo",
+   "trips": 22,
+   "wikidata": "Q11125"
+  },
+  "21010": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Ferrol",
+   "population": 64367,
+   "population_source": "wikidata",
+   "stop": "Ferrol",
+   "trips": 28,
+   "wikidata": "Q485329"
+  },
+  "22100": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Ourense",
+   "population": 105769,
+   "population_source": "wikidata",
+   "stop": "Ourense",
+   "trips": 184,
+   "wikidata": "Q99151"
+  },
+  "22308": {
+   "admin_level": "8",
+   "as_of": "2025-00-00",
+   "municipality": "Vigo",
+   "population": 294489,
+   "population_source": "wikidata",
+   "stop": "Vigo-Guixar",
+   "trips": 58,
+   "wikidata": "Q8745"
+  },
+  "23008": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Vilagarcía de Arousa",
+   "population": 37975,
+   "population_source": "wikidata",
+   "stop": "Vilagarcía de Arousa",
+   "trips": 11,
+   "wikidata": "Q1442637"
+  },
+  "30002": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Plasencia",
+   "population": 40132,
+   "population_source": "wikidata",
+   "stop": "Plasencia",
+   "trips": 15,
+   "wikidata": "Q241767"
+  },
+  "30100": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Salamanca",
+   "population": 146110,
+   "population_source": "wikidata",
+   "stop": "Salamanca",
+   "trips": 83,
+   "wikidata": "Q15695"
+  },
+  "30110": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Salamanca",
+   "population": 146110,
+   "population_source": "wikidata",
+   "stop": "Salamanca-La Alamedilla",
+   "trips": 15,
+   "wikidata": "Q15695"
+  },
+  "31200": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Puebla de Sanabria",
+   "population": 1378,
+   "population_source": "wikidata",
+   "stop": "Puebla de Sanabria",
+   "trips": 17,
+   "wikidata": "Q1646385"
+  },
+  "31304": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "O Carballiño",
+   "population": 14249,
+   "population_source": "wikidata",
+   "stop": "O Carballiño",
+   "trips": 4,
+   "wikidata": "Q1607558"
+  },
+  "31400": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Santiago de Compostela",
+   "population": 100965,
+   "population_source": "wikidata",
+   "stop": "Santiago de Compostela-Daniel Castelao",
+   "trips": 50,
+   "wikidata": "Q14314"
+  },
+  "31412": {
+   "admin_level": "8",
+   "as_of": "2025-00-00",
+   "municipality": "A Coruña",
+   "population": 251543,
+   "population_source": "wikidata",
+   "stop": "A Coruña",
+   "trips": 271,
+   "wikidata": "Q8757"
+  },
+  "35400": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Cáceres",
+   "population": 96651,
+   "population_source": "wikidata",
+   "stop": "Cáceres",
+   "trips": 96,
+   "wikidata": "Q15678"
+  },
+  "35406": {
+   "admin_level": "8",
+   "as_of": "2025",
+   "municipality": "Valencia de Alcántara",
+   "population": 5140,
+   "population_source": "osm",
+   "stop": "Valencia de Alcántara",
+   "trips": 4,
+   "wikidata": "Q1613421"
+  },
+  "37200": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Ciudad Real",
+   "population": 76217,
+   "population_source": "wikidata",
+   "stop": "Ciudad Real",
+   "trips": 116,
+   "wikidata": "Q15093"
+  },
+  "37311": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Cabeza del Buey",
+   "population": 4489,
+   "population_source": "wikidata",
+   "stop": "Cabeza del Buey",
+   "trips": 17,
+   "wikidata": "Q1100433"
+  },
+  "37406": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Villanueva de la Serena",
+   "population": 25773,
+   "population_source": "wikidata",
+   "stop": "Villanueva de la Serena",
+   "trips": 15,
+   "wikidata": "Q695380"
+  },
+  "37500": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Mérida",
+   "population": 60225,
+   "population_source": "wikidata",
+   "stop": "Mérida",
+   "trips": 21,
+   "wikidata": "Q14323"
+  },
+  "37606": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Badajoz",
+   "population": 150209,
+   "population_source": "wikidata",
+   "stop": "Badajoz",
+   "trips": 138,
+   "wikidata": "Q15679"
+  },
+  "40100": {
+   "admin_level": "8",
+   "as_of": "2025-00-00",
+   "municipality": "Zafra",
+   "population": 16735,
+   "population_source": "wikidata",
+   "stop": "Zafra",
+   "trips": 21,
+   "wikidata": "Q140203"
+  },
+  "40107": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Fuente del Arco",
+   "population": 648,
+   "population_source": "wikidata",
+   "stop": "Fuente del Arco",
+   "trips": 16,
+   "wikidata": "Q1605901"
+  },
+  "42008": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Jabugo",
+   "population": 2183,
+   "population_source": "wikidata",
+   "stop": "Jabugo-Galaroza",
+   "trips": 6,
+   "wikidata": "Q913504"
+  },
+  "43019": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Huelva",
+   "population": 143215,
+   "population_source": "wikidata",
+   "stop": "Huelva",
+   "trips": 22,
+   "wikidata": "Q12246"
+  },
+  "50207": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Vilches",
+   "population": 4191,
+   "population_source": "wikidata",
+   "stop": "Vilches",
+   "trips": 30,
+   "wikidata": "Q684071"
+  },
+  "50300": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Linares",
+   "population": 55633,
+   "population_source": "wikidata",
+   "stop": "Linares-Baeza",
+   "trips": 55,
+   "wikidata": "Q281272"
+  },
+  "50407": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Villa del Río",
+   "population": 6852,
+   "population_source": "wikidata",
+   "stop": "Villa del Río",
+   "trips": 34,
+   "wikidata": "Q970738"
+  },
+  "50413": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Córdoba",
+   "population": 323262,
+   "population_source": "wikidata",
+   "stop": "Alcolea de Córdoba",
+   "trips": 37,
+   "wikidata": "Q5818"
+  },
+  "50417": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Córdoba",
+   "population": 323262,
+   "population_source": "wikidata",
+   "stop": "Campus Universitario de Rabanales",
+   "trips": 57,
+   "wikidata": "Q5818"
+  },
+  "50500": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Córdoba",
+   "population": 323262,
+   "population_source": "wikidata",
+   "stop": "Córdoba-Julio Anguita",
+   "trips": 171,
+   "wikidata": "Q5818"
+  },
+  "50502": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Córdoba",
+   "population": 323262,
+   "population_source": "wikidata",
+   "stop": "Villarrubia de Córdoba",
+   "trips": 38,
+   "wikidata": "Q5818"
+  },
+  "50506": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Palma del Río",
+   "population": 20438,
+   "population_source": "wikidata",
+   "stop": "Palma del Río",
+   "trips": 70,
+   "wikidata": "Q1372714"
+  },
+  "51003": {
+   "admin_level": "8",
+   "as_of": "2025-00-00",
+   "municipality": "Sevilla",
+   "population": 689423,
+   "population_source": "wikidata",
+   "stop": "Sevilla-Santa Justa",
+   "trips": 221,
+   "wikidata": "Q8717"
+  },
+  "51405": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Cádiz",
+   "population": 109950,
+   "population_source": "wikidata",
+   "stop": "Cádiz",
+   "trips": 184,
+   "wikidata": "Q15682"
+  },
+  "54403": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Álora",
+   "population": 13650,
+   "population_source": "wikidata",
+   "stop": "El Chorro-Caminito del Rey",
+   "trips": 21,
+   "wikidata": "Q250746"
+  },
+  "54413": {
+   "admin_level": "8",
+   "as_of": "2025-00-00",
+   "municipality": "Málaga",
+   "population": 599063,
+   "population_source": "wikidata",
+   "stop": "Málaga María Zambrano",
+   "trips": 75,
+   "wikidata": "Q8851"
+  },
+  "55020": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Algeciras",
+   "population": 126589,
+   "population_source": "wikidata",
+   "stop": "Algeciras",
+   "trips": 14,
+   "wikidata": "Q484552"
+  },
+  "56312": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Almería",
+   "population": 205468,
+   "population_source": "wikidata",
+   "stop": "Almería",
+   "trips": 26,
+   "wikidata": "Q10400"
+  },
+  "60400": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Alcázar de San Juan",
+   "population": 31914,
+   "population_source": "wikidata",
+   "stop": "Alcázar de San Juan",
+   "trips": 52,
+   "wikidata": "Q679269"
+  },
+  "60600": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Albacete",
+   "population": 175400,
+   "population_source": "wikidata",
+   "stop": "Albacete-Los Llanos",
+   "trips": 38,
+   "wikidata": "Q15095"
+  },
+  "60902": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Villena",
+   "population": 34712,
+   "population_source": "wikidata",
+   "stop": "Villena",
+   "trips": 205,
+   "wikidata": "Q502249"
+  },
+  "60911": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Alacant / Alicante",
+   "population": 366221,
+   "population_source": "wikidata",
+   "stop": "Alicante/Alacant-Terminal",
+   "trips": 377,
+   "wikidata": "Q11959"
+  },
+  "61200": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Murcia",
+   "population": 479405,
+   "population_source": "wikidata",
+   "stop": "Murcia del Carmen",
+   "trips": 205,
+   "wikidata": "Q12225"
+  },
+  "61307": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Cartagena",
+   "population": 220704,
+   "population_source": "wikidata",
+   "stop": "Cartagena",
+   "trips": 133,
+   "wikidata": "Q162615"
+  },
+  "65000": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "València",
+   "population": 840792,
+   "population_source": "wikidata",
+   "stop": "València-Estació del Nord",
+   "trips": 516,
+   "wikidata": "Q8818"
+  },
+  "65300": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Castelló de la Plana / Castellón de la Plana",
+   "population": 183711,
+   "population_source": "wikidata",
+   "stop": "Castelló de la Plana",
+   "trips": 9,
+   "wikidata": "Q15092"
+  },
+  "65312": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Vinaròs",
+   "population": 30529,
+   "population_source": "wikidata",
+   "stop": "Vinaròs",
+   "trips": 126,
+   "wikidata": "Q917888"
+  },
+  "65400": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Tortosa",
+   "population": 35997,
+   "population_source": "wikidata",
+   "stop": "Tortosa",
+   "trips": 38,
+   "wikidata": "Q12812"
+  },
+  "65411": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Salou",
+   "population": 31491,
+   "population_source": "wikidata",
+   "stop": "Salou-Port Aventura",
+   "trips": 22,
+   "wikidata": "Q662789"
+  },
+  "67011": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Encinacorba",
+   "population": 176,
+   "population_source": "wikidata",
+   "stop": "Encinacorba",
+   "trips": 11,
+   "wikidata": "Q1650371"
+  },
+  "67013": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Villarreal de Huerva",
+   "population": 270,
+   "population_source": "wikidata",
+   "stop": "Villarreal de Huerva",
+   "trips": 2,
+   "wikidata": "Q744533"
+  },
+  "67017": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Ferreruela de Huerva",
+   "population": 81,
+   "population_source": "wikidata",
+   "stop": "Ferreruela",
+   "trips": 8,
+   "wikidata": "Q1768510"
+  },
+  "67020": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Calamocha",
+   "population": 4655,
+   "population_source": "wikidata",
+   "stop": "Navarrete",
+   "trips": 1,
+   "wikidata": "Q572760"
+  },
+  "67200": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Teruel",
+   "population": 36655,
+   "population_source": "wikidata",
+   "stop": "Teruel",
+   "trips": 5,
+   "wikidata": "Q14336"
+  },
+  "69011": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Alcoi / Alcoy",
+   "population": 61468,
+   "population_source": "wikidata",
+   "stop": "Alcoi",
+   "trips": 118,
+   "wikidata": "Q494777"
+  },
+  "70300": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Baides",
+   "population": 46,
+   "population_source": "wikidata",
+   "stop": "Baides",
+   "trips": 25,
+   "wikidata": "Q601029"
+  },
+  "70302": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Sigüenza",
+   "population": 4911,
+   "population_source": "wikidata",
+   "stop": "Sigüenza",
+   "trips": 15,
+   "wikidata": "Q47475"
+  },
+  "70403": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Arcos de Jalón",
+   "population": 1531,
+   "population_source": "wikidata",
+   "stop": "Arcos de Jalón",
+   "trips": 9,
+   "wikidata": "Q830147"
+  },
+  "70500": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Ariza",
+   "population": 1096,
+   "population_source": "wikidata",
+   "stop": "Ariza",
+   "trips": 6,
+   "wikidata": "Q1640165"
+  },
+  "70600": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Calatayud",
+   "population": 20158,
+   "population_source": "wikidata",
+   "stop": "Calatayud",
+   "trips": 62,
+   "wikidata": "Q496424"
+  },
+  "70700": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Ricla",
+   "population": 3019,
+   "population_source": "wikidata",
+   "stop": "Ricla-La Almunia",
+   "trips": 11,
+   "wikidata": "Q766898"
+  },
+  "71100": {
+   "admin_level": "8",
+   "as_of": "2025-00-00",
+   "municipality": "Zaragoza",
+   "population": 693091,
+   "population_source": "wikidata",
+   "stop": "Zaragoza-Miraflores",
+   "trips": 30,
+   "wikidata": "Q10305"
+  },
+  "71204": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Caspe",
+   "population": 10365,
+   "population_source": "wikidata",
+   "stop": "Caspe",
+   "trips": 2,
+   "wikidata": "Q64010"
+  },
+  "71210": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Flix",
+   "population": 3340,
+   "population_source": "wikidata",
+   "stop": "Flix",
+   "trips": 2,
+   "wikidata": "Q548045"
+  },
+  "71300": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Móra la Nova",
+   "population": 3350,
+   "population_source": "wikidata",
+   "stop": "Móra la Nova",
+   "trips": 11,
+   "wikidata": "Q1233555"
+  },
+  "71400": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Reus",
+   "population": 111601,
+   "population_source": "wikidata",
+   "stop": "Reus",
+   "trips": 29,
+   "wikidata": "Q487096"
+  },
+  "71500": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Tarragona",
+   "population": 143649,
+   "population_source": "wikidata",
+   "stop": "Tarragona",
+   "trips": 18,
+   "wikidata": "Q15088"
+  },
+  "71801": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Barcelona",
+   "population": 1731649,
+   "population_source": "wikidata",
+   "stop": "Barcelona-Sants",
+   "trips": 443,
+   "wikidata": "Q1492"
+  },
+  "73100": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Valls",
+   "population": 25518,
+   "population_source": "wikidata",
+   "stop": "La Plana-Picamoixons",
+   "trips": 4,
+   "wikidata": "Q825883"
+  },
+  "74200": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Huesca/Uesca",
+   "population": 55454,
+   "population_source": "wikidata",
+   "stop": "Huesca",
+   "trips": 20,
+   "wikidata": "Q11967"
+  },
+  "74217": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Canfranc",
+   "population": 633,
+   "population_source": "wikidata",
+   "stop": "Canfranc",
+   "trips": 18,
+   "wikidata": "Q984642"
+  },
+  "78302": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Binéfar",
+   "population": 10235,
+   "population_source": "wikidata",
+   "stop": "Binéfar",
+   "trips": 7,
+   "wikidata": "Q864175"
+  },
+  "78400": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Lleida",
+   "population": 146266,
+   "population_source": "wikidata",
+   "stop": "Lleida-Pirineus",
+   "trips": 139,
+   "wikidata": "Q15090"
+  },
+  "78500": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Cervera",
+   "population": 9603,
+   "population_source": "wikidata",
+   "stop": "Cervera",
+   "trips": 26,
+   "wikidata": "Q847011"
+  },
+  "78600": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Manresa",
+   "population": 80974,
+   "population_source": "wikidata",
+   "stop": "Manresa",
+   "trips": 11,
+   "wikidata": "Q16697"
+  },
+  "78700": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Terrassa",
+   "population": 233270,
+   "population_source": "wikidata",
+   "stop": "Terrassa Estació del Nord",
+   "trips": 13,
+   "wikidata": "Q13939"
+  },
+  "79300": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Girona",
+   "population": 108666,
+   "population_source": "wikidata",
+   "stop": "Girona",
+   "trips": 8,
+   "wikidata": "Q7038"
+  },
+  "79303": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Flaçà",
+   "population": 1175,
+   "population_source": "wikidata",
+   "stop": "Flaçà",
+   "trips": 2,
+   "wikidata": "Q13430"
+  },
+  "79309": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Figueres",
+   "population": 49689,
+   "population_source": "wikidata",
+   "stop": "Figueres",
+   "trips": 40,
+   "wikidata": "Q6839"
+  },
+  "79315": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Portbou",
+   "population": 1131,
+   "population_source": "wikidata",
+   "stop": "Portbou",
+   "trips": 64,
+   "wikidata": "Q7165"
+  },
+  "79316": {
+   "admin_level": "8",
+   "as_of": "2023-01-01",
+   "municipality": "Cerbère",
+   "population": 1209,
+   "population_source": "wikidata",
+   "stop": "Cerbère",
+   "trips": 37,
+   "wikidata": "Q6667"
+  },
+  "79400": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Barcelona",
+   "population": 1731649,
+   "population_source": "wikidata",
+   "stop": "Barcelona Estació de França",
+   "trips": 83,
+   "wikidata": "Q1492"
+  },
+  "80100": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Pamplona / Iruña",
+   "population": 209094,
+   "population_source": "wikidata",
+   "stop": "Pamplona/Iruña",
+   "trips": 24,
+   "wikidata": "Q10282"
+  },
+  "81100": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Logroño",
+   "population": 152150,
+   "population_source": "wikidata",
+   "stop": "Logroño",
+   "trips": 23,
+   "wikidata": "Q14325"
+  },
+  "81110": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Alfaro",
+   "population": 9923,
+   "population_source": "wikidata",
+   "stop": "Alfaro",
+   "trips": 13,
+   "wikidata": "Q695889"
+  },
+  "81200": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Castejón",
+   "population": 4725,
+   "population_source": "wikidata",
+   "stop": "Castejón de Ebro",
+   "trips": 12,
+   "wikidata": "Q1648779"
+  },
+  "82100": {
+   "admin_level": "8",
+   "as_of": "2025-01-01",
+   "municipality": "Soria",
+   "population": 41025,
+   "population_source": "wikidata",
+   "stop": "Soria",
+   "trips": 2,
+   "wikidata": "Q12155"
+  },
+  "87089": {
+   "admin_level": "8",
+   "as_of": "2023-01-01",
+   "municipality": "Marseille",
+   "population": 886040,
+   "population_source": "wikidata",
+   "stop": "Marseille St Charles",
+   "trips": 43,
+   "wikidata": "Q23482"
+  },
+  "87303": {
+   "admin_level": "8",
+   "as_of": "2023-01-01",
+   "municipality": "Lyon",
+   "population": 519127,
+   "population_source": "wikidata",
+   "stop": "Lyon Part Dieu",
+   "trips": 20,
+   "wikidata": "Q456"
+  },
+  "94346": {
+   "admin_level": "7",
+   "as_of": "2021-00-00",
+   "municipality": "Porto",
+   "population": 231800,
+   "population_source": "wikidata",
+   "stop": "Porto Campanha - O Porto Campaña",
+   "trips": 4,
+   "wikidata": "Q36433"
+  }
+ },
+ "v": 1
+}

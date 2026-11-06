@@ -19,8 +19,13 @@ the railroads it shows, or by Amtraker. It is original work, MIT-licensed.
 | Brightline | Florida | [Brightline's own GTFS and GTFS-Realtime](https://www.gobrightline.com) | No | None published |
 | NSW TrainLink, regional trains | New South Wales, and its routes into Queensland, Victoria and the ACT | [Transport for NSW](https://opendata.transport.nsw.gov.au/) | Yes, your own, free | CC BY 4.0, Transport for NSW attributed: see [its data licence](https://opendata.transport.nsw.gov.au/datalicence) |
 | V/Line, trains | Victoria, and its route into New South Wales | [Transport Victoria](https://opendata.transport.vic.gov.au/) | Yes, your own, free | CC BY 4.0, Transport Victoria attributed: see [the dataset](https://discover.data.vic.gov.au/dataset/gtfs-realtime) |
+| Renfe (Spain): AVE, Avlo, Alvia, Avant, Euromed, Intercity, MD, Regional | Spain, and its routes into France and Portugal | [Renfe's own GTFS-Realtime and timetable](https://data.renfe.com/) | No | CC BY 4.0, Renfe attributed. Its route lines are built from [OpenStreetMap](https://www.openstreetmap.org/copyright) and shipped in `data/renfe_spain_lines.json.gz`: © OpenStreetMap contributors, ODbL 1.0 |
+| Renfe Regionals (Catalunya): R11-R17 | Catalonia | [Renfe's own GTFS-Realtime](https://data.renfe.com/) | No | CC BY 4.0, Renfe attributed |
 | VIA Rail | Canada | [VIA Rail's own train status and GTFS](https://www.viarail.ca/en/developer-resources) | No | Its GTFS: Open Government Licence - Canada 2.0 |
 | VR | Finland | [Fintraffic Digitraffic](https://www.digitraffic.fi/en/) | No | CC BY 4.0, Fintraffic attributed |
+
+Renfe's long-distance feed also carries Rodalies' regional trains (R11-R17). With both Renfe railroads set up,
+Renfe (Spain) leaves those trains to Renfe Regionals (Catalunya), so each is drawn once.
 
 Read each source's terms before you use its data; they bind you, as the
 person receiving it. Amtraker's attribution travels with every entity this

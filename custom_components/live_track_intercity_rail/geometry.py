@@ -647,6 +647,38 @@ class _State:
     last_t: float | None = None     # when last_d was published
 
 
+def line_from_legs(geo: dict[str, Any], sid: str, decoded: dict[str, list]) -> list[list[float]] | None:
+    """A line stored as LEGS of shared lines: geometry["shape_legs"][sid] is [[from stop, to stop, line key or
+    None], ...], each key's points in geometry["pair_lines"] as 1e-5 degree integers (the first absolute, the
+    rest differences) from the lower stop id to the higher; None is the straight line between the two stops.
+    Renfe (Spain) assembles its trips' lines from lines shipped per stop pair (sources/renfe_ld_lines.py):
+    stored whole, 2026-11-06's window was 8,371,586 bytes of JSON and 382,534 points, every pattern repeating
+    its legs (bin\\es324_replay.txt). `decoded` caches each key's points. None: no such line."""
+    legs = (geo.get("shape_legs") or {}).get(sid)
+    if not legs:
+        return None
+    stops, lines = geo.get("stops") or {}, geo.get("pair_lines") or {}
+    pts: list[list[float]] = []
+    for a, b, key in legs:
+        if key is None or key not in lines:
+            if a not in stops or b not in stops:
+                continue
+            seg = [list(stops[a]), list(stops[b])]
+        else:
+            if key not in decoded:
+                flat, out, la, lo = lines[key], [], 0, 0
+                for i in range(0, len(flat) - 1, 2):
+                    la += flat[i]
+                    lo += flat[i + 1]
+                    out.append([la / 1e5, lo / 1e5])
+                decoded[key] = out
+            seg = decoded[key][::-1] if a > b else list(decoded[key])
+        if pts and seg and pts[-1] == seg[0]:
+            seg = seg[1:]
+        pts.extend(seg)
+    return pts if len(pts) >= 2 else None
+
+
 @dataclass
 class Projector:
     """Per railroad. Feed it the distilled geometry once; ask it each poll."""
@@ -655,10 +687,13 @@ class Projector:
     _routes: dict[str, Route] = field(default_factory=dict)
     _state: dict[str, _State] = field(default_factory=dict)
     _stop_d: dict[tuple, tuple] = field(default_factory=dict)
+    _decoded: dict[str, list] = field(default_factory=dict)
 
     def _route(self, sid: str) -> Route | None:
         if sid not in self._routes:
             pts = (self.geometry.get("shapes") or {}).get(sid)
+            if not pts and self.geometry.get("shape_legs"):
+                pts = line_from_legs(self.geometry, sid, self._decoded)
             if not pts or len(pts) < 2:
                 return None
             self._routes[sid] = Route([tuple(p) for p in pts])

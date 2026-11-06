@@ -572,7 +572,8 @@ class Operator(unittest.TestCase):
 
     def test_spain_is_offered(self):
         self.assertEqual(operators.regions_in_use()["ES"], "Spain")
-        self.assertEqual([o.id for o in operators.operators_in("ES")], ["renfe_regionals_catalunya"])
+        # Renfe (Spain) beside it since 2026-11-06 (backlog 324), sorted by name.
+        self.assertEqual([o.id for o in operators.operators_in("ES")], ["renfe_spain", "renfe_regionals_catalunya"])
 
     def test_late_from_10_very_late_from_20(self):
         self.assertEqual(self.op.lateness_for({"train": "15772", "line_name": "R16"}),
