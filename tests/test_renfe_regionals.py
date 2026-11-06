@@ -583,15 +583,25 @@ class Operator(unittest.TestCase):
 
     def test_leaving_barcelona_the_line_colour(self):
         k = self.look(train="15772", line_name="R11", route_color="#0069AA", toward_hub=False)
-        self.assertEqual(k, {"marker_color": "#0069AA", "marker_ring_color": "#FFFFFF", "marker_ring_width": 3,
+        self.assertEqual(k, {"marker_color": "#0064A8", "marker_ring_color": "#FFFFFF", "marker_ring_width": 3,
                              "marker_label_color": "#FFFFFF", "marker_label_outline_color": "none",
-                             "marker_arrow_color": "#0069AA", "marker_arrow_outline_color": "#FFFFFF"})
+                             "marker_arrow_color": "#0064A8", "marker_arrow_outline_color": "#FFFFFF"})
 
     def test_going_to_it_white(self):
         k = self.look(train="15772", line_name="R11", route_color="#0069AA", toward_hub=True)
         self.assertEqual((k["marker_color"], k["marker_ring_color"], k["marker_label_color"],
                           k["marker_arrow_color"], k["marker_arrow_outline_color"]),
-                         ("#FFFFFF", "#0069AA", "#0069AA", "#FFFFFF", "#0069AA"))
+                         ("#FFFFFF", "#0064A8", "#0064A8", "#FFFFFF", "#0064A8"))
+
+    def test_rodalies_badge_colours_over_the_timetable(self):
+        # Lee 2026-11-06 01:04: "Switch R11-R17 to the Rodalies badge colours." Measured on Rodalies'
+        # own page; the timetable gave R13 146520, R2 Sud's green.
+        badges = {"R11": "#0064A8", "R13": "#E62A88", "R14": "#67509A", "R15": "#9B8B77", "R16": "#B00033",
+                  "R17": "#E97300", "R12": "#FFDC01"}
+        for line, colour in badges.items():
+            k = self.look(train="1", line_name=line, route_color="#146520", toward_hub=False)
+            self.assertEqual(k["marker_color"], colour, line)
+        self.assertEqual(self.look(train="1", line_name="R18", route_color="#146520")["marker_color"], "#146520")
 
     def test_the_sources_answer_wins_over_the_number(self):
         k = self.look(train="18121", line_name="R16", route_color="#B52B46", toward_hub=True)
@@ -599,20 +609,38 @@ class Operator(unittest.TestCase):
 
     def test_neither_end_in_barcelona_the_number_says(self):
         self.assertEqual(self.look(train="18120", line_name="R16", route_color="#B52B46")["marker_color"], "#FFFFFF")
-        self.assertEqual(self.look(train="18121", line_name="R16", route_color="#B52B46")["marker_color"], "#B52B46")
+        self.assertEqual(self.look(train="18121", line_name="R16", route_color="#B52B46")["marker_color"], "#B00033")
         for line in ("R13", "R14", "R15", "R17"):
             self.assertEqual(self.look(train="2", line_name=line, route_color="#000001")["marker_color"], "#FFFFFF")
 
     def test_r11s_number_says_nothing(self):
-        self.assertEqual(self.look(train="15772", line_name="R11", route_color="#0069AA")["marker_color"], "#0069AA")
-        self.assertEqual(self.look(train="15772", line_name="R12", route_color="#0069AA")["marker_color"], "#0069AA")
+        self.assertEqual(self.look(train="15772", line_name="R11", route_color="#0069AA")["marker_color"], "#0064A8")
+        self.assertEqual(self.look(train="15772", line_name="R12", route_color="#0069AA")["marker_color"], "#FFDC01")
 
     def test_no_number_or_no_line(self):
-        self.assertEqual(self.look(train=None, line_name="R16", route_color="#B52B46")["marker_color"], "#B52B46")
+        self.assertEqual(self.look(train=None, line_name="R16", route_color="#B52B46")["marker_color"], "#B00033")
         self.assertEqual(self.look(train="18120", route_color="#B52B46")["marker_color"], "#B52B46")
 
     def test_no_colour_renfes_purple(self):
-        self.assertEqual(self.look(train="15773", line_name="R12")["marker_color"], "#8A0072")
+        self.assertEqual(self.look(train="15773", line_name="R18")["marker_color"], "#8A0072")
+        self.assertEqual(self.look(train="15773")["marker_ring_color"], "#FFFFFF")
+
+    def test_r17_orange_and_white(self):
+        # Lee 2026-11-06 00:55: "R17 is #E97300 and white." The timetable says F3B12E.
+        away = self.look(train="28009", line_name="R17", route_color="#F3B12E", toward_hub=False)
+        self.assertEqual((away["marker_color"], away["marker_ring_color"]), ("#E97300", "#FFFFFF"))
+        to = self.look(train="28008", line_name="R17", route_color="#F3B12E", toward_hub=True)
+        self.assertEqual((to["marker_color"], to["marker_ring_color"]), ("#FFFFFF", "#E97300"))
+
+    def test_r12_yellow_and_black(self):
+        # Lee 2026-11-06 00:45: "R12 is #FFDC01 and black." Whatever the timetable gives it.
+        away = self.look(train="15773", line_name="R12", route_color="#123456", toward_hub=False)
+        self.assertEqual((away["marker_color"], away["marker_ring_color"], away["marker_label_color"],
+                          away["marker_arrow_color"], away["marker_arrow_outline_color"]),
+                         ("#FFDC01", "#000000", "#000000", "#FFDC01", "#000000"))
+        to = self.look(train="15772", line_name="R12", toward_hub=True)
+        self.assertEqual((to["marker_color"], to["marker_ring_color"], to["marker_label_color"]),
+                         ("#000000", "#FFDC01", "#FFDC01"))
 
     def test_the_looks_keys_reach_the_map_and_its_inputs_do_not(self):
         rec = {"vehicle_id": "15772-6", "marker_label": "15772", "in_service": True, "train": "15772",

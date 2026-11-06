@@ -6,15 +6,17 @@ lines for Live Track Commuter Rail and sends these lines here (saw_livetrack.ren
 REGIONAL_LINES, network 51): one owner per vehicle (06_MAP_CONTRACT.md D1).
 
 THE LOOK (D4a-direction, Lee 2026-10-19; for these lines 2026-11-05): the line's own colour
-from Renfe's timetable (R11 0069AA, R13 146520, R14 6C60A8, R15 978571, R16 B52B46, R17
-F3B12E, read 2026-11-05) fill, white ring and label leaving Barcelona; white fill, line-colour
-ring and label going to it. Which way: the trip's first or last stop in Barcelona
+fill, white ring and label leaving Barcelona; white fill, line-colour ring and label going to
+it. The colours are Rodalies de Catalunya's own badges (LINE_LOOK, Lee 2026-11-06), not the
+timetable's, which gave R13 R2 Sud's green; the timetable's colour is used only for a line not
+in LINE_LOOK. Which way: the trip's first or last stop in Barcelona
 (sources/renfe.py); a trip that neither starts nor ends there, or with no timetable, by the
 number, odd leaving and even going, as measured on every R13-R17 trip that does (1,736 of
 1,736, by the trip id's number; the label's, which this reads, differed on one train of 8,
 both odd). R11's numbers are even both ways (585 to, 523 from), so an R11 with no answer takes
-the leaving look, as does any unknown. A line with no colour in the timetable takes Renfe's
-purple (my call).
+the leaving look, as does any unknown. R12, which the timetable does not carry, is FFDC01 paired
+with black instead of white (Lee 2026-11-06). Any other line with no colour in the timetable takes
+Renfe's purple (my call).
 
 LABEL the train number (Lee 2026-11-05); the line in the hover box.
 
@@ -46,6 +48,20 @@ VERY_LATE_MIN = 20
 HUB = "Barcelona"
 # Lines whose numbers say the way: odd leaving Barcelona, even going to it (measured).
 PARITY_LINES = frozenset({"R13", "R14", "R15", "R16", "R17"})
+# Each line's own pair, whatever the timetable says: (its colour, the colour it pairs with).
+# Lee 2026-11-06 01:04: "Switch R11-R17 to the Rodalies badge colours": each badge's dominant colour
+# on Rodalies de Catalunya's own page (the 2026-01-24 notice Lee uploaded), where Renfe's timetable
+# gave R13 R2 Sud's green 146520 and the others a few units off. R12, not on that page: Lee 00:45,
+# "R12 is #FFDC01 and black." R17: Lee 00:55, "#E97300 and white", the badge's own value.
+LINE_LOOK = {
+    "R11": ("#0064A8", WHITE),
+    "R12": ("#FFDC01", "#000000"),
+    "R13": ("#E62A88", WHITE),
+    "R14": ("#67509A", WHITE),
+    "R15": ("#9B8B77", WHITE),
+    "R16": ("#B00033", WHITE),
+    "R17": ("#E97300", WHITE),
+}
 
 
 def going_to_hub(rec: Mapping[str, Any]) -> bool:
@@ -60,9 +76,10 @@ def going_to_hub(rec: Mapping[str, Any]) -> bool:
 
 
 def renfe_regional_styling(rec: Mapping[str, Any]) -> dict[str, Any]:
-    """Line colour fill leaving Barcelona, white fill going to it (module docstring)."""
-    colour = rec.get("route_color") or RENFE_PURPLE
-    fill, other = (WHITE, colour) if going_to_hub(rec) else (colour, WHITE)
+    """Line colour fill leaving Barcelona, white fill going to it (module docstring); a line in
+    LINE_LOOK pairs its own two colours the same way."""
+    colour, partner = LINE_LOOK.get(rec.get("line_name"), (rec.get("route_color") or RENFE_PURPLE, WHITE))
+    fill, other = (partner, colour) if going_to_hub(rec) else (colour, partner)
     return {
         "marker_color": fill,
         "marker_ring_color": other,
