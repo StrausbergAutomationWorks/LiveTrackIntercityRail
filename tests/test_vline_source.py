@@ -1234,6 +1234,197 @@ class CheckKey(unittest.TestCase):
         self.assertEqual(src.check_key("intercity", "k"), "cannot_connect")
 
 
+# The trip-id fallback (2026-11-05, Lee 21:34): the live feed named Friday's trips `--1-` where the
+# timetable has `--5-` (bin\ltir_vl_tripids.txt). START, 2026-10-20, is a Tuesday.
+LIVE = "01-ABY--1-T0-8605"
+TWIN = "01-ABY--5-T0-8605"
+SAT = "01-ABY--6-T0-8605"
+WEEKDAYS = ["1111100", "20261001", "20261231", [], []]
+SATURDAYS = ["0000010", "20261001", "20261231", [], []]
+
+
+def geo_fb(services=None, **over):
+    g = dict(GEO)
+    g["trip_tables"] = {TWIN: "t", SAT: "t"}
+    g["trains"] = {TWIN: ["L"], SAT: ["L"]}
+    g["trip_services"] = {TWIN: "WK", SAT: "SA"}
+    g["services"] = services or {"WK": WEEKDAYS, "SA": SATURDAYS}
+    g.update(over)
+    return g
+
+
+class TripIdFallback(unittest.TestCase):
+    def test_a_live_id_the_timetable_lacks_takes_the_one_running_twin(self):
+        snap = rt().parse(row(trip=LIVE), None, T(10, 30), geo_fb())
+        self.assertEqual(snap.stop_codes["8605-20"], "B")
+        self.assertEqual(snap.route_keys["8605-20"], TWIN)
+        self.assertEqual(snap.next_stops["8605-20"][0], "Seymour Station")
+
+    def test_the_update_is_still_matched_by_the_live_id(self):
+        snap = rt().parse(row(trip=LIVE), update((2, 0, 300), trip=LIVE), T(10, 30), geo_fb())
+        self.assertEqual(snap.trip_delays["8605-20"], 300)
+
+    def test_an_update_under_the_twins_id_is_not_this_run(self):
+        snap = rt().parse(row(trip=LIVE), update((2, 0, 300), trip=TWIN), T(10, 30), geo_fb())
+        self.assertNotIn("8605-20", snap.trip_delays)
+
+    def test_two_running_that_day_is_none(self):
+        snap = rt().parse(row(trip=LIVE), None, T(10, 30), geo_fb({"WK": WEEKDAYS, "SA": WEEKDAYS}))
+        self.assertEqual(snap.stop_codes, {})
+        self.assertEqual(snap.route_keys["8605-20"], LIVE)
+
+    def test_none_running_that_day_is_none(self):
+        snap = rt().parse(row(trip=LIVE), None, T(10, 30), geo_fb({"WK": SATURDAYS, "SA": SATURDAYS[:1] + ["20261101", "20261231", [], []]}))
+        self.assertEqual(snap.stop_codes, {})
+
+    def test_another_line_is_never_a_twin(self):
+        snap = rt().parse(row(trip="01-GEL--1-T0-8605"), None, T(10, 30), geo_fb())
+        self.assertEqual(snap.stop_codes, {})
+
+    def test_another_number_is_never_a_twin(self):
+        snap = rt().parse(row(trip="01-ABY--1-T0-8607"), None, T(10, 30), geo_fb())
+        self.assertEqual(snap.stop_codes, {})
+
+    def test_the_exact_id_wins_whatever_its_calendar(self):
+        snap = rt().parse(row(trip=SAT), None, T(10, 30), geo_fb())
+        self.assertEqual(snap.route_keys["8605-20"], SAT)
+        self.assertEqual(snap.stop_codes["8605-20"], "B")
+
+    def test_a_removed_date_is_not_run(self):
+        wk = ["1111100", "20261001", "20261231", [], ["20261020"]]
+        snap = rt().parse(row(trip=LIVE), None, T(10, 30), geo_fb({"WK": wk, "SA": SATURDAYS}))
+        self.assertEqual(snap.stop_codes, {})
+
+    def test_an_added_date_is_run(self):
+        wk = ["1111100", "20261001", "20261231", [], ["20261020"]]
+        sa = ["0000010", "20261001", "20261231", ["20261020"], []]
+        snap = rt().parse(row(trip=LIVE), None, T(10, 30), geo_fb({"WK": wk, "SA": sa}))
+        self.assertEqual(snap.route_keys["8605-20"], SAT)
+
+    def test_a_twin_without_a_stop_table_is_not_one(self):
+        # Both run on the day; only SAT has a table, so SAT is the one (mutation, 2026-11-05).
+        g = geo_fb({"WK": WEEKDAYS, "SA": WEEKDAYS})
+        g["trip_tables"] = {SAT: "t"}
+        snap = rt().parse(row(trip=LIVE), None, T(10, 30), g)
+        self.assertEqual(snap.route_keys["8605-20"], SAT)
+        self.assertEqual(snap.stop_codes["8605-20"], "B")
+
+    def test_an_old_copy_without_calendars_finds_none(self):
+        g = geo_fb()
+        del g["trip_services"], g["services"]
+        snap = rt().parse(row(trip=LIVE), None, T(10, 30), g)
+        self.assertEqual(snap.stop_codes, {})
+        self.assertEqual(snap.route_keys["8605-20"], LIVE)
+
+    def test_a_timetable_arriving_later_is_used_for_a_held_run(self):
+        r = rt()
+        r.parse(row(trip=LIVE), None, T(10, 30), {})
+        snap = r.parse(empty(), update((2, 0, 60), trip=LIVE), T(10, 31), geo_fb())
+        self.assertEqual(snap.skipped.get("held"), 1)
+        self.assertEqual(snap.stop_codes["8605-20"], "B")
+        self.assertEqual(snap.route_keys["8605-20"], TWIN)
+
+    def test_a_new_copy_rebuilds_the_index(self):
+        r = rt()
+        self.assertEqual(r._table_id(LIVE, START, geo_fb()), TWIN)
+        g = geo_fb()
+        g["trip_tables"] = {"01-ABY--7-T0-8605": "t"}
+        g["trip_services"] = {"01-ABY--7-T0-8605": "WK"}
+        self.assertEqual(r._table_id(LIVE, START, g), "01-ABY--7-T0-8605")
+
+    def test_line_prefix(self):
+        self.assertEqual(src.line_prefix(LIVE), "01-ABY")
+        for bad in ("", "8605", "--1-T0-8605"):
+            self.assertIsNone(src.line_prefix(bad), bad)
+
+
+class ServiceRuns(unittest.TestCase):
+    S = {"WK": ["1111100", "20261001", "20261231", ["20261025"], ["20261021"]],
+         "ONLY": ["0000000", "", "", ["20261101"], []]}
+
+    def test_a_weekday_in_range(self):
+        self.assertTrue(geometry.service_runs(self.S, "WK", "20261020"))
+
+    def test_a_weekend_day(self):
+        self.assertFalse(geometry.service_runs(self.S, "WK", "20261024"))
+
+    def test_each_weekday_reads_its_own_bit(self):
+        # 2026-10-19 is a Monday. One service a day: each runs on its own day only (mutation, 2026-11-05).
+        days = ["2026101%d" % d for d in range(9, 10)] + ["202610%d" % d for d in range(20, 26)]
+        for i in range(7):
+            s = {"D": ["".join("1" if j == i else "0" for j in range(7)), "20261001", "20261231", [], []]}
+            self.assertEqual([geometry.service_runs(s, "D", d) for d in days], [j == i for j in range(7)], i)
+
+    def test_out_of_range(self):
+        self.assertFalse(geometry.service_runs(self.S, "WK", "20260930"))
+        self.assertFalse(geometry.service_runs(self.S, "WK", "20270101"))
+
+    def test_the_range_is_inclusive(self):
+        self.assertTrue(geometry.service_runs(self.S, "WK", "20261001"))
+        self.assertTrue(geometry.service_runs(self.S, "WK", "20261231"))
+
+    def test_added_beats_the_weekday(self):
+        self.assertTrue(geometry.service_runs(self.S, "WK", "20261025"))
+
+    def test_removed_beats_the_weekday(self):
+        self.assertFalse(geometry.service_runs(self.S, "WK", "20261021"))
+
+    def test_a_service_only_in_calendar_dates(self):
+        self.assertTrue(geometry.service_runs(self.S, "ONLY", "20261101"))
+        self.assertFalse(geometry.service_runs(self.S, "ONLY", "20261102"))
+
+    def test_unknown_or_bad(self):
+        self.assertFalse(geometry.service_runs(self.S, "NOPE", "20261020"))
+        self.assertFalse(geometry.service_runs(self.S, None, "20261020"))
+        self.assertFalse(geometry.service_runs(None, "WK", "20261020"))
+        self.assertFalse(geometry.service_runs(self.S, "WK", "2026-10-20"))
+
+
+CALENDAR = ("service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date\n"
+            "S,1,1,1,1,1,0,0,20261001,20261231\n")
+CALENDAR_DATES = ("service_id,date,exception_type\n"
+                  "S,20261025,1\nS,20261021,2\nX,20261101,1\nS,20261102,9\n")
+
+
+class DistillCalendars(unittest.TestCase):
+    def setUp(self):
+        self.dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.dir)
+        self.path = os.path.join(self.dir, "z.zip")
+
+    def distill(self, **over):
+        write_zip(self.path, **over)
+        return geometry.distill_stream(self.path)
+
+    def test_stream_version_and_each_trips_service(self):
+        d = self.distill(**{"calendar.txt": CALENDAR, "calendar_dates.txt": CALENDAR_DATES})
+        self.assertEqual(d["stream_v"], geometry.STREAM_VERSION)
+        self.assertEqual(d["trip_services"], {"T1": "S", "T2": "S", "T3": "S", "T4": "S", "T5": "S"})
+
+    def test_calendars(self):
+        d = self.distill(**{"calendar.txt": CALENDAR, "calendar_dates.txt": CALENDAR_DATES})
+        self.assertEqual(d["services"], {"S": ["1111100", "20261001", "20261231", ["20261025"], ["20261021"]],
+                                         "X": ["0000000", "", "", ["20261101"], []]})
+
+    def test_no_calendar_files(self):
+        d = self.distill()
+        self.assertEqual(d["services"], {})
+        self.assertEqual(d["trip_services"]["T1"], "S")
+
+    def test_the_distilled_copy_answers_the_fallback(self):
+        trips = ("route_id,service_id,trip_id,shape_id\n"
+                 "R1,S,01-ABY--5-T0-8605,X\nR1,W,01-ABY--6-T0-8605,X\n")
+        times = ("trip_id,arrival_time,departure_time,stop_id,stop_sequence,pickup_type,drop_off_type\n"
+                 "01-ABY--5-T0-8605,08:00:00,08:00:00,A,1,0,0\n01-ABY--5-T0-8605,09:00:00,09:00:00,B,2,0,0\n"
+                 "01-ABY--6-T0-8605,08:00:00,08:00:00,A,1,0,0\n01-ABY--6-T0-8605,09:00:00,09:00:00,B,2,0,0\n")
+        cal = CALENDAR + "W,0,0,0,0,0,1,1,20261001,20261231\n"
+        d = self.distill(**{"trips.txt": trips, "stop_times.txt": times, "calendar.txt": cal})
+        d = json.loads(json.dumps(d))   # as route_store writes and reads it
+        r = rt()
+        self.assertEqual(r._table_id(LIVE, "20261020", d), "01-ABY--5-T0-8605")
+        self.assertEqual(r._table_id(LIVE, "20261024", d), "01-ABY--6-T0-8605")
+
+
 class Reference(unittest.TestCase):
     def test_copy_is_byte_exact_when_the_library_clone_is_here(self):
         here = pathlib.Path(__file__).resolve().parents[1] / "custom_components" / "live_track_intercity_rail" / "shared_transport_vic.py"

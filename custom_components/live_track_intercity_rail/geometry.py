@@ -45,6 +45,10 @@ from typing import Any
 
 R = 6371008.8
 GEOMETRY_VERSION = 1
+# distill_stream's own version (V/Line). A copy distilled under another is distilled again
+# (route_store), without touching any other railroad's copy. 2: trip_services and services,
+# for the trip-id fallback (2026-11-05; Intercity SSOT 8.5).
+STREAM_VERSION = 2
 
 # A fix farther than this from every route of its train number is not on a
 # route we know: no estimate. MEASURED: first fix to its route p50 3 m, p90
@@ -242,6 +246,51 @@ def service_days(rows, names, dates: list[dt.date]) -> dict[str, set[str]]:
             elif kind == "2" and sid in days:
                 days[sid].discard(iso)
     return days
+
+
+def calendars(rows, names) -> dict[str, list]:
+    """service_id -> [weekdays as seven 0/1 characters from Monday, start YYYYMMDD, end YYYYMMDD,
+    [dates added], [dates removed]], JSON-ready, read by service_runs. A service only in
+    calendar_dates.txt has weekdays "0000000" and no range."""
+    out: dict[str, list] = {}
+    if "calendar.txt" in names:
+        for r in rows("calendar.txt"):
+            sid = (r.get("service_id") or "").strip()
+            if sid:
+                out[sid] = ["".join("1" if (r.get(w) or "").strip() == "1" else "0" for w in _WEEKDAYS),
+                            (r.get("start_date") or "").strip(), (r.get("end_date") or "").strip(), [], []]
+    if "calendar_dates.txt" in names:
+        for r in rows("calendar_dates.txt"):
+            sid = (r.get("service_id") or "").strip()
+            day = (r.get("date") or "").strip()
+            kind = (r.get("exception_type") or "").strip()
+            if not sid or not day or kind not in ("1", "2"):
+                continue
+            entry = out.setdefault(sid, ["0000000", "", "", [], []])
+            entry[3 if kind == "1" else 4].append(day)
+    for entry in out.values():
+        entry[3].sort()
+        entry[4].sort()
+    return out
+
+
+def service_runs(services: Any, sid: str | None, day: str) -> bool:
+    """Whether service `sid` runs on `day` (YYYYMMDD), by the GTFS rule service_days uses:
+    calendar_dates.txt first (1 adds the date, 2 removes it), then calendar.txt's range and
+    weekday. False for an unknown service or a date that is not one."""
+    entry = (services or {}).get(sid) if sid else None
+    if not entry:
+        return False
+    weekdays, start, end, added, removed = entry
+    if day in added:
+        return True
+    if day in removed:
+        return False
+    try:
+        weekday = dt.datetime.strptime(day, "%Y%m%d").weekday()
+    except ValueError:
+        return False
+    return bool(start) and start <= day <= end and weekdays[weekday:weekday + 1] == "1"
 
 
 def _seconds(text: str | None) -> int | None:
@@ -508,8 +557,15 @@ def distill_stream(path: str, simplify_m: float = SIMPLIFY_M) -> dict[str, Any]:
                            _seconds(r.get("departure_time"))])
         close_trip()
 
-        trip_shape = {(r.get("trip_id") or "").strip(): (r.get("shape_id") or "").strip()
-                      for r in rows("trips.txt")}
+        trip_shape: dict[str, str] = {}
+        trip_services: dict[str, str] = {}
+        for r in rows("trips.txt"):
+            trip = (r.get("trip_id") or "").strip()
+            trip_shape[trip] = (r.get("shape_id") or "").strip()
+            sid = (r.get("service_id") or "").strip()
+            if trip and sid:
+                trip_services[trip] = sid
+        services = calendars(rows, z.namelist())
         wanted = {s for s in trip_shape.values() if s}
 
         stops: dict[str, list] = {}
@@ -568,10 +624,11 @@ def distill_stream(path: str, simplify_m: float = SIMPLIFY_M) -> dict[str, Any]:
         route_names = {(r.get("route_id") or "").strip():
                        " ".join((r.get("route_long_name") or r.get("route_short_name") or "").split())
                        for r in rows("routes.txt")}
-    return {"v": GEOMETRY_VERSION, "stable_lines": True, "stops": stops, "stop_names": stop_names,
-            "route_names": route_names,
+    return {"v": GEOMETRY_VERSION, "stream_v": STREAM_VERSION, "stable_lines": True, "stops": stops,
+            "stop_names": stop_names, "route_names": route_names,
             "trains": {t: [line_of[s]] for t, s in trip_shape.items() if s in line_of},
-            "shapes": lines, "stop_tables": tables, "trip_tables": trip_tables, "folds_cut_km": cut_km}
+            "shapes": lines, "stop_tables": tables, "trip_tables": trip_tables, "folds_cut_km": cut_km,
+            "trip_services": trip_services, "services": services}
 
 
 @dataclass

@@ -317,6 +317,44 @@ class RouteStoreFromClient(unittest.TestCase):
         self.assertIsNone(s.static_client)
 
 
+class StreamVersion(unittest.TestCase):
+    """A streamed copy (V/Line) made under another geometry.STREAM_VERSION is distilled again from
+    the same timetable (2026-11-05: trip_services and services for the trip-id fallback)."""
+
+    def store(self, op_id):
+        self.dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.dir)
+        s = route_store.RouteStore(_ha_stub.Hass(self.dir), None, operators.OPERATORS[op_id])
+        s.static_client = object()
+        s.note_static("v1")
+        return s
+
+    def test_the_current_stream_version_is_not_stale(self):
+        s = self.store("vline")
+        s._data = {"source_version": "v1", "stream_v": load("geometry").STREAM_VERSION}
+        self.assertFalse(s._stale(0.0))
+
+    def test_no_stream_version_is_stale(self):
+        s = self.store("vline")
+        s._data = {"source_version": "v1"}
+        self.assertTrue(s._stale(0.0))
+
+    def test_an_older_stream_version_is_stale(self):
+        s = self.store("vline")
+        s._data = {"source_version": "v1", "stream_v": load("geometry").STREAM_VERSION - 1}
+        self.assertTrue(s._stale(0.0))
+
+    def test_a_copy_not_streamed_does_not_look_at_it(self):
+        s = self.store("nsw_trainlink")
+        s._data = {"source_version": "v1"}
+        self.assertFalse(s._stale(0.0))
+
+    def test_a_new_timetable_still_counts(self):
+        s = self.store("vline")
+        s._data = {"source_version": "v0", "stream_v": load("geometry").STREAM_VERSION}
+        self.assertTrue(s._stale(0.0))
+
+
 class Coordinator(unittest.TestCase):
     def make(self, read):
         self.dir = tempfile.mkdtemp()

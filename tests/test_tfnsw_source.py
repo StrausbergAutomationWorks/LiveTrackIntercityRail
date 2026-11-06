@@ -477,7 +477,8 @@ class Manifest(unittest.TestCase):
         import re
         here = pathlib.Path(__file__).resolve().parents[1] / "custom_components" / "live_track_intercity_rail"
         req = json.loads((here / "manifest.json").read_text(encoding="utf-8"))["requirements"]
-        self.assertTrue(req[0].startswith("saw-livetrack[gtfs]>=0.2.23,"), req)
+        # 0.2.25 since 2026-11-05: digitraffic_rail.next_stop after the last actual row (backlog 289).
+        self.assertTrue(req[0].startswith("saw-livetrack[gtfs]>=0.2.25,"), req)
         names = {re.split(r"[=<>\[]", r)[0].lower() for r in req}
         extra = [r.split(";")[0].strip() for r in md.requires("saw-livetrack") if 'extra == "gtfs"' in r]
         self.assertTrue(extra)

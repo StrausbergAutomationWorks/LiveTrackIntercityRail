@@ -216,8 +216,19 @@ class FixtureTests(unittest.TestCase):
                          {"intercity": 38, "commuter": 62, "freight": 49})
 
     def test_what_is_published(self):
-        self.assertEqual(len(self.snap.observations), 32)
-        self.assertEqual(self.snap.skipped, {"arrived": 4, "predeparture": 2})
+        # 31 and 5 arrived since saw-livetrack 0.2.25 (backlog 289): S 44 reached Helsinki at
+        # 07:58:44 and was still published, its "next stop" Tikkurila, passed about 04:04.
+        self.assertEqual(len(self.snap.observations), 31)
+        self.assertEqual(self.snap.skipped, {"arrived": 5, "predeparture": 2})
+
+    def test_289_the_next_stop_is_after_the_last_actual_row(self):
+        # Each of these named a stop BEHIND the train before saw-livetrack 0.2.25: IC 41 TK
+        # (passed LAI 07:51), HDM 424 KLO (passed KAS 07:57), HDM 482 TUU (at PH 07:52).
+        ids = {o.train: o.vehicle_id for o in self.snap.observations}
+        self.assertNotIn("S 44", ids)
+        self.assertEqual(self.snap.stop_codes[ids["IC 41"]], "VS")
+        self.assertEqual(self.snap.stop_codes[ids["HDM 424"]], "JJ")
+        self.assertEqual(self.snap.stop_codes[ids["HDM 482"]], "PH")
 
     def test_every_label_is_type_and_number_and_every_identity_number_and_day(self):
         dates = {(str(t["trainNumber"])): t["departureDate"] for t in self.fx["trains"]}
@@ -243,7 +254,7 @@ class FixtureTests(unittest.TestCase):
         with_line = sum(1 for o in snap.observations if snap.route_keys[o.vehicle_id] in self.geo["trains"])
         self.assertEqual(with_line, 13)
         self.assertEqual(counts["estimated"], 13)
-        self.assertEqual(counts["observed"], 19)
+        self.assertEqual(counts["observed"], 18)   # 19 before 0.2.25: S 44, arrived
         for vid, r in result["vehicles"].items():
             if r.get("position_source") == "estimated":
                 self.assertIn("fix_latitude", r)

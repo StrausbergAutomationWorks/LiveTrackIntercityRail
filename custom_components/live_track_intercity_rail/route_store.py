@@ -102,8 +102,11 @@ class RouteStore:
     def _stale(self, now: float) -> bool:
         d = self._data
         if self.static_client is not None:
+            # A streamed copy (V/Line) made under another STREAM_VERSION is distilled again from
+            # the same timetable: it lacks what the code now reads (trip_services, 2026-11-05).
             return self._static_version is not None and (
-                d is None or d.get("source_version") != self._static_version)
+                d is None or d.get("source_version") != self._static_version
+                or (self._op.gtfs_stream and d.get("stream_v") != geometry.STREAM_VERSION))
         if d is None:
             return True
         if now - float(d.get("fetched_at", 0)) >= self._op.gtfs_refresh_s:

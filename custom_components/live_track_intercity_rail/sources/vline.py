@@ -55,6 +55,17 @@ behind, p90 514, max 1,703, with the next fix current again. It says nothing new
 NEXT STOP (D5): the timetable plus the update's delay, first stop still ahead, since the updates
 name no stop ahead on 20.8% of cases. The name as published. The origin is never next.
 
+A LIVE TRIP ID MAY NOT BE IN THE TIMETABLE (Lee 2026-11-05 21:34, "Build the V/Line fallback").
+Found 2026-11-05 with no new publication since 11-02 (same ETag): the realtime feed named Friday's
+trips `01-GEL--1-T0-8751` on six lines where the timetable has `01-GEL--5-T0-8751`; 20 of 33 running
+trains had no stops, no delay and no estimate (bin\\ltir_vl_tripids.txt). Such a trip takes the ONE
+timetable trip with the same line prefix (`01-GEL`) and service number whose service runs on its
+start date: 34 of 34 had exactly one, 33 of 34 matching every stop its update names by stop_id and
+sequence (bin\\ltir_vl_unknown_trips.txt), and across the publication's first 63 days every line and
+number running on a date ran ONE trip (21,835 of 21,835, bin\\ltir_vl_fb_census.txt). None or several:
+nothing, as before. The trip update is still matched by the live id; only the stops and the line
+come from the timetable trip.
+
 STALLED (decision 7, rule C): sources/tfnsw.py's. Not while timed: nothing says where it is.
 """
 
@@ -68,6 +79,7 @@ from saw_livetrack.gtfs.realtime import Obs, position_of, vehicle_time
 from saw_livetrack.gtfs.schedule import next_by_timetable, update_delays
 from saw_livetrack.transport_vic import TIME_ZONE, KeyedError, KeyRefused, TransportVicClient
 
+from ..geometry import service_runs
 from .base import HELD_SPEED_KEY, TIMED_AFTER_KEY, Snapshot
 from .tfnsw import TfnswRealtime, _terminal_forecast, identity
 
@@ -91,6 +103,12 @@ def service_number(trip_id: str) -> str | None:
     """'01-ABY--10-T0-8605' -> '8605'; None when the id does not end in a number."""
     tail = trip_id.rsplit("-", 1)[-1] if trip_id else ""
     return tail if tail.isdigit() else None
+
+
+def line_prefix(trip_id: str) -> str | None:
+    """'01-GEL--1-T0-8751' -> '01-GEL'; None without the '--'."""
+    head, sep, _ = (trip_id or "").partition("--")
+    return head if sep and head else None
 
 
 def route_code(route_id: str) -> str:
@@ -146,6 +164,7 @@ class _Run:
     skipped: set = field(default_factory=set)
     gone_since: float | None = None  # since when good answers have not carried it
     cand: list = field(default_factory=list)  # [(lat, lon, time)] refused in a row
+    table_id: str | None = None      # the timetable's trip: trip_id, or its twin (_table_id)
 
 
 class VLineRealtime(TfnswRealtime):
@@ -157,6 +176,42 @@ class VLineRealtime(TfnswRealtime):
     def __init__(self) -> None:
         super().__init__()
         self._runs: dict[str, _Run] = {}
+        self._twin_src: Any = None
+        self._twin_idx: dict[tuple[str, str], list[str]] = {}
+
+    def _twins(self, geo: Mapping[str, Any]) -> dict[tuple[str, str], list[str]]:
+        """(line prefix, service number) -> the timetable's trip ids, built once per copy."""
+        services = geo.get("trip_services") or {}
+        if services is not self._twin_src:
+            idx: dict[tuple[str, str], list[str]] = {}
+            for trip in services:
+                prefix, number = line_prefix(trip), service_number(trip)
+                if prefix and number:
+                    idx.setdefault((prefix, number), []).append(trip)
+            self._twin_src, self._twin_idx = services, idx
+        return self._twin_idx
+
+    def _table_id(self, trip_id: str, start_date: str, geo: Mapping[str, Any]) -> str | None:
+        """The timetable trip for a live trip: itself when the timetable has it, else the ONE
+        trip with its line prefix and service number whose service runs on start_date (the
+        module docstring); None when there is none or more than one."""
+        tables = geo.get("trip_tables") or {}
+        if trip_id in tables:
+            return trip_id
+        prefix, number = line_prefix(trip_id), service_number(trip_id)
+        if not prefix or not number:
+            return None
+        services, calendars = geo.get("trip_services") or {}, geo.get("services") or {}
+        hits = [t for t in self._twins(geo).get((prefix, number), ())
+                if t in tables and service_runs(calendars, services.get(t), start_date)]
+        return hits[0] if len(hits) == 1 else None
+
+    def _run_rows(self, run: _Run, geo: Mapping[str, Any]) -> None:
+        """Fill a run's timetable rows (and its timetable trip) while it has none."""
+        if run.rows:
+            return
+        run.table_id = self._table_id(run.trip_id, run.start, geo)
+        run.rows = self._rows(run.table_id, run.start, geo) if run.table_id else []
 
     def _rows(self, trip_id: str, start_date: str, geo: Mapping[str, Any]) -> list:
         """[(sequence, stop_id, arrival epoch, departure epoch)] for this run."""
@@ -239,7 +294,8 @@ class VLineRealtime(TfnswRealtime):
             train=run.number, line=None,
             # The line's bearing is used (projection.py), Fleet's chord where there is no line.
             reported_course=None, trip_id=key))
-        snap.route_keys[key] = run.trip_id
+        # The line is the timetable trip's: a live id the timetable lacks has none of its own.
+        snap.route_keys[key] = run.table_id or run.trip_id
         extra: dict[str, Any] = {"route_code": route_code(run.route_id)}
         name = (geo.get("route_names") or {}).get(run.route_id)
         if name:
@@ -326,8 +382,7 @@ class VLineRealtime(TfnswRealtime):
                 continue
             if run is None:
                 run = _Run(trip_id, start, number, v.trip.route_id.strip())
-            if not run.rows:
-                run.rows = self._rows(trip_id, start, geo)
+            self._run_rows(run, geo)
             self._note_update(run, by_run.get((trip_id, start)), answered, now)
             forecast = _terminal_forecast(run.rows, run.delays)
             if forecast is not None and forecast < now and age is not None and age > FINISHED_AGE_S:
@@ -345,8 +400,7 @@ class VLineRealtime(TfnswRealtime):
                 continue
             update = by_run.get((run.trip_id, run.start))
             self._note_update(run, update, answered, now)
-            if not run.rows:
-                run.rows = self._rows(run.trip_id, run.start, geo)
+            self._run_rows(run, geo)
             if self._ended(run, update, now):
                 del self._runs[key]
                 skip("ended")
