@@ -1,9 +1,9 @@
 {
- "about": "End stations of Norway's intercity trips that do not stop at Oslo S, and the population of the urban settlement (tettsted) each serves: the hub rule for the look (Lee 2026-11-07, Intercity SSOT 8.8). A station in no settlement has population null; the trip's other end decides.",
+ "about": "End stations of Norway's intercity trips (Vy, Go-Ahead Norge, SJ Nord) that do not stop at Oslo S, and the population of the urban settlement (tettsted) each serves: the hub rule for the look (Lee 2026-11-07, Intercity SSOT 8.8). A station in no settlement has population null; the trip's other end decides.",
  "source": "Statistics Norway (SSB), StatBank table 04859, Bosatte, 2026 (table updated 2026-08-31)",
  "source_url": "https://www.ssb.no/en/statbank/table/04859",
  "licence": "CC BY 4.0, Statistics Norway",
- "made_by": "bin\\no_ssb_pop.py and bin\\no_ends_write.py, 2026-11-07",
+ "made_by": "bin\\no_ssb_pop.py and bin\\no_ends_write.py, 2026-11-07; SJ Nord's ends bin\\sjn_ssb_pop.py and bin\\sjn_ends_write.py, 2026-11-08",
  "ends": {
   "Arendal stasjon": {
    "settlement": "Arendal",
@@ -15,6 +15,12 @@
    "settlement": "Bergen",
    "tettsted": "5001",
    "population": 274589,
+   "year": 2026
+  },
+  "Bodø stasjon": {
+   "settlement": "Bodø",
+   "tettsted": "7501",
+   "population": 43446,
    "year": 2026
   },
   "Dombås stasjon": {
@@ -29,6 +35,12 @@
    "population": 7259,
    "year": 2026
   },
+  "Fauske stasjon": {
+   "settlement": "Fauske",
+   "tettsted": "7692",
+   "population": 6411,
+   "year": 2026
+  },
   "Flåm stasjon": {
    "settlement": "Flåm",
    "tettsted": "5572",
@@ -41,11 +53,31 @@
    "population": 30620,
    "year": 2026
   },
+  "Heimdal stasjon": {
+   "settlement": "Trondheim",
+   "tettsted": "6501",
+   "population": 202397,
+   "year": 2026,
+   "note": "inside the Trondheim urban settlement (SSB's tettsted 1044 Heimdal is another place)"
+  },
   "Kristiansand stasjon": {
    "settlement": "Kristiansand",
    "tettsted": "4002",
    "population": 68300,
    "year": 2026
+  },
+  "Ler stasjon": {
+   "settlement": "Ler",
+   "tettsted": "6653",
+   "population": 771,
+   "year": 2026
+  },
+  "Lerkendal stasjon": {
+   "settlement": "Trondheim",
+   "tettsted": "6501",
+   "population": 202397,
+   "year": 2026,
+   "note": "inside the Trondheim urban settlement (SSB's tettsted 1044 Heimdal is another place)"
   },
   "Lillehammer stasjon": {
    "settlement": "Lillehammer",
@@ -53,10 +85,34 @@
    "population": 22370,
    "year": 2026
   },
+  "Lundamo stasjon": {
+   "settlement": "Lundamo",
+   "tettsted": "6654",
+   "population": 1167,
+   "year": 2026
+  },
+  "Melhus skysstasjon": {
+   "settlement": "Melhus",
+   "tettsted": "6651",
+   "population": 7525,
+   "year": 2026
+  },
   "Mjølfjell stasjon": {
    "settlement": null,
    "population": null,
    "note": "not an urban settlement in Statistics Norway table 04859 (no tettsted of this name)"
+  },
+  "Mo i Rana stasjon": {
+   "settlement": "Mo i Rana",
+   "tettsted": "7631",
+   "population": 18666,
+   "year": 2026
+  },
+  "Mosjøen stasjon": {
+   "settlement": "Mosjøen",
+   "tettsted": "7581",
+   "population": 10125,
+   "year": 2026
   },
   "Myrdal stasjon": {
    "settlement": null,
@@ -74,10 +130,28 @@
    "population": 9395,
    "year": 2026
   },
+  "Oppdal stasjon": {
+   "settlement": "Oppdal",
+   "tettsted": "6591",
+   "population": 4690,
+   "year": 2026
+  },
   "Porsgrunn stasjon": {
    "settlement": "Porsgrunn/Skien",
    "tettsted": "3005",
    "population": 97240,
+   "year": 2026
+  },
+  "Rognan stasjon": {
+   "settlement": "Rognan",
+   "tettsted": "7681",
+   "population": 2646,
+   "year": 2026
+  },
+  "Røros stasjon": {
+   "settlement": "Røros",
+   "tettsted": "6631",
+   "population": 3871,
    "year": 2026
   },
   "Skien stasjon": {
@@ -92,16 +166,45 @@
    "population": 244378,
    "year": 2026
   },
+  "Steinkjer stasjon": {
+   "settlement": "Steinkjer",
+   "tettsted": "7003",
+   "population": 13146,
+   "year": 2026
+  },
+  "Stjørdal stasjon": {
+   "settlement": "Stjørdalshalsen",
+   "tettsted": "7034",
+   "population": 16061,
+   "year": 2026
+  },
   "Stokke stasjon": {
    "settlement": "Stokke",
    "tettsted": "2623",
    "population": 4288,
    "year": 2026
   },
+  "Storlien station": {
+   "settlement": null,
+   "population": null,
+   "note": "in Sweden: no settlement in Statistics Norway table 04859; the trip's other end decides"
+  },
+  "Støren stasjon": {
+   "settlement": "Støren",
+   "tettsted": "6641",
+   "population": 2259,
+   "year": 2026
+  },
   "Tangen stasjon": {
    "settlement": "Tangen",
    "tettsted": "1051",
    "population": 528,
+   "year": 2026
+  },
+  "Trondheim S": {
+   "settlement": "Trondheim",
+   "tettsted": "6501",
+   "population": 202397,
    "year": 2026
   },
   "Voss stasjon": {
@@ -114,6 +217,12 @@
    "settlement": "Ål",
    "tettsted": "2081",
    "population": 2658,
+   "year": 2026
+  },
+  "Åndalsnes stasjon": {
+   "settlement": "Åndalsnes",
+   "tettsted": "6192",
+   "population": 2521,
    "year": 2026
   }
  }

@@ -144,6 +144,24 @@ class TestHub(unittest.TestCase):
         self.assertEqual(ends["Skien stasjon"]["population"], ends["Porsgrunn stasjon"]["population"])
         self.assertEqual(ent.load_ends(str(FIX / "nothing_here.json")), {})
 
+    def test_sj_nord_ends(self):
+        # SJ Nord's ends (2026-11-08), names as its timetable spells them: 193 of its 242 trips without Oslo S had no
+        # hub before. Heimdal and Lerkendal are Trondheim's; Storlien is in Sweden, so the other end decides.
+        ends = ent.load_ends()
+        trd = ends["Trondheim S"]["population"]
+        self.assertEqual(trd, 202397)
+        self.assertEqual(ends["Heimdal stasjon"]["population"], trd)
+        self.assertEqual(ends["Lerkendal stasjon"]["population"], trd)
+        self.assertEqual(ends["Bodø stasjon"]["population"], 43446)
+        self.assertIsNone(ends["Storlien station"]["population"])
+        names = {"t": "Trondheim S", "s": "Storlien station", "b": "Bodø stasjon", "r": "Rognan stasjon",
+                 "k": "Steinkjer stasjon", "l": "Lerkendal stasjon", "x": "Mid"}
+        self.assertEqual(ent.hub_index(["s", "x", "t"], names, ends), 2)    # R71 to Trondheim
+        self.assertEqual(ent.hub_index(["t", "x", "s"], names, ends), 0)
+        self.assertEqual(ent.hub_index(["t", "x", "b"], names, ends), 0)    # F7: Trondheim over Bodo
+        self.assertEqual(ent.hub_index(["r", "b"], names, ends), 1)         # R75 to Bodo
+        self.assertEqual(ent.hub_index(["k", "x", "l"], names, ends), 2)    # R70 to Lerkendal = Trondheim
+
 
 class TestCutAndDistill(unittest.TestCase):
     def test_cut(self):
