@@ -33,8 +33,10 @@ SOURCE_RENFE = "renfe"
 # Renfe's long-distance GTFS-Realtime (AV, LD and MD), through this integration's own client
 # (sources/renfe_ld.py).
 SOURCE_RENFE_LD = "renfe_ld"
+# Entur (Norway), one codespace per railroad, through the shared client saw_livetrack.entur (sources/entur.py).
+SOURCE_ENTUR = "entur"
 SOURCES = (SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_VIA, SOURCE_DIGITRAFFIC, SOURCE_TFNSW,
-           SOURCE_TRANSPORT_VIC, SOURCE_RENFE, SOURCE_RENFE_LD)
+           SOURCE_TRANSPORT_VIC, SOURCE_RENFE, SOURCE_RENFE_LD, SOURCE_ENTUR)
 
 
 @dataclass(frozen=True)
@@ -163,5 +165,6 @@ REGIONS: dict[str, str] = {
     "CA": "Canada",
     "ES": "Spain",
     "FI": "Finland",
+    "NO": "Norway",
     "US": "United States",
 }

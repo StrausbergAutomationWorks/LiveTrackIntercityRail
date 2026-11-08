@@ -774,7 +774,7 @@ class Projector:
                  stop_code: str | None, speed_ms: float | None,
                  now: float, derive_speed: bool = False,
                  eta: float | None = None, timed: bool = False,
-                 horizon: float = MAX_HORIZON_S) -> tuple[float, float] | None:
+                 horizon: float = MAX_HORIZON_S, toward_stop: bool = False) -> tuple[float, float] | None:
         """(lat, lon) on the route at `now`, or None for "publish the fix".
         With derive_speed and no speed_ms, the speed of the last two fixes.
 
@@ -789,7 +789,10 @@ class Projector:
         10.7 km, p90 42.2.
 
         horizon: when the last speed gives way to the timed rule, per railroad
-        (Operator.timed_after_s; V/Line 600 s, Lee 2026-11-01, decision 2)."""
+        (Operator.timed_after_s; V/Line 600 s, Lee 2026-11-01, decision 2).
+
+        toward_stop: the stop aimed at is AHEAD by the source's word, so the
+        train goes that way along its line (projection.py, AIM_ETA_KEY)."""
         if fix_t is None or now < fix_t:
             return None
         stop = (self.geometry.get("stops") or {}).get(stop_code) if stop_code else None
@@ -835,6 +838,13 @@ class Projector:
         # whose passed stop the source had not yet marked Departed BACKWARDS
         # (27 of 38 backward arrows in bin\ltir_heading_trial2.txt).
         st.direction = st.motion or 1.0
+        if toward_stop and d_stop is not None:
+            # The source KNOWS which way the train goes (Norway's tunnel push: through to where its fixes come
+            # back): toward the stop, whatever two fixes at a platform said (measured: a fix wandering back 400 m
+            # at Oslo S turned a train's way and held it there, bin\\no_replay_tunnels_dbg.txt).
+            here = st.last_d if st.last_d is not None else st.d_fix
+            if d_stop != here:
+                st.direction = math.copysign(1.0, d_stop - here)
         if timed and now - fix_t > horizon:
             d = self._timed(st, d_stop, eta, fix_t, now)
         else:

@@ -50,6 +50,10 @@ RECORD_ONLY_KEYS = ("destination", "departure_date", "santa_express", "route_cod
 # railroad's own (V/Line: a train with no row at all).
 TIMED_AFTER_KEY = "timed_after_s"
 HELD_SPEED_KEY = "held_speed_kmh"
+# AIM_ETA_KEY: when the timed rule should have the train at the stop it aims at, where that is not
+# the next stop's estimate (Norway: a train pushed through a tunnel reaches the point its fixes come
+# back at in the quickest time measured; None holds it where it was last drawn). Extras only.
+AIM_ETA_KEY = "aim_eta"
 
 
 @dataclass

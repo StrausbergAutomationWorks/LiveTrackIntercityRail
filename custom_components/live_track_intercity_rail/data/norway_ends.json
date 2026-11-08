@@ -1,0 +1,120 @@
+{
+ "about": "End stations of Norway's intercity trips that do not stop at Oslo S, and the population of the urban settlement (tettsted) each serves: the hub rule for the look (Lee 2026-11-07, Intercity SSOT 8.8). A station in no settlement has population null; the trip's other end decides.",
+ "source": "Statistics Norway (SSB), StatBank table 04859, Bosatte, 2026 (table updated 2026-08-31)",
+ "source_url": "https://www.ssb.no/en/statbank/table/04859",
+ "licence": "CC BY 4.0, Statistics Norway",
+ "made_by": "bin\\no_ssb_pop.py and bin\\no_ends_write.py, 2026-11-07",
+ "ends": {
+  "Arendal stasjon": {
+   "settlement": "Arendal",
+   "tettsted": "3511",
+   "population": 45668,
+   "year": 2026
+  },
+  "Bergen stasjon": {
+   "settlement": "Bergen",
+   "tettsted": "5001",
+   "population": 274589,
+   "year": 2026
+  },
+  "Dombås stasjon": {
+   "settlement": "Dombås",
+   "tettsted": "1522",
+   "population": 1173,
+   "year": 2026
+  },
+  "Eidsvoll stasjon": {
+   "settlement": "Eidsvoll",
+   "tettsted": "0673",
+   "population": 7259,
+   "year": 2026
+  },
+  "Flåm stasjon": {
+   "settlement": "Flåm",
+   "tettsted": "5572",
+   "population": 291,
+   "year": 2026
+  },
+  "Hamar stasjon": {
+   "settlement": "Hamar",
+   "tettsted": "1001",
+   "population": 30620,
+   "year": 2026
+  },
+  "Kristiansand stasjon": {
+   "settlement": "Kristiansand",
+   "tettsted": "4002",
+   "population": 68300,
+   "year": 2026
+  },
+  "Lillehammer stasjon": {
+   "settlement": "Lillehammer",
+   "tettsted": "1501",
+   "population": 22370,
+   "year": 2026
+  },
+  "Mjølfjell stasjon": {
+   "settlement": null,
+   "population": null,
+   "note": "not an urban settlement in Statistics Norway table 04859 (no tettsted of this name)"
+  },
+  "Myrdal stasjon": {
+   "settlement": null,
+   "population": null,
+   "note": "not an urban settlement in Statistics Norway table 04859 (no tettsted of this name)"
+  },
+  "Nelaug stasjon": {
+   "settlement": null,
+   "population": null,
+   "note": "not an urban settlement in Statistics Norway table 04859 (no tettsted of this name)"
+  },
+  "Notodden stasjon": {
+   "settlement": "Notodden",
+   "tettsted": "3021",
+   "population": 9395,
+   "year": 2026
+  },
+  "Porsgrunn stasjon": {
+   "settlement": "Porsgrunn/Skien",
+   "tettsted": "3005",
+   "population": 97240,
+   "year": 2026
+  },
+  "Skien stasjon": {
+   "settlement": "Porsgrunn/Skien",
+   "tettsted": "3005",
+   "population": 97240,
+   "year": 2026
+  },
+  "Stavanger stasjon": {
+   "settlement": "Stavanger/Sandnes",
+   "tettsted": "4522",
+   "population": 244378,
+   "year": 2026
+  },
+  "Stokke stasjon": {
+   "settlement": "Stokke",
+   "tettsted": "2623",
+   "population": 4288,
+   "year": 2026
+  },
+  "Tangen stasjon": {
+   "settlement": "Tangen",
+   "tettsted": "1051",
+   "population": 528,
+   "year": 2026
+  },
+  "Voss stasjon": {
+   "settlement": "Vossevangen",
+   "tettsted": "5132",
+   "population": 7130,
+   "year": 2026
+  },
+  "Ål stasjon": {
+   "settlement": "Ål",
+   "tettsted": "2081",
+   "population": 2658,
+   "year": 2026
+  }
+ }
+}

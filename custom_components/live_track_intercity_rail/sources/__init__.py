@@ -8,4 +8,5 @@
   vline           Transport Victoria's V/Line feeds (SSOT 8.5)
   renfe           Renfe's GTFS-Realtime, Catalonia's regional lines (SSOT 8.7)
   renfe_ld        Renfe's long-distance GTFS-Realtime, AV, LD and MD (SSOT 8.7); its lines in renfe_ld_lines
+  entur           Entur, Norway: one railroad's codespace through the shared client (SSOT 8.8)
 """

@@ -34,6 +34,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from saw_livetrack import AmtrakerError, RateLimited
 from saw_livetrack.digitraffic_rail import DigitrafficError
+from saw_livetrack.entur import INTERCITY_LETTERS, EnturError
 from saw_livetrack.gtfs import Fleet, decode
 from saw_livetrack.renfe import RenfeError
 from saw_livetrack.tfnsw import AuthRefused, KeyedError
@@ -46,15 +47,16 @@ from .const import (
     USER_AGENT,
 )
 from . import projection
-from .operators import (SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_DIGITRAFFIC, SOURCE_RENFE,
+from .operators import (SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_DIGITRAFFIC, SOURCE_ENTUR, SOURCE_RENFE,
                         SOURCE_RENFE_LD, SOURCE_TFNSW, SOURCE_TRANSPORT_VIC, SOURCE_VIA, Operator)
 from .route_store import RouteStore
 from .shared_coordinator import get_shared_client, release_shared_client
 from .shared_digitraffic_rail import get_shared_rail_client, release_shared_rail_client
+from .shared_entur import get_shared_entur_client, release_shared_entur_client
 from .shared_renfe import get_shared_renfe_client, release_shared_renfe_client
 from .shared_tfnsw import get_shared_tfnsw_client, release_shared_tfnsw_client
 from .shared_transport_vic import get_shared_transport_vic_client, release_shared_transport_vic_client
-from .sources import amtraker, renfe, renfe_ld, tfnsw, vline
+from .sources import amtraker, entur, renfe, renfe_ld, tfnsw, vline
 from .sources.base import EXTRA_KEYS, Snapshot, hold_last, trains_in_service
 from .sources.brightline_rt import BrightlineRealtime
 from .sources.via_rail import ViaRail
@@ -110,6 +112,9 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._ld: renfe_ld.RenfeLdRealtime | None = None
         # Renfe's two operators share which train numbers Renfe Regionals (Catalunya) owns (Lee 2026-11-06).
         self._handoff: renfe_ld.Handoff | None = None
+        self._entur_client = None
+        self._entur_view: entur.StaticView | None = None
+        self._entur: entur.EnturRealtime | None = None
         self._session = async_get_clientsession(hass)
         if op.source == SOURCE_AMTRAKER:
             # On the event loop, as shared_coordinator requires.
@@ -161,6 +166,15 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._ld = renfe_ld.RenfeLdRealtime()
             self.routes.static_client = renfe_ld.StaticView(self._ld_client)
             self._handoff = renfe_ld.handoff_for(hass.data)
+        elif op.source == SOURCE_ENTUR:
+            # On the event loop, as shared_entur requires. One poller for every Live Track integration on Entur
+            # (Commuter Rail draws the L lines and Flytoget, backlog 326); this entry registers what it draws, in its
+            # railroad's codespace. Keyless; the timetable is the client's, on disk, cut here (sources/entur.py).
+            opts = op.source_options
+            self._entur_client = get_shared_entur_client(hass, opts["consumer"], opts["codespace"])
+            self._entur_view = entur.StaticView(self._entur_client, opts["codespace"], INTERCITY_LETTERS)
+            self._entur = entur.EnturRealtime()
+            self.routes.static_client = self._entur_view
         else:  # pragma: no cover - an operator naming a source not built
             raise ValueError(f"unknown source {op.source!r} for {op.id}")
 
@@ -190,6 +204,11 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if self._ld_client is not None:
             self._ld_client = None
             self.routes.static_client = None
+        if self._entur_client is not None:
+            self._entur_client = None
+            self.routes.static_client = None
+            opts = self.operator.source_options
+            release_shared_entur_client(self.hass, opts["consumer"], opts["codespace"])
 
     async def _get_rt(self, url: str) -> bytes | None:
         """One whole file, or None on any failure; the reason is kept.
@@ -335,8 +354,26 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._ld.parse, positions, updates, now, projector.geometry if projector else {},
             self._handoff.owned(now) if self._handoff is not None else frozenset())
 
+    async def _fetch_entur(self) -> Snapshot | None:
+        """This railroad's two feeds from the shared Entur client, in the executor (synchronous urllib). A 429 or a
+        failed file is ridden out by hold_last."""
+        opts = self.operator.source_options
+        try:
+            positions, updates, version = await self.hass.async_add_executor_job(
+                entur.read, self._entur_client, opts["consumer"], opts["codespace"], self._entur_view)
+        except EnturError as err:
+            self._last_reason = f"{type(err).__name__}: {err}"[:200]
+            _LOGGER.debug("%s fetch failed: %s", self.operator.id, self._last_reason)
+            return None
+        self.routes.note_static(version)
+        projector = self.routes.projector
+        return await self.hass.async_add_executor_job(
+            self._entur.parse, positions, updates, time.time(), projector.geometry if projector else {})
+
     async def _fetch(self) -> Snapshot | None:
         op = self.operator
+        if self._entur is not None:
+            return await self._fetch_entur()
         if self._renfe is not None:
             return await self._fetch_renfe()
         if self._ld is not None:

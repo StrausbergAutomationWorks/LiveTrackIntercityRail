@@ -26,7 +26,7 @@ from __future__ import annotations
 from typing import Any
 
 from .geometry import MAX_HORIZON_S, Projector
-from .sources.base import HELD_SPEED_KEY, TIMED_AFTER_KEY, Snapshot
+from .sources.base import AIM_ETA_KEY, HELD_SPEED_KEY, TIMED_AFTER_KEY, Snapshot
 
 ESTIMATED = "estimated"
 OBSERVED = "observed"
@@ -79,8 +79,13 @@ def apply(projector: Projector | None, snap: Snapshot, result: dict[str, Any],
                 snap.stop_codes.get(vid),
                 kmh / 3.6 if kmh is not None else None,
                 now, derive_speed=derive_speed,
-                eta=(snap.next_stops.get(vid) or (None, None))[1],
+                # The source's own aim where it gives one (AIM_ETA_KEY; None
+                # holds the train where it was last drawn), else the next stop's.
+                eta=(extra[AIM_ETA_KEY] if AIM_ETA_KEY in extra
+                     else (snap.next_stops.get(vid) or (None, None))[1]),
                 horizon=extra.get(TIMED_AFTER_KEY, MAX_HORIZON_S if horizon is None else horizon),
+                # An aim the source gives is ahead of the train (Norway's tunnel push).
+                toward_stop=extra.get(AIM_ETA_KEY) is not None,
                 # Not a train standing at a platform with an unchanged fix: it
                 # would creep toward its next stop before it leaves. A held
                 # fix (no position now) or a train reported moving.

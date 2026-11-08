@@ -23,6 +23,8 @@ the railroads it shows, or by Amtraker. It is original work, MIT-licensed.
 | Renfe Regionals (Catalunya): R11-R17 | Catalonia | [Renfe's own GTFS-Realtime](https://data.renfe.com/) | No | CC BY 4.0, Renfe attributed |
 | VIA Rail | Canada | [VIA Rail's own train status and GTFS](https://www.viarail.ca/en/developer-resources) | No | Its GTFS: Open Government Licence - Canada 2.0 |
 | VR | Finland | [Fintraffic Digitraffic](https://www.digitraffic.fi/en/) | No | CC BY 4.0, Fintraffic attributed |
+| Vy: F, RE, RX and R lines | Norway, and its routes into Sweden | [Entur](https://developer.entur.org) | No | [NLOD 2.0](https://data.norge.no/nlod/en/2.0): "Contains data under the Norwegian licence for Open Government data (NLOD) distributed by Entur". End-station populations in `data/norway_ends.json`: Statistics Norway, table 04859, CC BY 4.0 |
+| Go-Ahead Norge: F5 and R50 | Southern Norway | [Entur](https://developer.entur.org) | No | NLOD 2.0, as Vy |
 
 Renfe's long-distance feed also carries Rodalies' regional trains (R11-R17). With both Renfe railroads set up,
 Renfe (Spain) leaves those trains to Renfe Regionals (Catalunya), so each is drawn once.

@@ -17,24 +17,28 @@ through the shared client, the fifth (2026-11-02, SSOT 8.6, backlog 319). V/Line
 Transport Victoria's feeds through the shared client, the sixth (2026-11-02, SSOT 8.5).
 Renfe's regional trains in Catalonia read Renfe's GTFS-Realtime through the shared client,
 the seventh (2026-11-05, SSOT 8.7, backlog 294). Renfe's AV, LD and MD trains read Renfe's
-long-distance feed through this integration's own client, the eighth (2026-11-06, SSOT 8.7, backlog 324).
+long-distance feed through this integration's own client, the eighth (2026-11-06, SSOT 8.7, backlog 324). Norway's Vy
+and Go-Ahead Norge read Entur through the shared client, one codespace each, the ninth (2026-11-07, SSOT 8.8, backlog
+326).
 """
 
 from __future__ import annotations
 
 from .amtrak import AMTRAK
-from .base import (REGIONS, SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_DIGITRAFFIC, SOURCE_RENFE,
+from .base import (REGIONS, SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_DIGITRAFFIC, SOURCE_ENTUR, SOURCE_RENFE,
                    SOURCE_RENFE_LD, SOURCE_TFNSW, SOURCE_TRANSPORT_VIC, SOURCE_VIA, SOURCES, Operator)
 from .brightline import BRIGHTLINE
+from .go_ahead_norge import GO_AHEAD_NORGE
 from .nsw_trainlink import NSW_TRAINLINK
 from .renfe_regionals import RENFE_REGIONALS
 from .renfe_spain import RENFE_SPAIN
 from .via_rail import VIA_RAIL
 from .vline import VLINE
 from .vr import VR
+from .vy import VY
 
-OPERATORS: dict[str, Operator] = {op.id: op for op in (AMTRAK, BRIGHTLINE, NSW_TRAINLINK, RENFE_REGIONALS,
-                                                       RENFE_SPAIN, VIA_RAIL, VLINE, VR)}
+OPERATORS: dict[str, Operator] = {op.id: op for op in (AMTRAK, BRIGHTLINE, GO_AHEAD_NORGE, NSW_TRAINLINK,
+                                                       RENFE_REGIONALS, RENFE_SPAIN, VIA_RAIL, VLINE, VR, VY)}
 
 
 def regions_in_use() -> dict[str, str]:
@@ -54,5 +58,5 @@ def operators_in(region: str) -> list[Operator]:
 
 
 __all__ = ["OPERATORS", "REGIONS", "SOURCES", "SOURCE_AMTRAKER", "SOURCE_BRIGHTLINE_RT", "SOURCE_DIGITRAFFIC",
-           "SOURCE_RENFE", "SOURCE_RENFE_LD", "SOURCE_TFNSW", "SOURCE_TRANSPORT_VIC", "SOURCE_VIA", "Operator",
-           "operators_in", "regions_in_use"]
+           "SOURCE_ENTUR", "SOURCE_RENFE", "SOURCE_RENFE_LD", "SOURCE_TFNSW", "SOURCE_TRANSPORT_VIC", "SOURCE_VIA",
+           "Operator", "operators_in", "regions_in_use"]
