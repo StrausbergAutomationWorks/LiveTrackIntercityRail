@@ -744,7 +744,8 @@ class TestOperators(unittest.TestCase):
             self.assertFalse(op.needs_key)
             self.assertEqual(op.scan_interval_s, 30)
         self.assertEqual(operators.regions_in_use()["NO"], "Norway")
-        self.assertEqual([o.id for o in operators.operators_in("NO")], ["go_ahead_norge", "vy"])
+        # SJ Nord since 2026-11-08, on Entur's SIRI ET (tests/test_entur_et_source.py).
+        self.assertEqual([o.id for o in operators.operators_in("NO")], ["go_ahead_norge", "sj_nord", "vy"])
 
     def test_lateness(self):
         lt = norway.norway_lateness

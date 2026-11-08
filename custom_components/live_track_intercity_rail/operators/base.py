@@ -35,8 +35,11 @@ SOURCE_RENFE = "renfe"
 SOURCE_RENFE_LD = "renfe_ld"
 # Entur (Norway), one codespace per railroad, through the shared client saw_livetrack.entur (sources/entur.py).
 SOURCE_ENTUR = "entur"
+# Entur's SIRI Estimated Timetable, for a railroad with NO positions (SJ Nord), through the same shared client
+# (sources/entur_et.py).
+SOURCE_ENTUR_ET = "entur_et"
 SOURCES = (SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_VIA, SOURCE_DIGITRAFFIC, SOURCE_TFNSW,
-           SOURCE_TRANSPORT_VIC, SOURCE_RENFE, SOURCE_RENFE_LD, SOURCE_ENTUR)
+           SOURCE_TRANSPORT_VIC, SOURCE_RENFE, SOURCE_RENFE_LD, SOURCE_ENTUR, SOURCE_ENTUR_ET)
 
 
 @dataclass(frozen=True)

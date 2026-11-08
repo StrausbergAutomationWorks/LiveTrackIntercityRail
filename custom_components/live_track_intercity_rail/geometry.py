@@ -774,7 +774,8 @@ class Projector:
                  stop_code: str | None, speed_ms: float | None,
                  now: float, derive_speed: bool = False,
                  eta: float | None = None, timed: bool = False,
-                 horizon: float = MAX_HORIZON_S, toward_stop: bool = False) -> tuple[float, float] | None:
+                 horizon: float = MAX_HORIZON_S, toward_stop: bool = False,
+                 no_fix: bool = False) -> tuple[float, float] | None:
         """(lat, lon) on the route at `now`, or None for "publish the fix".
         With derive_speed and no speed_ms, the speed of the last two fixes.
 
@@ -792,7 +793,17 @@ class Projector:
         (Operator.timed_after_s; V/Line 600 s, Lee 2026-11-01, decision 2).
 
         toward_stop: the stop aimed at is AHEAD by the source's word, so the
-        train goes that way along its line (projection.py, AIM_ETA_KEY)."""
+        train goes that way along its line (projection.py, AIM_ETA_KEY).
+
+        no_fix: the source has no position at all; the "fix" is the stop the train is timed from (SJ Nord,
+        sources/entur_et.py). Those stops come in the journey's order, so two of them say nothing about which way
+        the train goes: a revised time can put the stop back by one, which is not the train reversing. The way is
+        the line's own and the stop aimed at (toward_stop), never learned from them. MEASURED (bin\\sjn_433.txt):
+        train 433's expected departure from Lundamo went 09:33:10, 09:34:26 ... 09:38:11, then back to 09:33:00,
+        so it was timed to Ler; the actual departure, 09:41:41, put its stop back at Lundamo, read as the train
+        reversing. The 5 km rule below stands for it as for a real fix: a small revision is held, and that one,
+        7.4 km, an actual saying where the train really was, is taken (Lee 2026-11-08: "actuals as a
+        correction")."""
         if fix_t is None or now < fix_t:
             return None
         stop = (self.geometry.get("stops") or {}).get(stop_code) if stop_code else None
@@ -809,8 +820,9 @@ class Projector:
                 st = _State(shape_id=best[0])
                 d_fix = best[1]
             else:
-                if abs(d_fix - st.d_fix) > MOTION_M:
-                    # The way the train actually went, from two fixes on its route.
+                if abs(d_fix - st.d_fix) > MOTION_M and not no_fix:
+                    # The way the train actually went, from two fixes on its route (never from the stops a
+                    # positionless train is timed from: no_fix).
                     st.motion = math.copysign(1.0, d_fix - st.d_fix)
                 if st.fix_t is not None:
                     st.prev_fix = (st.d_fix, st.fix_t)
@@ -842,11 +854,12 @@ class Projector:
             # The source KNOWS which way the train goes (Norway's tunnel push: through to where its fixes come
             # back): toward the stop, whatever two fixes at a platform said (measured: a fix wandering back 400 m
             # at Oslo S turned a train's way and held it there, bin\\no_replay_tunnels_dbg.txt).
-            here = st.last_d if st.last_d is not None else st.d_fix
+            # A positionless train (no_fix) goes from the stop it is timed from to the one it aims at.
+            here = st.last_d if st.last_d is not None and not no_fix else st.d_fix
             if d_stop != here:
                 st.direction = math.copysign(1.0, d_stop - here)
         if timed and now - fix_t > horizon:
-            d = self._timed(st, d_stop, eta, fix_t, now)
+            d = self._timed(st, d_stop, eta, fix_t, now, from_fix=no_fix)
         else:
             if d_stop is None:
                 # No stop to aim at: on the line where the fix is, held there.
@@ -875,12 +888,16 @@ class Projector:
         return p
 
     def _timed(self, st: _State, d_stop: float | None, eta: float | None,
-               fix_t: float, now: float) -> float:
+               fix_t: float, now: float, from_fix: bool = False) -> float:
         """Where a train with no usable fix is along its line at `now`: from
         where it was last drawn (or its fix, the first time), toward its next
         stop, arriving at `eta`. A stop not ahead, or no estimate: it waits
-        where it is. A stop whose estimate has passed: at the stop."""
-        if st.last_d is not None and st.last_t is not None and st.last_t >= fix_t:
+        where it is. A stop whose estimate has passed: at the stop.
+
+        from_fix: always from the fix at its time (a positionless train's fix is the stop it left, and its time when
+        it left: a fact, and a later one corrects it; estimate(no_fix)). The never-backwards rule in estimate then
+        holds a small revision and lets a large one through."""
+        if not from_fix and st.last_d is not None and st.last_t is not None and st.last_t >= fix_t:
             a_d, a_t = st.last_d, st.last_t
         else:
             a_d, a_t = st.d_fix, fix_t

@@ -105,5 +105,69 @@ class EnturCoordinator(unittest.TestCase):
         self.assertEqual(c.routes._static_version, "entur1:v9:2026-11-07")
 
 
+class SjNordCoordinator(unittest.TestCase):
+    """SJ Nord's branch (Intercity SSOT 8.8, "SJ NORD"): the same shared client, its SIRI ET, its own view."""
+
+    def setUp(self):
+        self.dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.dir)
+        self.hass = _ha_stub.Hass(self.dir)
+        self.et = load("sources.entur_et")
+
+    def make(self, op_id):
+        entry = types.SimpleNamespace(data={"operator": op_id}, options={}, domain=const.DOMAIN)
+        return coordinator.IntercityRailCoordinator(self.hass, entry, operators.OPERATORS[op_id])
+
+    def patch_read(self, fn):
+        self.addCleanup(setattr, self.et, "read", self.et.read)
+        self.et.read = fn
+
+    def test_the_shared_client_its_claim_and_view(self):
+        vy = self.make("vy")
+        sjn = self.make("sj_nord")
+        self.assertIs(sjn._entur_client, vy._entur_client)
+        self.assertIsNone(sjn._entur)
+        self.assertIsInstance(sjn._entur_et, self.et.EnturEtRealtime)
+        view = sjn.routes.static_client
+        self.assertIsInstance(view, ent.StaticView)
+        self.assertEqual((view.codespace, view.keep_letters), ("SJN", ("F", "R", "RE", "RX")))
+        self.assertEqual(sjn._entur_client.claims, {(lib.INTERCITY, "VYG"), (lib.INTERCITY, "SJN")})
+        sjn.async_release()
+        self.assertEqual(vy._entur_client.claims, {(lib.INTERCITY, "VYG")})
+        self.assertIsNone(sjn.routes.static_client)
+        vy.async_release()
+        self.assertNotIn(lib.SHARED_KEY, self.hass.data)
+
+    def test_a_failure_is_ridden_out(self):
+        def read(client, consumer, codespace, view):
+            raise lib.FeedUnavailable("HTTP 503 from x")
+        self.patch_read(read)
+        c = self.make("sj_nord")
+        self.assertIsNone(run(c._fetch()))
+        self.assertIn("HTTP 503", c._last_reason)
+
+    def test_a_good_read_is_parsed_and_its_version_noted(self):
+        seen = []
+        now = time.time()
+        journey = {"id": "453:x", "number": "453", "date": "20261108", "line": "R70", "cancelled": False,
+                   "calls": [{"order": 1, "stop": "NSR:Quay:1", "name": "A", "recorded": True, "cancelled": False,
+                              "aimed_arrival": None, "aimed_departure": now - 60, "expected_arrival": None,
+                              "expected_departure": None, "actual_arrival": None, "actual_departure": now - 30},
+                             {"order": 2, "stop": "NSR:Quay:2", "name": "B", "recorded": False, "cancelled": False,
+                              "aimed_arrival": now + 600, "aimed_departure": now + 660, "expected_arrival": now + 630,
+                              "expected_departure": None, "actual_arrival": None, "actual_departure": None}]}
+
+        def read(client, consumer, codespace, view):
+            seen.append((client, consumer, codespace, view))
+            return [journey], "entur2:v1:2026-11-08"
+        self.patch_read(read)
+        c = self.make("sj_nord")
+        snap = run(c._fetch())
+        # No timetable yet: no stop position, so nothing drawn, and said why.
+        self.assertEqual((snap.observations, snap.skipped), ([], {"no_stop_position": 1}))
+        self.assertEqual(seen, [(c._entur_client, lib.INTERCITY, "SJN", c.routes.static_client)])
+        self.assertEqual(c.routes._static_version, "entur2:v1:2026-11-08")
+
+
 if __name__ == "__main__":
     unittest.main()

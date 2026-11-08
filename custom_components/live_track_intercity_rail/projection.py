@@ -26,7 +26,7 @@ from __future__ import annotations
 from typing import Any
 
 from .geometry import MAX_HORIZON_S, Projector
-from .sources.base import AIM_ETA_KEY, HELD_SPEED_KEY, TIMED_AFTER_KEY, Snapshot
+from .sources.base import AIM_ETA_KEY, HELD_SPEED_KEY, NO_FIX_KEY, TIMED_AFTER_KEY, Snapshot
 
 ESTIMATED = "estimated"
 OBSERVED = "observed"
@@ -86,6 +86,9 @@ def apply(projector: Projector | None, snap: Snapshot, result: dict[str, Any],
                 horizon=extra.get(TIMED_AFTER_KEY, MAX_HORIZON_S if horizon is None else horizon),
                 # An aim the source gives is ahead of the train (Norway's tunnel push).
                 toward_stop=extra.get(AIM_ETA_KEY) is not None,
+                # No position from the source at all (SJ Nord): its way is never learned from the stops it is
+                # timed from.
+                no_fix=bool(extra.get(NO_FIX_KEY)),
                 # Not a train standing at a platform with an unchanged fix: it
                 # would creep toward its next stop before it leaves. A held
                 # fix (no position now) or a train reported moving.
@@ -112,6 +115,22 @@ def apply(projector: Projector | None, snap: Snapshot, result: dict[str, Any],
                 rec.pop("course_deg", None)
                 rec["icon_rotation_basis"] = "held"
             rec["icon_rotation_deg"] = crs
+        if extra.get(NO_FIX_KEY):
+            # No position from the source at all (SJ Nord): an estimate whatever the projector says, and no fix to
+            # name. Where the projector has nothing, the stop it is timed from.
+            if est is not None:
+                rec["latitude"], rec["longitude"] = est
+            if crs is not None and extra.get(AIM_ETA_KEY) is not None:
+                # Running to its next stop by its times (it has no speed to say so): the line's bearing is its course.
+                rec["course_deg"] = crs
+                rec["icon_rotation_basis"] = "course"
+            rec.pop("fix_latitude", None)
+            rec.pop("fix_longitude", None)
+            rec["position_source"] = ESTIMATED
+            for key in SEGMENT_KEYS:
+                rec.pop(key, None)
+            counts[ESTIMATED] += 1
+            continue
         if est is None or est == fix:
             rec["position_source"] = OBSERVED
             counts[OBSERVED] += 1

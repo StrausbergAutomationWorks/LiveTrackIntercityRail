@@ -47,7 +47,8 @@ from .const import (
     USER_AGENT,
 )
 from . import projection
-from .operators import (SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_DIGITRAFFIC, SOURCE_ENTUR, SOURCE_RENFE,
+from .operators import (SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_DIGITRAFFIC, SOURCE_ENTUR, SOURCE_ENTUR_ET,
+                        SOURCE_RENFE,
                         SOURCE_RENFE_LD, SOURCE_TFNSW, SOURCE_TRANSPORT_VIC, SOURCE_VIA, Operator)
 from .route_store import RouteStore
 from .shared_coordinator import get_shared_client, release_shared_client
@@ -56,7 +57,7 @@ from .shared_entur import get_shared_entur_client, release_shared_entur_client
 from .shared_renfe import get_shared_renfe_client, release_shared_renfe_client
 from .shared_tfnsw import get_shared_tfnsw_client, release_shared_tfnsw_client
 from .shared_transport_vic import get_shared_transport_vic_client, release_shared_transport_vic_client
-from .sources import amtraker, entur, renfe, renfe_ld, tfnsw, vline
+from .sources import amtraker, entur, entur_et, renfe, renfe_ld, tfnsw, vline
 from .sources.base import EXTRA_KEYS, Snapshot, hold_last, trains_in_service
 from .sources.brightline_rt import BrightlineRealtime
 from .sources.via_rail import ViaRail
@@ -115,6 +116,7 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._entur_client = None
         self._entur_view: entur.StaticView | None = None
         self._entur: entur.EnturRealtime | None = None
+        self._entur_et: entur_et.EnturEtRealtime | None = None
         self._session = async_get_clientsession(hass)
         if op.source == SOURCE_AMTRAKER:
             # On the event loop, as shared_coordinator requires.
@@ -174,6 +176,14 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._entur_client = get_shared_entur_client(hass, opts["consumer"], opts["codespace"])
             self._entur_view = entur.StaticView(self._entur_client, opts["codespace"], INTERCITY_LETTERS)
             self._entur = entur.EnturRealtime()
+            self.routes.static_client = self._entur_view
+        elif op.source == SOURCE_ENTUR_ET:
+            # The same shared client, for a railroad with no positions (SJ Nord): its SIRI ET, read once a minute for
+            # every consumer, and its timetable, cut as Vy's (sources/entur_et.py).
+            opts = op.source_options
+            self._entur_client = get_shared_entur_client(hass, opts["consumer"], opts["codespace"])
+            self._entur_view = entur.StaticView(self._entur_client, opts["codespace"], INTERCITY_LETTERS)
+            self._entur_et = entur_et.EnturEtRealtime()
             self.routes.static_client = self._entur_view
         else:  # pragma: no cover - an operator naming a source not built
             raise ValueError(f"unknown source {op.source!r} for {op.id}")
@@ -370,10 +380,28 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return await self.hass.async_add_executor_job(
             self._entur.parse, positions, updates, time.time(), projector.geometry if projector else {})
 
+    async def _fetch_entur_et(self) -> Snapshot | None:
+        """This railroad's journeys from the shared client's SIRI ET, in the executor. A 429 or a failed read is
+        ridden out by hold_last."""
+        opts = self.operator.source_options
+        try:
+            journeys, version = await self.hass.async_add_executor_job(
+                entur_et.read, self._entur_client, opts["consumer"], opts["codespace"], self._entur_view)
+        except EnturError as err:
+            self._last_reason = f"{type(err).__name__}: {err}"[:200]
+            _LOGGER.debug("%s fetch failed: %s", self.operator.id, self._last_reason)
+            return None
+        self.routes.note_static(version)
+        projector = self.routes.projector
+        return await self.hass.async_add_executor_job(
+            self._entur_et.parse, journeys, time.time(), projector.geometry if projector else {})
+
     async def _fetch(self) -> Snapshot | None:
         op = self.operator
         if self._entur is not None:
             return await self._fetch_entur()
+        if self._entur_et is not None:
+            return await self._fetch_entur_et()
         if self._renfe is not None:
             return await self._fetch_renfe()
         if self._ld is not None:

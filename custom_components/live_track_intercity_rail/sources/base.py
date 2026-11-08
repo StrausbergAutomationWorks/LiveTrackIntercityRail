@@ -54,6 +54,10 @@ HELD_SPEED_KEY = "held_speed_kmh"
 # the next stop's estimate (Norway: a train pushed through a tunnel reaches the point its fixes come
 # back at in the quickest time measured; None holds it where it was last drawn). Extras only.
 AIM_ETA_KEY = "aim_eta"
+# NO_FIX_KEY: the source has NO position for this train at all; the Obs stands at a stop it is timed from (SJ Nord,
+# sources/entur_et.py). Its record is always "estimated" and carries no fix_latitude/fix_longitude (projection.py).
+# Extras only.
+NO_FIX_KEY = "no_fix"
 
 
 @dataclass
