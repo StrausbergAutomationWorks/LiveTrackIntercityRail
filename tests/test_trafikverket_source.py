@@ -149,6 +149,20 @@ class Parse(unittest.TestCase):
     def rt(self):
         return src.TrafikverketRealtime(ends=ENDS)
 
+    def test_the_ends_are_read_at_the_first_parse_not_at_construction(self):
+        calls = []
+        self.addCleanup(setattr, src.sweden_lines, "load_ends", src.sweden_lines.load_ends)
+        src.sweden_lines.load_ends = lambda *a: calls.append(1) or ENDS
+        rt = src.TrafikverketRealtime()
+        self.assertEqual(calls, [])                     # built on the event loop: no file read
+        self.assertIsNone(rt.parse(None, STATIONS, NOW, geo()))
+        self.assertEqual(calls, [])                     # no answer: nothing read either
+        snap = rt.parse([run_(calls=[call("Kac", "Avgang", NOW - 900), call("Hie", "Ankomst", NOW + 900)])],
+                        STATIONS, NOW, geo())
+        self.assertIs(snap.extras["525-9"]["toward_hub"], True)
+        rt.parse([], STATIONS, NOW, geo())
+        self.assertEqual(calls, [1])                    # once, in the executor
+
     def test_none_and_empty(self):
         self.assertIsNone(self.rt().parse(None, STATIONS, NOW, geo()))
         self.assertEqual(self.rt().parse([], STATIONS, NOW, geo()).observations, [])

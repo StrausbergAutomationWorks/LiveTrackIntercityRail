@@ -187,7 +187,9 @@ class TrafikverketRealtime:
     """Per config entry: which runs have been seen, for the first-sight rule."""
 
     def __init__(self, ends: Mapping[str, Mapping[str, Any]] | None = None, has_line=None) -> None:
-        self._ends = ends if ends is not None else sweden_lines.load_ends()
+        # The ends file is read at the first parse, in the executor: the coordinator builds this on the event loop
+        # (HA flagged the read there, 2026-11-08 19:35 CST, with the 15 entries).
+        self._ends = ends
         self._has_line = has_line
         self._seen: dict[str, float] = {}
 
@@ -211,6 +213,8 @@ class TrafikverketRealtime:
         """The brand's runs -> Snapshot. None only when `runs` is None (no answer); an empty list is a quiet hour."""
         if runs is None:
             return None
+        if self._ends is None:
+            self._ends = sweden_lines.load_ends()
         geo = geometry if geometry is not None else {}
         names = {s: v.get("name") for s, v in (stations or {}).items()}
         names.update({k: v for k, v in (geo.get("stop_names") or {}).items() if k not in names})
