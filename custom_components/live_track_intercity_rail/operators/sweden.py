@@ -46,7 +46,8 @@ BRANDS: dict[str, tuple[str, str, str, str]] = {
     "malartag": ("Mälartåg", "#0949A1", WHITE, WHITE),
     "vasttagen": ("Västtågen", "#00ACEA", "#00394D", "#00394D"),
     "krosatagen": ("Krösatågen", "#C40000", WHITE, WHITE),
-    "ostgotapendeln": ("Östgötapendeln", "#E10E1C", "#320010", "#320010"),
+    # Numbers white (Lee 2026-11-08 ~19:4x CST): maroon on red read ~2.9:1 at map size; the ring stays maroon.
+    "ostgotapendeln": ("Östgötapendeln", "#E10E1C", "#320010", WHITE),
     "norrtag": ("Norrtåg", "#005AAA", "#F89C0E", "#F89C0E"),
     "tag_i_bergslagen": ("Tåg i Bergslagen", "#C0311A", WHITE, WHITE),
     "x_taget": ("X-Tåget", "#E1071A", WHITE, WHITE),

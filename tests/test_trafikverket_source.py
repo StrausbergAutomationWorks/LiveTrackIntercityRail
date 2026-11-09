@@ -421,6 +421,11 @@ class Operators(unittest.TestCase):
             self.assertEqual(operators.OPERATORS[op_id].marker_keys({})["marker_color"], fill, op_id)
         self.assertEqual(operators.OPERATORS["vasttagen"].marker_keys({})["marker_label_color"], "#00394D")
         self.assertEqual(operators.OPERATORS["ostgotapendeln"].marker_keys({})["marker_ring_color"], "#320010")
+        # Lee 2026-11-08 ~19:4x: white numbers, maroon ring; toward the hub white with red ring and numbers.
+        self.assertEqual(operators.OPERATORS["ostgotapendeln"].marker_keys({})["marker_label_color"], "#FFFFFF")
+        self.assertEqual([operators.OPERATORS["ostgotapendeln"].marker_keys({"toward_hub": True})[k] for k in
+                          ("marker_color", "marker_ring_color", "marker_label_color")],
+                         ["#FFFFFF", "#E10E1C", "#E10E1C"])
         self.assertEqual(operators.OPERATORS["norrtag"].marker_keys({})["marker_label_color"], "#F89C0E")
         self.assertEqual(operators.OPERATORS["varmlandstrafik"].marker_keys({})["marker_label_color"], "#000000")
         self.assertEqual(operators.OPERATORS["pagatagen"].marker_keys({})["marker_label_color"], "#FFFFFF")
