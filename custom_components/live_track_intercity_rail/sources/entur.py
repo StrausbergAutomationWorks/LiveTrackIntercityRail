@@ -66,6 +66,8 @@ from typing import Any, Iterable, Mapping
 from zoneinfo import ZoneInfo
 
 from saw_livetrack.entur import TIME_ZONE, is_bus, letters, line_from_route_id, local_id
+from saw_livetrack.entur import TUNNEL_ALONG_X, TUNNEL_ENTRY_M
+from saw_livetrack.entur import TUNNELS as SHARED_TUNNELS
 from saw_livetrack.gtfs.filter import services_on
 from saw_livetrack.gtfs.realtime import Obs, position_of, vehicle_time
 from saw_livetrack.gtfs.schedule import next_by_timetable, update_delays
@@ -86,32 +88,39 @@ FROZEN_S: float | None = 60.0
 # (geometry.Projector._timed waits where it is), at rest.
 HOLD = {HELD_SPEED_KEY: 0.0, TIMED_AFTER_KEY: 0.0, AIM_ETA_KEY: None}
 # THE TUNNELS, each way: (id, where its fixes freeze going in, where they come back, the quickest dark time in s,
-# passages measured). MEASURED on the capture's first 2.6 hours (2026-11-07 21:34Z-00:10Z; bin\\no_tunnels.txt,
-# no_tunnels2.txt): every place a Vy or Go-Ahead train's fix stood still 60 s or more and then came back 3 km or more
-# away, clustered within 600 m; the freeze fixes spread up to 534 m (Oslo S), the comebacks up to 690 m; quickest
-# among passages under 200 km/h straight (all were). Oslo's tunnels only (Lee 2026-11-07 18:10: "the long tunnels
-# around Oslo"): Ulriken in Bergen measured the same (Arna-Bergen 270 s, Bergen-Arna 270 s), left out.
-TUNNELS = (
-    ("oslotunnelen_w", (59.91168, 10.75219), (59.92012, 10.68731), 211.0, 14),     # Oslo S - Nationaltheatret - Skøyen
-    ("oslotunnelen_e", (59.91861, 10.69489), (59.91059, 10.75485), 241.0, 13),
-    ("lysaker_sandvika_w", (59.91486, 10.62438), (59.89459, 10.53044), 149.0, 11),
-    ("lysaker_sandvika_e", (59.89673, 10.53845), (59.91470, 10.62993), 148.0, 8),
-    ("sandvika_asker_w1", (59.88973, 10.50076), (59.86480, 10.45693), 89.0, 10),
-    ("sandvika_asker_w2", (59.86429, 10.45609), (59.83358, 10.43445), 89.0, 11),
-    ("sandvika_asker_e1", (59.83545, 10.43731), (59.87193, 10.46851), 119.0, 6),
-    ("sandvika_asker_e2", (59.87016, 10.46576), (59.89089, 10.51527), 91.0, 2),
-    ("romeriksporten_w", (59.95273, 11.02512), (59.90594, 10.79167), 329.0, 7),    # Lillestrøm side to Oslo S
-    ("romeriksporten_e", (59.90605, 10.79668), (59.95247, 11.03679), 331.0, 10),
-    ("lieraasen_w", (59.82812, 10.42795), (59.76262, 10.28762), 270.0, 9),         # Asker side to Drammen
-    ("lieraasen_e", (59.76489, 10.29439), (59.83149, 10.43232), 269.0, 6),
-    ("follobanen_s", (59.90637, 10.76614), (59.72809, 10.83911), 479.0, 7),        # Oslo S to Ski
-    ("follobanen_n", (59.73246, 10.84221), (59.90813, 10.76382), 479.0, 7),
+# passages measured). Since 2026-11-09 (Lee 17:10: "Switch") the shared list, saw_livetrack.entur.TUNNELS: Oslo's
+# fourteen, measured here 2026-11-07 and hoisted in 0.2.28 for Live Track Commuter Rail, equal row for row, and
+# Ulriken (0.2.30), which Intercity's F4 and R40 now get too; its entry and along limits with it. It read: Intercity's
+# own copy of Oslo's fourteen (bin\\no_tunnels.txt, no_tunnels2.txt), Ulriken "left out".
+# Then this railroad's own, PROVISIONAL: the Bergen Line (Lee 2026-11-09 17:10: "more capture to finalize, but keep
+# them running until then"). MEASURED on the WHOLE capture of 2026-11-07/08 (21:34Z-11:04Z, bin\\bl_tunnels_full.txt;
+# the first analysis saw its first 2.6 h): the same rule, a fix still 60 s or more, then back 3 km or more away;
+# quickest among the clean passages to the main comeback. Arna to Voss each way 3-5 passages; Myrdal one each way;
+# toward Finse one, eastbound only. Here, not in the library: Intercity alone runs the Bergen Line (one consumer).
+# They are FINALIZED from a longer capture; the passage counts say how firm each is.
+BERGEN_LINE_TUNNELS = (
+    ("bergensbanen_1e", (60.43035, 5.62607), (60.45849, 5.73735), 240.0, 5),     # east of Arna, eastbound
+    ("bergensbanen_1w", (60.45530, 5.73220), (60.42933, 5.62471), 359.0, 3),
+    ("bergensbanen_2e", (60.59936, 5.82380), (60.63772, 5.95648), 270.0, 5),
+    ("bergensbanen_2w", (60.63729, 5.95183), (60.59331, 5.81875), 271.0, 3),
+    ("bergensbanen_3e", (60.64638, 6.01522), (60.64684, 6.11043), 210.0, 1),     # and 2 frozen inside it: 150 s left
+    ("bergensbanen_3w", (60.64634, 6.10078), (60.64669, 6.01461), 179.0, 3),
+    ("bergensbanen_4e", (60.62937, 6.29156), (60.62391, 6.38804), 180.0, 4),
+    ("bergensbanen_4w", (60.62324, 6.38543), (60.62996, 6.28784), 209.0, 4),     # toward Voss
+    ("bergensbanen_5e", (60.72593, 7.01607), (60.73448, 7.12289), 240.0, 1),     # up to Myrdal
+    ("bergensbanen_5w", (60.73325, 7.12118), (60.72531, 7.01183), 301.0, 1),
+    ("bergensbanen_6e", (60.73937, 7.12501), (60.67015, 7.24363), 690.0, 1),     # Myrdal toward Finse
+    ("bergensbanen_7e", (60.65884, 7.26879), (60.60255, 7.50223), 510.0, 1),
 )
+TUNNELS = SHARED_TUNNELS + BERGEN_LINE_TUNNELS
+# The rows' digest, a part of the cached geometry's version: their comeback points are stops in it (TUNNEL_STOP), so
+# a tunnel added here or in the library is distilled in at the restart, not at Oslo's next day.
+TUNNELS_TAG = hashlib.sha1(repr(TUNNELS).encode("utf-8")).hexdigest()[:8]
 # A frozen fix this near a tunnel's way in is taken as going in (the freeze fixes spread up to 534 m), or one already
 # inside it: its distances to the way in and to the comeback point add up to at most ALONG_X times theirs (measured:
 # train 1673's fix froze 1.6 km into Romeriksporten, its two distances 1.017 times; bin\\no_replay_tunnels_dbg.txt).
-ENTRY_M = 700.0
-ALONG_X = 1.05
+ENTRY_M = TUNNEL_ENTRY_M
+ALONG_X = TUNNEL_ALONG_X
 # A tunnel's comeback point as a stop of the distilled geometry, the timed rule's aim.
 TUNNEL_STOP = "saw:tunnel:"
 # A failed update poll keeps the last answer this long (const.SOURCE_GAP_S).
@@ -332,8 +341,8 @@ class StaticView:
         self._ends_tag: str | None = None
 
     def static_version(self) -> str | None:
-        """The distill's format, the end-city table's digest, the client's version and Oslo's date. The digest
-        makes a new norway_ends.json distil again at the restart; without it the cached geometry kept the old hubs
+        """The distill's format, the end-city table's and the tunnels' digests, the client's version and Oslo's
+        date. The digests make a new norway_ends.json or tunnel distil again at the restart; without it the cached geometry kept the old hubs
         until Oslo's next day (2026-11-08, SJ Nord's ends: Intercity SSOT 8.8). Blocking the first time (the
         digest); read() runs it in the executor."""
         v = self.client.static_version(self.codespace)
@@ -341,7 +350,7 @@ class StaticView:
             return None
         if self._ends_tag is None:
             self._ends_tag = file_tag(self._ends_path)
-        return f"entur{DISTILL_V}:{self._ends_tag}:{v}:{self._today()}"
+        return f"entur{DISTILL_V}:{self._ends_tag}:{TUNNELS_TAG}:{v}:{self._today()}"
 
     def static_path(self) -> str | None:
         return self.client.static_path(self.codespace)

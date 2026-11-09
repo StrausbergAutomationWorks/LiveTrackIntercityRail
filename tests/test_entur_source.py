@@ -225,7 +225,7 @@ class TestStaticView(unittest.TestCase):
             fh.write(gtfs_zip())
         v = ent.StaticView(FakeClient("Fri, 06 Nov", tmp), "VYG", lib.INTERCITY_LETTERS, today=lambda: "2026-11-07")
         self.assertEqual(v.static_version(),
-                         f"entur{ent.DISTILL_V}:{ent.file_tag(ent.ENDS_FILE)}:Fri, 06 Nov:2026-11-07")
+                         f"entur{ent.DISTILL_V}:{ent.file_tag(ent.ENDS_FILE)}:{ent.TUNNELS_TAG}:Fri, 06 Nov:2026-11-07")
         d = v.distill_geometry()
         self.assertEqual(len(d["trains"]), 3)
         self.assertIn("VYG:ServiceJourney:1808_1-R", d["trip_hub"])     # the shipped ends: Bergen beats Voss
@@ -248,9 +248,9 @@ class TestStaticView(unittest.TestCase):
             return ent.StaticView(FakeClient("v1"), "SJN", (), today=lambda: "2026-11-09", ends_path=p).static_version()
         a, b = version('{"ends": {}}'), version('{"ends": {"Trondheim S": {"population": 1}}}')
         self.assertNotEqual(a, b)
-        self.assertRegex(a, r"^entur\d+:[0-9a-f]{12}:v1:2026-11-09$")
+        self.assertRegex(a, r"^entur\d+:[0-9a-f]{12}:[0-9a-f]{8}:v1:2026-11-09$")
         self.assertEqual(version('{"ends": {}}'), a)
-        self.assertEqual(version(None), f"entur{ent.DISTILL_V}:none:v1:2026-11-09")
+        self.assertEqual(version(None), f"entur{ent.DISTILL_V}:none:{ent.TUNNELS_TAG}:v1:2026-11-09")
         self.assertEqual(ent.file_tag(p), "none")
 
 
@@ -675,7 +675,13 @@ class TestParse(unittest.TestCase):
     def test_tunnels_table(self):
         ids = [t[0] for t in ent.TUNNELS]
         self.assertEqual(len(ids), len(set(ids)))
-        self.assertEqual(len(ids), 14)
+        # 2026-11-09 (Lee: "Switch"): the shared list first, unchanged (Oslo's 14 and Ulriken's 2), then the Bergen
+        # Line's provisional 12. It read 14, Intercity's own copy of Oslo's.
+        self.assertEqual(ent.TUNNELS[:len(lib.TUNNELS)], lib.TUNNELS)
+        self.assertEqual(len(ids), len(lib.TUNNELS) + 12)
+        self.assertIn("ulriken_w", ids)
+        self.assertTrue(all(i.startswith("bergensbanen_") for i in ids[len(lib.TUNNELS):]))
+        self.assertEqual((ent.ENTRY_M, ent.ALONG_X), (lib.TUNNEL_ENTRY_M, lib.TUNNEL_ALONG_X))
         for t in ent.TUNNELS:
             self.assertEqual(self.geo["stops"][ent.TUNNEL_STOP + t[0]], list(t[2]))
             self.assertGreater(t[3], ent.FROZEN_S)
