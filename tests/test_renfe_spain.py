@@ -9,6 +9,7 @@ import asyncio
 import datetime as dt
 import io
 import json
+import os
 import pathlib
 import shutil
 import sys
@@ -557,10 +558,30 @@ class StaticViewCase(unittest.TestCase):
     def test_the_version_is_the_lines_digest_and_spains_date(self):
         v = self.view(ld_zip())
         a = v.static_version()
-        self.assertRegex(a, r"^ld1:[0-9a-f]{12}:2026-11-06$")
+        self.assertRegex(a, r"^ld1:[0-9a-f]{12}\+[0-9a-f]{12}:2026-11-06$")
         self.day = "2026-11-07"
         self.assertEqual(v.static_version(), a[:-2] + "07")
         self.assertIsNone(v.static_path())
+
+    def test_a_new_ends_file_is_a_new_version(self):
+        # 2026-11-09 (Lee: "make future end-station changes take effect at the restart"): the hubs are distilled into
+        # the cached geometry, so the ends file's digest is part of its version.
+        tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmp)
+        c = types.SimpleNamespace(static_zip=lambda fetch=False: None)
+        p = os.path.join(tmp, "ends.json")
+
+        def version(body):
+            if body is None:
+                os.remove(p)
+            else:
+                open(p, "w", encoding="utf-8").write(body)
+            return ld.StaticView(c, today=lambda: "2026-11-09", ends_path=p).static_version()
+        a, b = version('{"ends": {}}'), version('{"ends": {"Madrid": {}}}')
+        self.assertNotEqual(a, b)
+        self.assertEqual(a.split("+")[0], b.split("+")[0])         # the lines' digest unchanged
+        self.assertEqual(version('{"ends": {}}'), a)
+        self.assertTrue(version(None).endswith("+none:2026-11-09"))
 
     def test_nothing_before_a_zip(self):
         self.assertIsNone(self.view(None).distill_geometry())

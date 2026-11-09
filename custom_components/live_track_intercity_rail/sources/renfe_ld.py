@@ -434,11 +434,19 @@ class StaticView:
         self._tag: str | None = None
 
     def static_version(self) -> str:
-        """The shipped lines' digest, the distill's format and Spain's date: a new day, a new release of the
-        lines, or a new distill distills again. Blocking the first time (a digest of the lines file)."""
+        """The shipped lines' and end-city table's digests, the distill's format and Spain's date: a new day, a new
+        release of the lines or of the ends, or a new distill distills again. The ends' digest since 2026-11-09: the
+        hubs are distilled into the cached geometry, which otherwise kept the old ones until Spain's next day (as
+        Norway's did, Intercity SSOT 8.8). Blocking the first time (the two digests)."""
         if self._tag is None:
             with open(self._lines_path, "rb") as fh:
-                self._tag = hashlib.sha1(fh.read()).hexdigest()[:12]
+                lines = hashlib.sha1(fh.read()).hexdigest()[:12]
+            try:
+                with open(self._ends_path, "rb") as fh:
+                    ends = hashlib.sha1(fh.read()).hexdigest()[:12]
+            except OSError:
+                ends = "none"
+            self._tag = f"{lines}+{ends}"
         return f"ld{DISTILL_V}:{self._tag}:{self._today()}"
 
     def static_path(self) -> str | None:

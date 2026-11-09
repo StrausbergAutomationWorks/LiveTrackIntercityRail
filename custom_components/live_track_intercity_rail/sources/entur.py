@@ -55,6 +55,7 @@ from __future__ import annotations
 
 import csv
 import datetime as dt
+import hashlib
 import io
 import json
 import math
@@ -262,6 +263,16 @@ def load_ends(path: str = ENDS_FILE) -> dict[str, Any]:
     return d.get("ends", {}) if isinstance(d, dict) else {}
 
 
+def file_tag(path: str) -> str:
+    """The first 12 hex of a file's SHA-1, "none" when it cannot be read: a cache version's part for a shipped data
+    file the distill reads (the end-city table). Blocking."""
+    try:
+        with open(path, "rb") as fh:
+            return hashlib.sha1(fh.read()).hexdigest()[:12]
+    except OSError:
+        return "none"
+
+
 def hub_index(stop_ids: list[str], names: Mapping[str, str], ends: Mapping[str, Any]) -> int | None:
     """The index of a trip's hub among its stops: its LAST Oslo S stop; else its larger end city by population
     (data/norway_ends.json, by station name); None when neither end is known, or both are as large."""
@@ -307,8 +318,8 @@ def distill(raw: bytes, keep_letters: Iterable[str], ends: Mapping[str, Any], to
 
 
 class StaticView:
-    """One codespace's timetable as route_store asks for it: a version (the client's, plus Oslo's date), and the
-    distilled geometry. The end-city table is read once, on the first distill (blocking)."""
+    """One codespace's timetable as route_store asks for it: a version (the client's, plus the end-city table's digest
+    and Oslo's date), and the distilled geometry. The end-city table is read once, on the first distill (blocking)."""
 
     def __init__(self, client: Any, codespace: str, keep_letters: Iterable[str], today=oslo_today,
                  ends_path: str = ENDS_FILE) -> None:
@@ -318,10 +329,19 @@ class StaticView:
         self._today = today
         self._ends_path = ends_path
         self._ends: dict[str, Any] | None = None
+        self._ends_tag: str | None = None
 
     def static_version(self) -> str | None:
+        """The distill's format, the end-city table's digest, the client's version and Oslo's date. The digest
+        makes a new norway_ends.json distil again at the restart; without it the cached geometry kept the old hubs
+        until Oslo's next day (2026-11-08, SJ Nord's ends: Intercity SSOT 8.8). Blocking the first time (the
+        digest); read() runs it in the executor."""
         v = self.client.static_version(self.codespace)
-        return None if v is None else f"entur{DISTILL_V}:{v}:{self._today()}"
+        if v is None:
+            return None
+        if self._ends_tag is None:
+            self._ends_tag = file_tag(self._ends_path)
+        return f"entur{DISTILL_V}:{self._ends_tag}:{v}:{self._today()}"
 
     def static_path(self) -> str | None:
         return self.client.static_path(self.codespace)

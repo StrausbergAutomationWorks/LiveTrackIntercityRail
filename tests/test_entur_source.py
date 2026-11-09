@@ -224,12 +224,34 @@ class TestStaticView(unittest.TestCase):
         with open(tmp, "wb") as fh:
             fh.write(gtfs_zip())
         v = ent.StaticView(FakeClient("Fri, 06 Nov", tmp), "VYG", lib.INTERCITY_LETTERS, today=lambda: "2026-11-07")
-        self.assertEqual(v.static_version(), f"entur{ent.DISTILL_V}:Fri, 06 Nov:2026-11-07")
+        self.assertEqual(v.static_version(),
+                         f"entur{ent.DISTILL_V}:{ent.file_tag(ent.ENDS_FILE)}:Fri, 06 Nov:2026-11-07")
         d = v.distill_geometry()
         self.assertEqual(len(d["trains"]), 3)
         self.assertIn("VYG:ServiceJourney:1808_1-R", d["trip_hub"])     # the shipped ends: Bergen beats Voss
         self.assertIsNone(ent.StaticView(FakeClient(None), "VYG", ()).static_version())
         self.assertIsNone(ent.StaticView(FakeClient("v", None), "VYG", ()).distill_geometry())
+
+    def test_a_new_ends_file_is_a_new_version(self):
+        # 2026-11-09 (Lee: "make future end-station changes take effect at the restart"): SJ Nord's ends of 2026-11-08
+        # waited for Oslo's next day, because the cached geometry's version had no part of the ends file.
+        import os
+        import tempfile
+        p = os.path.join(tempfile.mkdtemp(), "ends.json")
+
+        def version(body):
+            if body is None:
+                os.remove(p)
+            else:
+                with open(p, "w", encoding="utf-8") as fh:
+                    fh.write(body)
+            return ent.StaticView(FakeClient("v1"), "SJN", (), today=lambda: "2026-11-09", ends_path=p).static_version()
+        a, b = version('{"ends": {}}'), version('{"ends": {"Trondheim S": {"population": 1}}}')
+        self.assertNotEqual(a, b)
+        self.assertRegex(a, r"^entur\d+:[0-9a-f]{12}:v1:2026-11-09$")
+        self.assertEqual(version('{"ends": {}}'), a)
+        self.assertEqual(version(None), f"entur{ent.DISTILL_V}:none:v1:2026-11-09")
+        self.assertEqual(ent.file_tag(p), "none")
 
 
 def positions(rows, now):
