@@ -9,4 +9,6 @@
   renfe           Renfe's GTFS-Realtime, Catalonia's regional lines (SSOT 8.7)
   renfe_ld        Renfe's long-distance GTFS-Realtime, AV, LD and MD (SSOT 8.7); its lines in renfe_ld_lines
   entur           Entur, Norway: one railroad's codespace through the shared client (SSOT 8.8)
+  entur_et        Entur's SIRI ET, a railroad with no positions (SJ Nord, SSOT 8.8)
+  trafikverket    Trafikverket, Sweden: one brand through the shared client (SSOT 8.9); its lines in sweden_lines
 """

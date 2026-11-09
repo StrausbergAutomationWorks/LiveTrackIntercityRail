@@ -38,6 +38,7 @@ from saw_livetrack.entur import INTERCITY_LETTERS, EnturError
 from saw_livetrack.gtfs import Fleet, decode
 from saw_livetrack.renfe import RenfeError
 from saw_livetrack.tfnsw import AuthRefused, KeyedError
+from saw_livetrack.trafikverket import AuthRefused as TrvAuthRefused, KeyedError as TrvKeyedError
 
 from .fetch import read_capped
 from .const import (
@@ -49,15 +50,16 @@ from .const import (
 from . import projection
 from .operators import (SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_DIGITRAFFIC, SOURCE_ENTUR, SOURCE_ENTUR_ET,
                         SOURCE_RENFE,
-                        SOURCE_RENFE_LD, SOURCE_TFNSW, SOURCE_TRANSPORT_VIC, SOURCE_VIA, Operator)
+                        SOURCE_RENFE_LD, SOURCE_TFNSW, SOURCE_TRAFIKVERKET, SOURCE_TRANSPORT_VIC, SOURCE_VIA, Operator)
 from .route_store import RouteStore
 from .shared_coordinator import get_shared_client, release_shared_client
 from .shared_digitraffic_rail import get_shared_rail_client, release_shared_rail_client
 from .shared_entur import get_shared_entur_client, release_shared_entur_client
 from .shared_renfe import get_shared_renfe_client, release_shared_renfe_client
 from .shared_tfnsw import get_shared_tfnsw_client, release_shared_tfnsw_client
+from .shared_trafikverket import get_shared_trafikverket_client, release_shared_trafikverket_client
 from .shared_transport_vic import get_shared_transport_vic_client, release_shared_transport_vic_client
-from .sources import amtraker, entur, entur_et, renfe, renfe_ld, tfnsw, vline
+from .sources import amtraker, entur, entur_et, renfe, renfe_ld, tfnsw, trafikverket, vline
 from .sources.base import EXTRA_KEYS, Snapshot, hold_last, trains_in_service
 from .sources.brightline_rt import BrightlineRealtime
 from .sources.via_rail import ViaRail
@@ -117,6 +119,9 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._entur_view: entur.StaticView | None = None
         self._entur: entur.EnturRealtime | None = None
         self._entur_et: entur_et.EnturEtRealtime | None = None
+        self._trv_client = None
+        self._trv: trafikverket.TrafikverketRealtime | None = None
+        self._trv_view: trafikverket.StaticView | None = None
         self._session = async_get_clientsession(hass)
         if op.source == SOURCE_AMTRAKER:
             # On the event loop, as shared_coordinator requires.
@@ -185,6 +190,17 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._entur_view = entur.StaticView(self._entur_client, opts["codespace"], INTERCITY_LETTERS)
             self._entur_et = entur_et.EnturEtRealtime()
             self.routes.static_client = self._entur_view
+        elif op.source == SOURCE_TRAFIKVERKET:
+            # On the event loop, as shared_trafikverket requires. One poller for every Live Track integration on
+            # Trafikverket (Commuter Rail draws Pendeltåg and Arlanda Express, Transit the buses; backlog 327); this
+            # entry registers its brand with its own key (Lee 2026-11-02, D1). The lines are shipped, the stations
+            # the client's (sources/trafikverket.py).
+            opts = op.source_options
+            self._trv_client = get_shared_trafikverket_client(
+                hass, opts["consumer"], opts["brand"], entry.data[CONF_API_KEY])
+            self._trv_view = trafikverket.StaticView(self._trv_client)
+            self._trv = trafikverket.TrafikverketRealtime()
+            self.routes.static_client = self._trv_view
         else:  # pragma: no cover - an operator naming a source not built
             raise ValueError(f"unknown source {op.source!r} for {op.id}")
 
@@ -219,6 +235,11 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self.routes.static_client = None
             opts = self.operator.source_options
             release_shared_entur_client(self.hass, opts["consumer"], opts["codespace"])
+        if self._trv_client is not None:
+            self._trv_client = None
+            self.routes.static_client = None
+            opts = self.operator.source_options
+            release_shared_trafikverket_client(self.hass, opts["consumer"], opts["brand"])
 
     async def _get_rt(self, url: str) -> bytes | None:
         """One whole file, or None on any failure; the reason is kept.
@@ -396,8 +417,28 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return await self.hass.async_add_executor_job(
             self._entur_et.parse, journeys, time.time(), projector.geometry if projector else {})
 
+    async def _fetch_trafikverket(self) -> Snapshot | None:
+        """This brand's runs from the shared Trafikverket client, in the executor (synchronous urllib). Every
+        registered key refused for 10 minutes asks the user for a new one; anything else is ridden out."""
+        opts = self.operator.source_options
+        try:
+            runs, stations, version = await self.hass.async_add_executor_job(
+                trafikverket.read, self._trv_client, opts["consumer"], opts["brand"], self._trv_view)
+        except TrvAuthRefused as err:
+            raise ConfigEntryAuthFailed(str(err)) from None
+        except TrvKeyedError as err:
+            self._last_reason = f"{type(err).__name__}: {err}"[:200]
+            _LOGGER.debug("%s fetch failed: %s", self.operator.id, self._last_reason)
+            return None
+        self.routes.note_static(version)
+        projector = self.routes.projector
+        return await self.hass.async_add_executor_job(
+            self._trv.parse, runs, stations, time.time(), projector.geometry if projector else None)
+
     async def _fetch(self) -> Snapshot | None:
         op = self.operator
+        if self._trv is not None:
+            return await self._fetch_trafikverket()
         if self._entur is not None:
             return await self._fetch_entur()
         if self._entur_et is not None:

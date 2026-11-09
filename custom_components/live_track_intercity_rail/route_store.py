@@ -217,7 +217,10 @@ class RouteStore:
                 _LOGGER.warning("%s timetable not read: %s; kept the last copy", op.id, err)
                 return
             # A line may be stored as legs of shared lines (geometry.line_from_legs; Renfe (Spain)).
-            if d is None or not (d.get("shapes") or d.get("shape_legs")) or not d.get("trains"):
+            # A view whose trips come with the runs (Sweden: "live_trains", sources/trafikverket.py) ships its
+            # lines only.
+            live = bool(d and d.get("live_trains") and d.get("pair_lines"))
+            if d is None or not (live or ((d.get("shapes") or d.get("shape_legs")) and d.get("trains"))):
                 _LOGGER.debug("%s timetable had no route lines; kept the last copy", op.id)
                 return
             d["fetched_at"] = now

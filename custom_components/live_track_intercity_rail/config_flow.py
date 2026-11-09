@@ -45,8 +45,9 @@ from .const import (
     MAX_SCAN_INTERVAL,
     MIN_SCAN_INTERVAL,
 )
-from .operators import OPERATORS, SOURCE_TRANSPORT_VIC, Operator, operators_in, regions_in_use
-from .sources import tfnsw, vline
+from .operators import (OPERATORS, SOURCE_TRAFIKVERKET, SOURCE_TRANSPORT_VIC, Operator, operators_in,
+                        regions_in_use)
+from .sources import tfnsw, trafikverket, vline
 
 
 def _dropdown(options: list[SelectOptionDict]) -> SelectSelector:
@@ -68,8 +69,20 @@ class IntercityRailConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def _check_key(self, op: Operator, key: str) -> str | None:
         """None when the key reads the feed, else the form's error."""
-        check = vline.check_key if op.source == SOURCE_TRANSPORT_VIC else tfnsw.check_key
+        check = {SOURCE_TRANSPORT_VIC: vline.check_key,
+                 SOURCE_TRAFIKVERKET: trafikverket.check_key}.get(op.source, tfnsw.check_key)
         return await self.hass.async_add_executor_job(check, op.source_options["consumer"], key)
+
+    def _key_in_use(self, op: Operator) -> str | None:
+        """The key another entry of this integration holds for the same source, offered in the key form so a user
+        adding a second Swedish brand need not paste it again (Sweden: fifteen entries, one Trafikverket key; each
+        entry still holds its own copy, D1)."""
+        for entry in self._async_current_entries(include_ignore=False):
+            other = OPERATORS.get(entry.data.get(CONF_OPERATOR, ""))
+            key = entry.data.get(CONF_API_KEY)
+            if other is not None and other.source == op.source and key:
+                return key
+        return None
 
     def _available(self, region: str) -> list[Operator]:
         taken = self._async_current_ids()
@@ -115,8 +128,12 @@ class IntercityRailConfigFlow(ConfigFlow, domain=DOMAIN):
                 return self.async_create_entry(title=op.name,
                                                data={CONF_OPERATOR: op.id, CONF_API_KEY: key})
             errors["base"] = error
+        schema = _key_schema()
+        known = self._key_in_use(op)
+        if known and user_input is None:
+            schema = self.add_suggested_values_to_schema(schema, {CONF_API_KEY: known})
         return self.async_show_form(
-            step_id="key", data_schema=_key_schema(), errors=errors,
+            step_id="key", data_schema=schema, errors=errors,
             description_placeholders={"name": op.name, "url": op.key_url or ""})
 
     async def async_step_reauth(self, entry_data: Mapping[str, Any]) -> ConfigFlowResult:

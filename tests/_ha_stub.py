@@ -40,8 +40,16 @@ class ConfigFlow:
     _reauth = None
     uid = None
 
+    _entries = ()
+
     def _async_current_ids(self):
         return set(self._ids)
+
+    def _async_current_entries(self, include_ignore=True):
+        return list(self._entries)
+
+    def add_suggested_values_to_schema(self, schema, suggested):
+        return {"schema": schema, "suggested": dict(suggested)}
 
     async def async_set_unique_id(self, uid):
         self.uid = uid

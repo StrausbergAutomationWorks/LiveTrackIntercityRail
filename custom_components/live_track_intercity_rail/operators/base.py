@@ -38,8 +38,11 @@ SOURCE_ENTUR = "entur"
 # Entur's SIRI Estimated Timetable, for a railroad with NO positions (SJ Nord), through the same shared client
 # (sources/entur_et.py).
 SOURCE_ENTUR_ET = "entur_et"
+# Trafikverket (Sweden), one brand per railroad, through the shared client saw_livetrack.trafikverket
+# (sources/trafikverket.py).
+SOURCE_TRAFIKVERKET = "trafikverket"
 SOURCES = (SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_VIA, SOURCE_DIGITRAFFIC, SOURCE_TFNSW,
-           SOURCE_TRANSPORT_VIC, SOURCE_RENFE, SOURCE_RENFE_LD, SOURCE_ENTUR, SOURCE_ENTUR_ET)
+           SOURCE_TRANSPORT_VIC, SOURCE_RENFE, SOURCE_RENFE_LD, SOURCE_ENTUR, SOURCE_ENTUR_ET, SOURCE_TRAFIKVERKET)
 
 
 @dataclass(frozen=True)
@@ -169,5 +172,6 @@ REGIONS: dict[str, str] = {
     "ES": "Spain",
     "FI": "Finland",
     "NO": "Norway",
+    "SE": "Sweden",
     "US": "United States",
 }
