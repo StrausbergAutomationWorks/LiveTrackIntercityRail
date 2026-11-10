@@ -11,4 +11,5 @@
   entur           Entur, Norway: one railroad's codespace through the shared client (SSOT 8.8)
   entur_et        Entur's SIRI ET, a railroad with no positions (SJ Nord, SSOT 8.8)
   trafikverket    Trafikverket, Sweden: one brand through the shared client (SSOT 8.9); its lines in sweden_lines
+  irish_rail      Irish Rail, Ireland: the NTA timetable, the realtime API as updates, shared client (SSOT 8.10)
 """

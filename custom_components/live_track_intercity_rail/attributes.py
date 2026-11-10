@@ -59,6 +59,9 @@ PASSTHROUGH = (
     # D4a: the marker's shape; "star" draws a star in the colours above,
     # "maple" VIA's badge (D4a-maple).
     "marker_shape",
+    # D4a-inner-ring: a thin second ring just inside the ring (the Enterprise; operators/irish_rail.py).
+    "marker_inner_ring_color",
+    "marker_inner_ring_width",
     # D4a-maple: the leaf's fill and outline, and the number as a tag in the
     # arrow's place (VIA; operators/via_rail.py).
     "marker_symbol_color",

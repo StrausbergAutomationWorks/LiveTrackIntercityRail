@@ -39,6 +39,7 @@ from saw_livetrack.gtfs import Fleet, decode
 from saw_livetrack.renfe import RenfeError
 from saw_livetrack.tfnsw import AuthRefused, KeyedError
 from saw_livetrack.trafikverket import AuthRefused as TrvAuthRefused, KeyedError as TrvKeyedError
+from saw_livetrack.irish_rail import KeyedError as IrKeyedError
 
 from .fetch import read_capped
 from .const import (
@@ -49,17 +50,18 @@ from .const import (
 )
 from . import projection
 from .operators import (SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_DIGITRAFFIC, SOURCE_ENTUR, SOURCE_ENTUR_ET,
-                        SOURCE_RENFE,
+                        SOURCE_IRISH_RAIL, SOURCE_RENFE,
                         SOURCE_RENFE_LD, SOURCE_TFNSW, SOURCE_TRAFIKVERKET, SOURCE_TRANSPORT_VIC, SOURCE_VIA, Operator)
 from .route_store import RouteStore
 from .shared_coordinator import get_shared_client, release_shared_client
 from .shared_digitraffic_rail import get_shared_rail_client, release_shared_rail_client
 from .shared_entur import get_shared_entur_client, release_shared_entur_client
+from .shared_irish_rail import get_shared_irish_rail_client, release_shared_irish_rail_client
 from .shared_renfe import get_shared_renfe_client, release_shared_renfe_client
 from .shared_tfnsw import get_shared_tfnsw_client, release_shared_tfnsw_client
 from .shared_trafikverket import get_shared_trafikverket_client, release_shared_trafikverket_client
 from .shared_transport_vic import get_shared_transport_vic_client, release_shared_transport_vic_client
-from .sources import amtraker, entur, entur_et, renfe, renfe_ld, tfnsw, trafikverket, vline
+from .sources import amtraker, entur, entur_et, irish_rail, renfe, renfe_ld, tfnsw, trafikverket, vline
 from .sources.base import EXTRA_KEYS, Snapshot, hold_last, trains_in_service
 from .sources.brightline_rt import BrightlineRealtime
 from .sources.via_rail import ViaRail
@@ -122,6 +124,9 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._trv_client = None
         self._trv: trafikverket.TrafikverketRealtime | None = None
         self._trv_view: trafikverket.StaticView | None = None
+        self._ir_client = None
+        self._ir: irish_rail.IrishRailRealtime | None = None
+        self._ir_view: irish_rail.StaticView | None = None
         self._session = async_get_clientsession(hass)
         if op.source == SOURCE_AMTRAKER:
             # On the event loop, as shared_coordinator requires.
@@ -201,6 +206,14 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._trv_view = trafikverket.StaticView(self._trv_client)
             self._trv = trafikverket.TrafikverketRealtime()
             self.routes.static_client = self._trv_view
+        elif op.source == SOURCE_IRISH_RAIL:
+            # On the event loop, as shared_irish_rail requires. One poller for every Live Track integration on Irish
+            # Rail (Commuter Rail draws P/D, Transit the DART); keyless. The timetable and stations are the client's, on
+            # disk (sources/irish_rail.py).
+            self._ir_client = get_shared_irish_rail_client(hass, op.source_options["consumer"])
+            self._ir_view = irish_rail.StaticView(self._ir_client, op.source_options["consumer"])
+            self._ir = irish_rail.IrishRailRealtime()
+            self.routes.static_client = self._ir_view
         else:  # pragma: no cover - an operator naming a source not built
             raise ValueError(f"unknown source {op.source!r} for {op.id}")
 
@@ -240,6 +253,10 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self.routes.static_client = None
             opts = self.operator.source_options
             release_shared_trafikverket_client(self.hass, opts["consumer"], opts["brand"])
+        if self._ir_client is not None:
+            self._ir_client = None
+            self.routes.static_client = None
+            release_shared_irish_rail_client(self.hass, self.operator.source_options["consumer"])
 
     async def _get_rt(self, url: str) -> bytes | None:
         """One whole file, or None on any failure; the reason is kept.
@@ -435,8 +452,24 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return await self.hass.async_add_executor_job(
             self._trv.parse, runs, stations, time.time(), projector.geometry if projector else None)
 
+    async def _fetch_irish_rail(self) -> Snapshot | None:
+        """Irish Rail's trains for this consumer from the shared client, in the executor (synchronous urllib). A
+        failed read is ridden out by hold_last; an empty answer still runs the timetable."""
+        try:
+            trains, version = await self.hass.async_add_executor_job(
+                irish_rail.read, self._ir_client, self.operator.source_options["consumer"], self._ir_view)
+        except IrKeyedError as err:
+            self._last_reason = f"{type(err).__name__}: {err}"[:200]
+            return None
+        self.routes.note_static(version)
+        projector = self.routes.projector
+        return await self.hass.async_add_executor_job(
+            self._ir.parse, trains, time.time(), projector.geometry if projector else {})
+
     async def _fetch(self) -> Snapshot | None:
         op = self.operator
+        if self._ir is not None:
+            return await self._fetch_irish_rail()
         if self._trv is not None:
             return await self._fetch_trafikverket()
         if self._entur is not None:

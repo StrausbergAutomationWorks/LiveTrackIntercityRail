@@ -41,8 +41,12 @@ SOURCE_ENTUR_ET = "entur_et"
 # Trafikverket (Sweden), one brand per railroad, through the shared client saw_livetrack.trafikverket
 # (sources/trafikverket.py).
 SOURCE_TRAFIKVERKET = "trafikverket"
+# Irish Rail (Ireland): every train from the NTA timetable, Irish Rail's realtime API as updates, through the shared
+# client saw_livetrack.irish_rail (sources/irish_rail.py).
+SOURCE_IRISH_RAIL = "irish_rail"
 SOURCES = (SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_VIA, SOURCE_DIGITRAFFIC, SOURCE_TFNSW,
-           SOURCE_TRANSPORT_VIC, SOURCE_RENFE, SOURCE_RENFE_LD, SOURCE_ENTUR, SOURCE_ENTUR_ET, SOURCE_TRAFIKVERKET)
+           SOURCE_TRANSPORT_VIC, SOURCE_RENFE, SOURCE_RENFE_LD, SOURCE_ENTUR, SOURCE_ENTUR_ET, SOURCE_TRAFIKVERKET,
+           SOURCE_IRISH_RAIL)
 
 
 @dataclass(frozen=True)
@@ -171,6 +175,7 @@ REGIONS: dict[str, str] = {
     "CA": "Canada",
     "ES": "Spain",
     "FI": "Finland",
+    "IE": "Ireland",
     "NO": "Norway",
     "SE": "Sweden",
     "US": "United States",

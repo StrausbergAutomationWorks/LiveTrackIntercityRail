@@ -21,17 +21,19 @@ long-distance feed through this integration's own client, the eighth (2026-11-06
 and Go-Ahead Norge read Entur through the shared client, one codespace each, the ninth (2026-11-07, SSOT 8.8, backlog
 326). SJ Nord reads Entur's SIRI Estimated Timetable through the same shared client, with no positions at all, the
 tenth (2026-11-08, SSOT 8.8). Sweden's fifteen brands read Trafikverket through the shared client, one entry per
-brand, the eleventh (2026-11-08, SSOT 8.9, backlog 327; operators/sweden.py).
+brand, the eleventh (2026-11-08, SSOT 8.9, backlog 327; operators/sweden.py). Irish Rail reads the NTA timetable with
+Irish Rail's realtime API as updates, through the shared client, the twelfth (2026-11-10, SSOT 8.10, backlog 328).
 """
 
 from __future__ import annotations
 
 from .amtrak import AMTRAK
 from .base import (REGIONS, SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_DIGITRAFFIC, SOURCE_ENTUR, SOURCE_ENTUR_ET,
-                   SOURCE_RENFE, SOURCE_RENFE_LD, SOURCE_TFNSW, SOURCE_TRAFIKVERKET, SOURCE_TRANSPORT_VIC, SOURCE_VIA,
+                   SOURCE_IRISH_RAIL, SOURCE_RENFE, SOURCE_RENFE_LD, SOURCE_TFNSW, SOURCE_TRAFIKVERKET, SOURCE_TRANSPORT_VIC, SOURCE_VIA,
                    SOURCES, Operator)
 from .brightline import BRIGHTLINE
 from .go_ahead_norge import GO_AHEAD_NORGE
+from .irish_rail import IRISH_RAIL
 from .nsw_trainlink import NSW_TRAINLINK
 from .renfe_regionals import RENFE_REGIONALS
 from .renfe_spain import RENFE_SPAIN
@@ -42,7 +44,7 @@ from .vline import VLINE
 from .vr import VR
 from .vy import VY
 
-OPERATORS: dict[str, Operator] = {op.id: op for op in (AMTRAK, BRIGHTLINE, GO_AHEAD_NORGE, NSW_TRAINLINK,
+OPERATORS: dict[str, Operator] = {op.id: op for op in (AMTRAK, BRIGHTLINE, GO_AHEAD_NORGE, IRISH_RAIL, NSW_TRAINLINK,
                                                        RENFE_REGIONALS, RENFE_SPAIN, SJ_NORD, VIA_RAIL, VLINE, VR,
                                                        VY) + SWEDEN}
 
@@ -64,6 +66,6 @@ def operators_in(region: str) -> list[Operator]:
 
 
 __all__ = ["OPERATORS", "REGIONS", "SOURCES", "SOURCE_AMTRAKER", "SOURCE_BRIGHTLINE_RT", "SOURCE_DIGITRAFFIC",
-           "SOURCE_ENTUR", "SOURCE_ENTUR_ET", "SOURCE_RENFE", "SOURCE_RENFE_LD", "SOURCE_TFNSW", "SOURCE_TRAFIKVERKET",
+           "SOURCE_ENTUR", "SOURCE_ENTUR_ET", "SOURCE_IRISH_RAIL", "SOURCE_RENFE", "SOURCE_RENFE_LD", "SOURCE_TFNSW", "SOURCE_TRAFIKVERKET",
            "SOURCE_TRANSPORT_VIC", "SOURCE_VIA",
            "Operator", "operators_in", "regions_in_use"]

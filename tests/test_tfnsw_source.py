@@ -471,10 +471,10 @@ class Operator(unittest.TestCase):
             if op.id not in ("nsw_trainlink", "vline"):
                 self.assertFalse(op.needs_key, op.id)
                 # Renfe's regionals take the timetable from the shared client too (SSOT 8.7), and Norway's railroads
-                # from Entur's (SSOT 8.8).
+                # from Entur's (SSOT 8.8), Irish Rail from its client's (SSOT 8.10).
                 self.assertEqual(op.gtfs_from_source,
                                  op.id in ("renfe_regionals_catalunya", "renfe_spain", "vy", "go_ahead_norge",
-                                           "sj_nord"), op.id)
+                                           "sj_nord", "irish_rail"), op.id)
 
 
 class Manifest(unittest.TestCase):
@@ -485,10 +485,10 @@ class Manifest(unittest.TestCase):
         import re
         here = pathlib.Path(__file__).resolve().parents[1] / "custom_components" / "live_track_intercity_rail"
         req = json.loads((here / "manifest.json").read_text(encoding="utf-8"))["requirements"]
-        # 0.2.31 since 2026-11-08: saw_livetrack.trafikverket, Sweden (Intercity SSOT 8.9). 0.2.29 from 2026-11-08: SIRI ET for SJ Nord (Intercity SSOT 8.8, "SJ NORD: BUILT"). 0.2.27 from
+        # 0.2.32 since 2026-11-10: saw_livetrack.irish_rail, Ireland (Intercity SSOT 8.10). 0.2.31 from 2026-11-08: saw_livetrack.trafikverket, Sweden (Intercity SSOT 8.9). 0.2.29 from 2026-11-08: SIRI ET for SJ Nord (Intercity SSOT 8.8, "SJ NORD: BUILT"). 0.2.27 from
         # 2026-11-07: saw_livetrack.entur, Norway. 0.2.25 from 2026-11-05: digitraffic_rail.next_stop after the
         # last actual row (backlog 289).
-        self.assertTrue(req[0].startswith("saw-livetrack[gtfs]>=0.2.31,"), req)
+        self.assertTrue(req[0].startswith("saw-livetrack[gtfs]>=0.2.32,"), req)
         names = {re.split(r"[=<>\[]", r)[0].lower() for r in req}
         extra = [r.split(";")[0].strip() for r in md.requires("saw-livetrack") if 'extra == "gtfs"' in r]
         self.assertTrue(extra)
