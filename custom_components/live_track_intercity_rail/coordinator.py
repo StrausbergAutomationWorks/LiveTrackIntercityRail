@@ -40,6 +40,7 @@ from saw_livetrack.renfe import RenfeError
 from saw_livetrack.tfnsw import AuthRefused, KeyedError
 from saw_livetrack.trafikverket import AuthRefused as TrvAuthRefused, KeyedError as TrvKeyedError
 from saw_livetrack.irish_rail import KeyedError as IrKeyedError
+from saw_livetrack.ns import AuthRefused as NsAuthRefused, KeyedError as NsKeyedError
 
 from .fetch import read_capped
 from .const import (
@@ -50,18 +51,20 @@ from .const import (
 )
 from . import projection
 from .operators import (SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_DIGITRAFFIC, SOURCE_ENTUR, SOURCE_ENTUR_ET,
-                        SOURCE_IRISH_RAIL, SOURCE_RENFE,
+                        SOURCE_IRISH_RAIL, SOURCE_NS, SOURCE_RENFE,
                         SOURCE_RENFE_LD, SOURCE_TFNSW, SOURCE_TRAFIKVERKET, SOURCE_TRANSPORT_VIC, SOURCE_VIA, Operator)
 from .route_store import RouteStore
 from .shared_coordinator import get_shared_client, release_shared_client
 from .shared_digitraffic_rail import get_shared_rail_client, release_shared_rail_client
 from .shared_entur import get_shared_entur_client, release_shared_entur_client
 from .shared_irish_rail import get_shared_irish_rail_client, release_shared_irish_rail_client
+from .shared_ns import get_shared_ns_client, release_shared_ns_client
 from .shared_renfe import get_shared_renfe_client, release_shared_renfe_client
 from .shared_tfnsw import get_shared_tfnsw_client, release_shared_tfnsw_client
 from .shared_trafikverket import get_shared_trafikverket_client, release_shared_trafikverket_client
 from .shared_transport_vic import get_shared_transport_vic_client, release_shared_transport_vic_client
 from .sources import amtraker, entur, entur_et, irish_rail, renfe, renfe_ld, tfnsw, trafikverket, vline
+from .sources import ns as ns_source
 from .sources.base import EXTRA_KEYS, Snapshot, hold_last, trains_in_service
 from .sources.brightline_rt import BrightlineRealtime
 from .sources.via_rail import ViaRail
@@ -127,6 +130,9 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._ir_client = None
         self._ir: irish_rail.IrishRailRealtime | None = None
         self._ir_view: irish_rail.StaticView | None = None
+        self._ns_client = None
+        self._ns: ns_source.NsRealtime | None = None
+        self._ns_view: ns_source.StaticView | None = None
         self._session = async_get_clientsession(hass)
         if op.source == SOURCE_AMTRAKER:
             # On the event loop, as shared_coordinator requires.
@@ -214,6 +220,15 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._ir_view = irish_rail.StaticView(self._ir_client, op.source_options["consumer"])
             self._ir = irish_rail.IrishRailRealtime()
             self.routes.static_client = self._ir_view
+        elif op.source == SOURCE_NS:
+            # On the event loop, as shared_ns requires. One poller for every Live Track integration on NS's feed
+            # (Commuter Rail draws the Sprinters), polling with the oldest registered key; this entry registers what it
+            # draws and its own key (Lee 2026-11-02, D1). SpoorKaart and OVapi's timetable are the client's, on disk
+            # (sources/ns.py).
+            self._ns_client = get_shared_ns_client(hass, op.source_options["consumer"], entry.data[CONF_API_KEY])
+            self._ns_view = ns_source.StaticView(self._ns_client)
+            self._ns = ns_source.NsRealtime()
+            self.routes.static_client = self._ns_view
         else:  # pragma: no cover - an operator naming a source not built
             raise ValueError(f"unknown source {op.source!r} for {op.id}")
 
@@ -257,6 +272,10 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._ir_client = None
             self.routes.static_client = None
             release_shared_irish_rail_client(self.hass, self.operator.source_options["consumer"])
+        if self._ns_client is not None:
+            self._ns_client = None
+            self.routes.static_client = None
+            release_shared_ns_client(self.hass, self.operator.source_options["consumer"])
 
     async def _get_rt(self, url: str) -> bytes | None:
         """One whole file, or None on any failure; the reason is kept.
@@ -466,8 +485,28 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return await self.hass.async_add_executor_job(
             self._ir.parse, trains, time.time(), projector.geometry if projector else {})
 
+    async def _fetch_ns(self) -> Snapshot | None:
+        """This operator's trains from the shared NS client, in the executor (synchronous urllib). Every registered key
+        refused for 10 minutes asks the user for a new one; anything else is ridden out by hold_last."""
+        opts = self.operator.source_options
+        try:
+            trains, version = await self.hass.async_add_executor_job(
+                ns_source.read, self._ns_client, opts["consumer"], opts["operator"], self._ns_view)
+        except NsAuthRefused as err:
+            raise ConfigEntryAuthFailed(str(err)) from None
+        except NsKeyedError as err:
+            self._last_reason = f"{type(err).__name__}: {err}"[:200]
+            _LOGGER.debug("%s fetch failed: %s", self.operator.id, self._last_reason)
+            return None
+        self.routes.note_static(version)
+        projector = self.routes.projector
+        return await self.hass.async_add_executor_job(
+            self._ns.parse, trains, time.time(), projector.geometry if projector else None)
+
     async def _fetch(self) -> Snapshot | None:
         op = self.operator
+        if self._ns is not None:
+            return await self._fetch_ns()
         if self._ir is not None:
             return await self._fetch_irish_rail()
         if self._trv is not None:

@@ -466,7 +466,8 @@ class Operator(unittest.TestCase):
     def test_other_railroads_need_no_key(self):
         for op in operators.OPERATORS.values():
             # Sweden's fifteen take each user's Trafikverket key (SSOT 8.9; tests/test_trafikverket_source.py).
-            if op.source == operators.SOURCE_TRAFIKVERKET:
+            # The Netherlands' three take each user's NS key (SSOT 8.11; tests/test_ns_source.py).
+            if op.source in (operators.SOURCE_TRAFIKVERKET, operators.SOURCE_NS):
                 continue
             if op.id not in ("nsw_trainlink", "vline"):
                 self.assertFalse(op.needs_key, op.id)
@@ -485,10 +486,10 @@ class Manifest(unittest.TestCase):
         import re
         here = pathlib.Path(__file__).resolve().parents[1] / "custom_components" / "live_track_intercity_rail"
         req = json.loads((here / "manifest.json").read_text(encoding="utf-8"))["requirements"]
-        # 0.2.33 since 2026-11-10: the Irish Rail client builds its TLS opener at first use. 0.2.32 from 2026-11-10: saw_livetrack.irish_rail, Ireland (Intercity SSOT 8.10). 0.2.31 from 2026-11-08: saw_livetrack.trafikverket, Sweden (Intercity SSOT 8.9). 0.2.29 from 2026-11-08: SIRI ET for SJ Nord (Intercity SSOT 8.8, "SJ NORD: BUILT"). 0.2.27 from
+        # 0.2.35 since 2026-11-11: saw_livetrack.ns, the Netherlands (Intercity SSOT 8.11). 0.2.33 from 2026-11-10: the Irish Rail client builds its TLS opener at first use. 0.2.32 from 2026-11-10: saw_livetrack.irish_rail, Ireland (Intercity SSOT 8.10). 0.2.31 from 2026-11-08: saw_livetrack.trafikverket, Sweden (Intercity SSOT 8.9). 0.2.29 from 2026-11-08: SIRI ET for SJ Nord (Intercity SSOT 8.8, "SJ NORD: BUILT"). 0.2.27 from
         # 2026-11-07: saw_livetrack.entur, Norway. 0.2.25 from 2026-11-05: digitraffic_rail.next_stop after the
         # last actual row (backlog 289).
-        self.assertTrue(req[0].startswith("saw-livetrack[gtfs]>=0.2.33,"), req)
+        self.assertTrue(req[0].startswith("saw-livetrack[gtfs]>=0.2.35,"), req)
         names = {re.split(r"[=<>\[]", r)[0].lower() for r in req}
         extra = [r.split(";")[0].strip() for r in md.requires("saw-livetrack") if 'extra == "gtfs"' in r]
         self.assertTrue(extra)

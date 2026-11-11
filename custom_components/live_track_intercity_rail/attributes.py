@@ -17,6 +17,9 @@ PASSTHROUGH = (
     "train",
     "line_name",
     "observed_at",
+    # The observed_at rule under D2: "first_seen" where the source gives no fix time and observed_at is the poll
+    # that first saw the position (NS, sources/ns.py). Absent when the source gave the time.
+    "observed_at_source",
     "last_seen",
     "previous_latitude",
     "previous_longitude",

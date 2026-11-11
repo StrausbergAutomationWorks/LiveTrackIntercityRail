@@ -44,9 +44,12 @@ SOURCE_TRAFIKVERKET = "trafikverket"
 # Irish Rail (Ireland): every train from the NTA timetable, Irish Rail's realtime API as updates, through the shared
 # client saw_livetrack.irish_rail (sources/irish_rail.py).
 SOURCE_IRISH_RAIL = "irish_rail"
+# NS (the Netherlands): NS's vehicle feed with each user's key, SpoorKaart's track, OVapi's timetable and delays,
+# through the shared client saw_livetrack.ns (sources/ns.py).
+SOURCE_NS = "ns"
 SOURCES = (SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_VIA, SOURCE_DIGITRAFFIC, SOURCE_TFNSW,
            SOURCE_TRANSPORT_VIC, SOURCE_RENFE, SOURCE_RENFE_LD, SOURCE_ENTUR, SOURCE_ENTUR_ET, SOURCE_TRAFIKVERKET,
-           SOURCE_IRISH_RAIL)
+           SOURCE_IRISH_RAIL, SOURCE_NS)
 
 
 @dataclass(frozen=True)
@@ -176,6 +179,7 @@ REGIONS: dict[str, str] = {
     "ES": "Spain",
     "FI": "Finland",
     "IE": "Ireland",
+    "NL": "Netherlands",
     "NO": "Norway",
     "SE": "Sweden",
     "US": "United States",
