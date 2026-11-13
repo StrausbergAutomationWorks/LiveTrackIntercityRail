@@ -3,7 +3,12 @@ shared client. No Home Assistant imports.
 
 Lee 2026-10-17 11:16 CDT: "Let's make V/Line trains Live Track Intercity Rail." All V/Line
 TRAINS, the commuter-length lines as well as the long ones; its coaches are Live Track Intercity
-Buses'. Intercity SSOT 8.5.
+Buses'. Intercity SSOT 8.5. REVISED 2026-11-13 (Lee 01:45 CST, "Build and deploy"; backlog 337):
+the commuter routes GEL, BAT, TRN, BGO and SER, V/Line's own short-distance class, are Live Track
+Commuter Rail's "V/Line commuter" entry, as Sydney's went. Since saw-livetrack 0.2.38 the shared
+client hands this operator the rest: SNH, ART, WBL, ECH, BDE, ABY, MBY, SWL and vPK. Nothing here
+changed: look, label, lateness and the 30 s poll are as before. The feed's rules are the library's
+(saw_livetrack.vline, sources/vline.py).
 
 THE LOOK (06_MAP_CONTRACT.md D4a-direction; Lee 2026-10-17 14:08, 2026-10-19 23:30): purple
 8F1A95 fill, FBC627 ring and label leaving Melbourne; swapped going to it; unknown, the purple

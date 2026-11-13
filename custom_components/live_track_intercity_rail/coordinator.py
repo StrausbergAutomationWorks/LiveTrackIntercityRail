@@ -381,8 +381,10 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return None
         self.routes.note_static(version)
         projector = self.routes.projector
+        # The WHOLE feed's newest fix (saw-livetrack 0.2.38): this entry is handed the long routes only.
+        whole = vline.whole(self._vic_client, self.operator.source_options["consumer"])
         return await self.hass.async_add_executor_job(
-            self._vline.parse, positions, updates, time.time(), projector.geometry if projector else {})
+            self._vline.parse, positions, updates, time.time(), projector.geometry if projector else {}, whole)
 
     async def _fetch_renfe(self) -> Snapshot | None:
         """This railroad's two feeds from the shared Renfe client, in the executor

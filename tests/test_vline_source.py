@@ -701,6 +701,8 @@ class NextStop(unittest.TestCase):
         class Perth(src.VLineRealtime):
             time_zone = "Australia/Perth"
         self.assertEqual(Perth()._origin(START) - ORIGIN, 3 * 3600)
+        # The library's runs read the adapter's zone too (saw-livetrack 0.2.38).
+        self.assertEqual(Perth()._rows(TRIP, START, GEO)[0][2] - rt()._rows(TRIP, START, GEO)[0][2], 3 * 3600)
 
     def test_no_table_for_a_bad_date(self):
         self.assertEqual(rt()._rows(TRIP, "bad", GEO), [])
@@ -1425,6 +1427,50 @@ class DistillCalendars(unittest.TestCase):
         r = rt()
         self.assertEqual(r._table_id(LIVE, "20261020", d), "01-ABY--5-T0-8605")
         self.assertEqual(r._table_id(LIVE, "20261024", d), "01-ABY--6-T0-8605")
+
+
+class TheLibrarysRules(unittest.TestCase):
+    """saw-livetrack 0.2.38 (backlog 337): the rules are saw_livetrack.vline's, this file the adapter."""
+
+    def test_the_rules_are_the_librarys(self):
+        import saw_livetrack.vline as lib
+        self.assertIs(src.VLineRealtime._feed_frozen, lib.feed_frozen)
+        self.assertIsInstance(rt()._tracker, lib.VLineRuns)
+        self.assertIs(src.service_number, lib.service_number)
+        self.assertIs(src.next_stop, lib.next_stop)
+
+    def test_whole_feed_from_the_client(self):
+        class C:
+            def feed_newest(self, consumer):
+                return (123.0, 9) if consumer == "intercity" else None
+        self.assertEqual(src.whole(C(), "intercity"), (123.0, 9))
+        self.assertIsNone(src.whole(object(), "intercity"))
+
+    def test_a_frozen_whole_feed_holds_a_lone_long_distance_train(self):
+        # At midnight the long routes may be one train: alone it is no freeze, the whole feed says it is.
+        r = rt()
+        t0 = T(10, 30)
+        lone = positions((TRIP, START, -37.39, 145.0, t0))
+        snap = r.parse(lone, None, t0 + 5, GEO)
+        self.assertNotIn(HELD, snap.extras["8605-20"])
+        snap = r.parse(lone, None, t0 + 200, GEO)
+        self.assertNotIn("feed_frozen", snap.skipped)
+        snap = r.parse(lone, None, t0 + 200, GEO, whole=(t0, 12))
+        self.assertEqual(snap.skipped.get("feed_frozen"), 1)
+        self.assertIsNone(snap.extras["8605-20"][HELD])
+        self.assertEqual(snap.extras["8605-20"][base.TIMED_AFTER_KEY], src.ROW_GONE_TIMED_S)
+
+    def test_the_geometry_view(self):
+        v = src.GeoTimetable(GEO)
+        self.assertIn(TRIP, v)
+        self.assertNotIn("nope", v)
+        self.assertEqual(v.stop_rows(TRIP)[0], [1, "A", 36000, 36000])
+        self.assertEqual(v.stop_rows("nope"), [])
+        services = {TRIP: "S"}
+        g = dict(GEO, trip_services=services)
+        self.assertIs(src.GeoTimetable(g).token, services)
+        self.assertEqual(list(src.GeoTimetable(g).twin_candidates()), [TRIP])
+        self.assertEqual(list(src.GeoTimetable({}).twin_candidates()), [])
 
 
 class Reference(unittest.TestCase):
