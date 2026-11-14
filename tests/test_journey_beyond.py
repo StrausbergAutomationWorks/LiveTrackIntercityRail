@@ -80,9 +80,10 @@ class Data(unittest.TestCase):
         self.assertAlmostEqual(ip / 1000, 4352, delta=60)
 
     def test_sections_where_the_train_reverses(self):
-        # Adelaide for the Indian Pacific both ways, Canberra for the Great Southern north; nowhere else.
+        # Adelaide for the Indian Pacific both ways, Canberra for the Great Southern north, Melbourne (Southern Cross)
+        # for the Great Southern south (Lee 2026-11-14 13:51 CST); nowhere else.
         cuts = {pid: [p["calls"][s][0] for s in p["sections"][1:]] for pid, p in TT["patterns"].items()}
-        self.assertEqual({k: v for k, v in cuts.items() if v}, {"IP_W": ["ADL"], "IP_E": ["ADL"], "GS_N": ["CBR"]})
+        self.assertEqual({k: v for k, v in cuts.items() if v}, {"IP_W": ["ADL"], "IP_E": ["ADL"], "GS_N": ["CBR"], "GS_S": ["SCS"]})
         p = TT["patterns"]["IP_E"]                                            # EPT KAL COK LPL ADL BKH KTM SYD
         self.assertEqual([src.section_of(p, i) for i in range(8)], [0, 0, 0, 0, 1, 1, 1, 1])
 
@@ -93,7 +94,7 @@ class Data(unittest.TestCase):
                 day = dt.date.fromisoformat(first) + dt.timedelta(weeks=k)
                 self.assertIsNotNone(src.run_calls(TT, pid, day, dep, arr), (pid, day))
                 n += 1
-        self.assertEqual(n, 507)
+        self.assertEqual(n, 508)
 
 
 class Rules(unittest.TestCase):
@@ -116,13 +117,54 @@ class Rules(unittest.TestCase):
         self.assertEqual((calls[2]["aimed_arrival"], calls[2]["aimed_departure"]), (z(2026, 11, 23, 4, 15),
                                                                                      z(2026, 11, 23, 8, 45)))
         self.assertEqual(calls[-1]["aimed_arrival"], z(2026, 11, 24, 8, 0))
-        # Marla and Katherine have no time: paced by distance between the timed calls either side (decision 3).
+        # Marla and Katherine have no time: reached at 85 km/h from the timed call before, held there for the rest
+        # until the timed call after is due at 85 km/h (Lee 2026-11-14 13:19 CST).
+        v = 85 / 3.6
         for i, a in ((1, (0, 2)), (3, (2, 4))):
             t0, t1 = calls[a[0]]["aimed_departure"], calls[a[1]]["aimed_arrival"]
-            share = (calls[i]["m"] - calls[a[0]]["m"]) / (calls[a[1]]["m"] - calls[a[0]]["m"])
-            self.assertAlmostEqual(calls[i]["aimed_arrival"], t0 + share * (t1 - t0), places=3)
+            m0, mi, m1 = calls[a[0]]["m"], calls[i]["m"], calls[a[1]]["m"]
+            self.assertAlmostEqual(calls[i]["aimed_arrival"], t0 + (mi - m0) / v, places=3)
+            self.assertAlmostEqual(calls[i]["aimed_departure"], t1 - (m1 - mi) / v, places=3)
+            self.assertGreater(calls[i]["aimed_departure"], calls[i]["aimed_arrival"])
             self.assertTrue(calls[i]["paced"])
-            self.assertEqual(calls[i]["aimed_arrival"], calls[i]["aimed_departure"])
+
+    def test_two_untimed_calls_share_the_time_over_by_weight(self):
+        # The 2027 Ghan: Port Augusta (a full day) holds three times as long as Marla (a morning) (Lee 13:51).
+        self.assertEqual(TT["patterns"]["GHAN_N_4D"]["weights"], {"PAG": 3})
+        c = src.run_calls(TT, "GHAN_N_4D", dt.date(2027, 6, 5), 14 * 60 + 30, 3 * 1440 + 17 * 60 + 30)
+        holds = [c[k]["aimed_departure"] - c[k]["aimed_arrival"] for k in (1, 2)]
+        self.assertAlmostEqual(holds[0], 3 * holds[1], places=3)
+        self.assertGreater(holds[1], 3600)
+        # The Great Southern north: Canberra and Coffs Harbour carry no weight, so share evenly.
+        g = src.run_calls(TT, "GS_N", dt.date(2026, 12, 4), 9 * 60, 2 * 1440 + 17 * 60 + 10)
+        self.assertAlmostEqual(g[1]["aimed_departure"] - g[1]["aimed_arrival"],
+                               g[2]["aimed_departure"] - g[2]["aimed_arrival"], places=3)
+
+    def test_melbourne_on_the_great_southern_south(self):
+        # Broadmeadows 10:45, then Melbourne (Southern Cross) untimed: reached at 85 km/h and held, then on to Adelaide.
+        c = src.run_calls(TT, "GS_S", dt.date(2026, 12, 7), 11 * 60 + 15, 3 * 1440 + 8 * 60 + 45)
+        self.assertEqual([x["stop"] for x in c], ["RMS", "CFH", "BMD", "SCS", "ADL"])
+        mel = c[3]
+        self.assertAlmostEqual(mel["aimed_arrival"] - c[2]["aimed_arrival"], (mel["m"] - c[2]["m"]) / (85 / 3.6), places=3)
+        self.assertAlmostEqual(c[4]["aimed_arrival"] - mel["aimed_departure"], (c[4]["m"] - mel["m"]) / (85 / 3.6), places=3)
+        self.assertGreater(mel["aimed_departure"] - mel["aimed_arrival"], 6 * 3600)
+        self.assertAlmostEqual(c[2]["aimed_arrival"] - c[1]["aimed_departure"], (c[2]["m"] - c[1]["m"]) / (85 / 3.6), places=3)
+
+    def test_no_time_over_or_no_speed_paces_evenly(self):
+        tt = json.loads(json.dumps(TT))
+        tt["services"]["the_ghan"]["avg_kmh"] = 2000                         # faster than the timetable: time over
+        fast = src.run_calls(tt, "GHAN_N_3D", dt.date(2026, 11, 22), 12 * 60 + 15, 2 * 1440 + 17 * 60 + 30)
+        self.assertGreater(fast[1]["aimed_departure"], fast[1]["aimed_arrival"])
+        for speed in (1, None):                                               # no time over, or no speed: paced
+            if speed is None:
+                del tt["services"]["the_ghan"]["avg_kmh"]
+            else:
+                tt["services"]["the_ghan"]["avg_kmh"] = speed
+            c = src.run_calls(tt, "GHAN_N_3D", dt.date(2026, 11, 22), 12 * 60 + 15, 2 * 1440 + 17 * 60 + 30)
+            share = (c[1]["m"] - c[0]["m"]) / (c[2]["m"] - c[0]["m"])
+            self.assertAlmostEqual(c[1]["aimed_arrival"], c[0]["aimed_departure"] + share * (
+                c[2]["aimed_arrival"] - c[0]["aimed_departure"]), places=3)
+            self.assertEqual(c[1]["aimed_arrival"], c[1]["aimed_departure"])
 
     def test_the_calendar_wins_for_the_ends(self):
         # Indian Pacific: calendar 14:15 from Sydney and 12:25 into Sydney; the pages 14:10 and 12:30.
@@ -145,6 +187,7 @@ class Rules(unittest.TestCase):
         self.assertIn(("IP_E", "2026-11-14"), got)
         self.assertIn(("GHAN_N_3D", "2026-11-15"), got)
         self.assertNotIn(("GHAN_N_3D", "2026-11-22"), got)
+        self.assertIn(("GHAN_N_3D", "2026-11-29"), {(p, d.isoformat()) for p, d, _, _ in src.departures(TT, z(2026, 11, 30, 0))})
         self.assertFalse(list(src.departures(TT, z(2028, 3, 1, 0))))         # after the horizon, nothing
         # The Indian Pacific from Perth is out four days and more: still listed on its fourth day.
         self.assertIn(("IP_E", "2026-11-14"), {(p, d.isoformat()) for p, d, _, _ in src.departures(TT, z(2026, 11, 18, 0))})
@@ -305,8 +348,9 @@ class Replay(unittest.TestCase):
         seen, sections = self.run_window(z(2026, 12, 3, 12), z(2026, 12, 11, 12), "3-11 Dec 2026")
         self.assertTrue({"great_southern-4", "great_southern-7"} <= seen)
         # The Indian Pacific of 5 Dec (Adelaide on the 7th) and of 9 Dec (the 10th), the Great Southern of 4 Dec at
-        # Canberra. The 2 Dec Indian Pacific left Adelaide before the window opens (05:35 UTC 3 Dec).
-        self.assertEqual(sections, 3)
+        # Canberra, the Great Southern of 7 Dec at Melbourne (9 Dec). The 2 Dec Indian Pacific left Adelaide before the
+        # window opens (05:35 UTC 3 Dec).
+        self.assertEqual(sections, 4)
 
 
 if __name__ == "__main__":

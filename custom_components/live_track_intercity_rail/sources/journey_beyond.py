@@ -14,8 +14,12 @@ nothing is drawn (`last_departure`); the data needs a new transcription before t
 TIMES are local wall-clock at each station (MEASURED, decision 6): a call's minutes count from the run's first local
 midnight at that station's own clock, so a run crossing zones (Sydney, Broken Hill, Adelaide, Cook, Rawlinna, Perth) and
 a daylight-saving change land right. A run's departure and arrival replace its pattern's ends (the calendar wins for the
-ends). A call with no time (Marla, Katherine northbound, Port Augusta, Canberra, Coffs Harbour) is PACED EVENLY along
-the line between the timed calls either side of it (decision 3): its time is the share of that stretch's distance.
+ends). A call with no time (Marla, Katherine northbound, Port Augusta, Canberra, Coffs Harbour) is REACHED AT THE
+SERVICE'S AVERAGE SPEED (`avg_kmh`, 85 km/h from Journey Beyond's "in numbers" pages) from the last timed call, and the
+train HOLDS there for the time left over before the next timed call (Lee 2026-11-14 13:19 CST); untimed calls in one
+stretch share it by the pattern's `weights` (default 1: the 2027 Ghan's Port Augusta, a full day, 3 to Marla's
+morning; Lee 13:51, "Weight the split"). A stretch the schedule leaves no time over for, or a service with no average speed, is paced
+evenly along the line instead (decision 3, as first built).
 
 WHERE A TRAIN IS: saw_livetrack.timetable (call_times, place): at its origin from 5 minutes before it leaves, standing
 at a call between its arrival and departure, running between calls along its pattern's line, kept at its last call 5
@@ -93,8 +97,9 @@ def local_epoch(day: dt.date, minute: int, zone: str) -> float:
 
 def run_calls(tt: Mapping[str, Any], pid: str, day: dt.date, dep: int, arr: int) -> list[dict[str, Any]] | None:
     """One run's calls with epoch `aimed_arrival` / `aimed_departure` (THE module's TIMES), the run's departure and
-    arrival in place of the pattern's ends, a call with no time paced along the line (`paced` True). None when the
-    pattern or a zone is unknown, or the times do not run forward."""
+    arrival in place of the pattern's ends, a call with no time reached at the average speed and held for the time left
+    over, else paced along the line (`paced` True). None when the pattern or a zone is unknown, or the times do not run
+    forward."""
     pat = (tt.get("patterns") or {}).get(pid)
     stations = tt.get("stations") or {}
     if not pat or len(pat.get("calls") or ()) < 2:
@@ -111,18 +116,30 @@ def run_calls(tt: Mapping[str, Any], pid: str, day: dt.date, dep: int, arr: int)
         out.append({"stop": sid, "m": float(m),
                     "aimed_arrival": None if a is None else local_epoch(day, a, zone),
                     "aimed_departure": None if d is None else local_epoch(day, d, zone)})
+    speed = ((tt.get("services") or {}).get(pat.get("service")) or {}).get("avg_kmh")
+    mps = float(speed) / 3.6 if speed else None
     timed = [i for i, c in enumerate(out) if c["aimed_arrival"] is not None or c["aimed_departure"] is not None]
-    for i, c in enumerate(out):
-        if i in timed:
+    for before, after in zip(timed, timed[1:]):
+        gap = range(before + 1, after)
+        if not gap:
             continue
-        before = max(k for k in timed if k < i)
-        after = min(k for k in timed if k > i)
         t0 = out[before]["aimed_departure"] if out[before]["aimed_departure"] is not None else out[before]["aimed_arrival"]
         t1 = out[after]["aimed_arrival"] if out[after]["aimed_arrival"] is not None else out[after]["aimed_departure"]
-        span = out[after]["m"] - out[before]["m"]
-        share = (c["m"] - out[before]["m"]) / span if span > 0 else 0.5
-        c["aimed_arrival"] = c["aimed_departure"] = t0 + share * (t1 - t0)
-        c["paced"] = True
+        m0, m1 = out[before]["m"], out[after]["m"]
+        left = (t1 - t0) - (m1 - m0) / mps if mps else 0.0
+        weights = [float((pat.get("weights") or {}).get(out[k]["stop"], 1)) for k in gap]
+        holds = [left * w / sum(weights) for w in weights] if left > 0 else None
+        held = 0.0
+        for n, k in enumerate(gap):
+            c = out[k]
+            if holds is None:
+                share = (c["m"] - m0) / (m1 - m0) if m1 > m0 else 0.5
+                c["aimed_arrival"] = c["aimed_departure"] = t0 + share * (t1 - t0)
+            else:
+                c["aimed_arrival"] = t0 + (c["m"] - m0) / mps + held
+                held += holds[n]
+                c["aimed_departure"] = c["aimed_arrival"] + holds[n]
+            c["paced"] = True
     last = None
     for c in out:
         for k in ("aimed_arrival", "aimed_departure"):

@@ -188,6 +188,8 @@ def build(rail_path, stations_path, log):
         for c, m in zip(p["calls"], ms):
             calls.append([c[0], minutes(c[1]), minutes(c[2]), round(m)])
         patterns[pid] = {"service": p["service"], "dir": p["dir"], "calls": calls, "sections": starts}
+        if p.get("weights"):
+            patterns[pid]["weights"] = p["weights"]
         log(f"{pid}: {total / 1000:.0f} km, {len(simple)} points")
     runs = []
     for r in src["runs"]:

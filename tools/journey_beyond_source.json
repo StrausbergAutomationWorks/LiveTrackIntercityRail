@@ -1,6 +1,6 @@
 {
   "v": 1,
-  "about": "Journey Beyond's five trains, transcribed BY HAND 2026-11-14 (Intercity SSOT 8.13). Dates and end times: Journey Beyond's booking calendar (bookings.journeybeyondrail.com.au search pages, read in a browser; never polled by shipped code). Times between the ends: the timetable pages (journeybeyondrail.com.au/guest-information/timetables/). Where the two disagree, the calendar wins for the ends (Lee 2026-11-14 11:05 CST). Times are local wall-clock at each station. A call with no time is paced evenly along the line between timed calls (decision 3). tools/journey_beyond.py compiles this into data/journey_beyond_timetable.json and data/journey_beyond_lines.json.gz. Credit: Timetable: Journey Beyond (journeybeyondrail.com.au).",
+  "about": "Journey Beyond's five trains, transcribed BY HAND 2026-11-14 (Intercity SSOT 8.13). Dates and end times: Journey Beyond's booking calendar (bookings.journeybeyondrail.com.au search pages, read in a browser; never polled by shipped code). Times between the ends: the timetable pages (journeybeyondrail.com.au/guest-information/timetables/). Where the two disagree, the calendar wins for the ends (Lee 2026-11-14 11:05 CST). Times are local wall-clock at each station. A call with no time is reached at the service's average speed (avg_kmh, Journey Beyond's 'in numbers' pages, Lee's screenshots 2026-11-14) from the last timed call, and the train holds there for the time left over before the next timed call, shared between the untimed calls of one stretch by their `weights` (default 1; a 'full day experience' 3 to a 'morning experience' 1, Journey Beyond's own words, Lee 2026-11-14 13:51 CST: 'Weight the split') (Lee 2026-11-14 13:19 CST; it read: paced evenly along the line, decision 3). tools/journey_beyond.py compiles this into data/journey_beyond_timetable.json and data/journey_beyond_lines.json.gz. Credit: Timetable: Journey Beyond (journeybeyondrail.com.au).",
   "stations": {
     "ADL": {"name": "Adelaide", "osm": "w53543374"},
     "PAG": {"name": "Port Augusta", "osm": "w234880691"},
@@ -32,21 +32,21 @@
     "RMS": {"name": "Brisbane", "osm": "n9586829503"}
   },
   "services": {
-    "the_ghan": {"name": "The Ghan"},
-    "ghan_expedition": {"name": "The Ghan Expedition"},
-    "indian_pacific": {"name": "Indian Pacific"},
-    "great_southern": {"name": "Great Southern"},
+    "the_ghan": {"name": "The Ghan", "avg_kmh": 85},
+    "ghan_expedition": {"name": "The Ghan Expedition", "avg_kmh": 85},
+    "indian_pacific": {"name": "Indian Pacific", "avg_kmh": 85},
+    "great_southern": {"name": "Great Southern", "avg_kmh": 85},
     "the_overland": {"name": "The Overland"}
   },
   "patterns": {
     "GHAN_N_3D": {"service": "the_ghan", "dir": "out", "from": "The Ghan 2026 page", "calls": [["ADL", null, "0 12:15"], ["MLA", null, null], ["ASP", "1 13:45", "1 18:15"], ["KTR", null, null], ["DRW", "2 17:30", null]]},
-    "GHAN_N_4D": {"service": "the_ghan", "dir": "out", "from": "The Ghan 2027 page (Flinders Ranges day at Port Augusta per Journey Beyond's 2027 itinerary PDFs)", "calls": [["ADL", null, "0 15:00"], ["PAG", null, null], ["MLA", null, null], ["ASP", "2 13:45", "2 18:15"], ["KTR", null, null], ["DRW", "3 17:30", null]]},
+    "GHAN_N_4D": {"service": "the_ghan", "dir": "out", "from": "The Ghan 2027 page (Flinders Ranges day at Port Augusta per Journey Beyond's 2027 itinerary PDFs)", "weights": {"PAG": 3}, "calls": [["ADL", null, "0 15:00"], ["PAG", null, null], ["MLA", null, null], ["ASP", "2 13:45", "2 18:15"], ["KTR", null, null], ["DRW", "3 17:30", null]]},
     "EXP_S_WED": {"service": "ghan_expedition", "dir": "back", "from": "The Ghan Expedition 2026 and 2027 pages, March-November table", "calls": [["DRW", null, "0 10:00"], ["KTR", "0 14:00", "0 18:45"], ["ASP", "1 09:10", "1 22:15"], ["MNG", "2 09:00", "2 19:40"], ["ADL", "3 10:50", null]]},
     "EXP_S_SAT": {"service": "ghan_expedition", "dir": "back", "from": "The Ghan Expedition 2026 and 2027 pages, April-October table", "calls": [["DRW", null, "0 09:00"], ["KTR", "0 13:00", "0 17:00"], ["ASP", "1 11:15", "1 21:45"], ["MNG", "2 09:00", "2 19:40"], ["ADL", "3 10:50", null]]},
     "IP_W": {"service": "indian_pacific", "dir": "out", "from": "Indian Pacific 2026 and 2027 pages (identical)", "calls": [["SYD", null, "0 14:10"], ["BKH", "1 06:30", null], ["ADL", "1 16:05", "1 21:50"], ["COK", "2 12:35", null], ["RWL", "2 17:55", null], ["EPT", "3 14:45", null]]},
     "IP_E": {"service": "indian_pacific", "dir": "back", "from": "Indian Pacific 2026 and 2027 pages (identical); the train's own arrival into Sydney, not the Katoomba charter", "calls": [["EPT", null, "0 17:55"], ["KAL", "1 06:00", null], ["COK", "1 22:04", null], ["LPL", "2 15:25", null], ["ADL", "2 17:15", "2 22:40"], ["BKH", "3 08:15", null], ["KTM", "4 08:05", "4 08:25"], ["SYD", "4 12:30", null]]},
     "GS_N": {"service": "great_southern", "dir": "out", "from": "Great Southern 2026/2027 page", "calls": [["ADL", null, "0 09:00"], ["CBR", null, null], ["CFH", null, null], ["RMS", "2 17:10", null]]},
-    "GS_S": {"service": "great_southern", "dir": "back", "from": "Great Southern 2026/2027 page; Broadmeadows 10:45 is the Melbourne table's, the same train (the calendar's Brisbane-Melbourne journey, RSTNSS, arrives +2 10:45 on the same dates)", "calls": [["RMS", null, "0 11:15"], ["CFH", null, null], ["BMD", "2 10:45", null], ["ADL", "3 08:45", null]]},
+    "GS_S": {"service": "great_southern", "dir": "back", "from": "Great Southern 2026/2027 page; Broadmeadows 10:45 is the Melbourne table's, the same train (the calendar's Brisbane-Melbourne journey, RSTNSS, arrives +2 10:45 on the same dates); Melbourne (Southern Cross) untimed, the page's Wednesday 'Melbourne & regional Victoria afternoon experience' (Lee 2026-11-14 13:51 CST: 'Add Melbourne')", "calls": [["RMS", null, "0 11:15"], ["CFH", null, null], ["BMD", "2 10:45", null], ["SCS", null, null], ["ADL", "3 08:45", null]]},
     "OVL_W_SUN": {"service": "the_overland", "dir": "out", "from": "The Overland 2027 page and 2026 PDF (identical), departures", "calls": [["ADL", null, "0 07:45"], ["MBG", null, "0 09:35"], ["BDT", null, "0 11:34"], ["NHL", null, "0 13:01"], ["DMB", null, "0 13:34"], ["HSM", null, "0 14:01"], ["STW", null, "0 14:55"], ["ART", null, "0 15:19"], ["GNS", null, "0 17:23"], ["SCS", "0 18:50", null]]},
     "OVL_W_THU": {"service": "the_overland", "dir": "out", "from": "The Overland 2027 page and 2026 PDF (identical), departures", "calls": [["ADL", null, "0 06:55"], ["MBG", null, "0 09:10"], ["BDT", null, "0 11:09"], ["NHL", null, "0 12:36"], ["DMB", null, "0 13:10"], ["HSM", null, "0 13:37"], ["STW", null, "0 14:31"], ["ART", null, "0 14:55"], ["GNS", null, "0 17:40"], ["SCS", "0 18:50", null]]},
     "OVL_E_MON": {"service": "the_overland", "dir": "back", "from": "The Overland 2027 page and 2026 PDF (identical), departures", "calls": [["SCS", null, "0 08:05"], ["GNS", null, "0 09:35"], ["ART", null, "0 11:35"], ["STW", null, "0 12:00"], ["HSM", null, "0 12:51"], ["DMB", null, "0 13:20"], ["NHL", null, "0 13:47"], ["BDT", null, "0 14:11"], ["MBG", null, "0 16:10"], ["ADL", "0 18:00", null]]},
@@ -55,6 +55,7 @@
   "runs": [
     {"pattern": "GHAN_N_3D", "journey": "APTBRT9", "first": "2026-11-15", "weeks": 1, "dep": "12:15", "arr": "2 17:30", "from": "PATTERN, not the calendar: closed to sale on 2026-11-14 (Sundays March-November)"},
     {"pattern": "GHAN_N_3D", "journey": "APTBRT9", "first": "2026-11-22", "weeks": 1, "dep": "12:15", "arr": "2 17:30"},
+    {"pattern": "GHAN_N_3D", "journey": "APTBRT9", "first": "2026-11-29", "weeks": 1, "dep": "12:15", "arr": "2 17:30", "from": "PATTERN, not the calendar: the calendar lists none; Lee 2026-11-14 13:19 CST: 'The Ghan on 29 Nov should run'"},
     {"pattern": "GHAN_N_4D", "journey": "APTBRT10", "first": "2027-03-06", "weeks": 38, "dep": "14:30", "arr": "3 17:30"},
     {"pattern": "GHAN_N_4D", "journey": "APTBRT10", "first": "2027-04-06", "weeks": 30, "dep": "14:30", "arr": "3 19:45"},
     {"pattern": "EXP_S_WED", "journey": "BRTAPTEX9", "first": "2026-11-18", "weeks": 2, "dep": "10:00", "arr": "3 10:50"},
@@ -83,7 +84,7 @@
     "Indian Pacific (both years): calendar 14:15 from Sydney, page 14:10; calendar 12:25 into Sydney, page 12:30."
   ],
   "pattern_check": [
-    "The Ghan north, Sunday 29 Nov 2026: the page's season (Sundays March-November) includes it, the calendar lists none. NOT drawn; for Lee.",
-    "Closed to sale on 2026-11-14 and added from the weekday pattern: The Ghan 15 Nov 2026, Indian Pacific Perth 14 Nov 2026, The Overland Adelaide 15 Nov 2026 (marked in runs)."
+    "The Ghan north, Sunday 29 Nov 2026: the page's season (Sundays March-November) includes it, the calendar lists none. Drawn: Lee 2026-11-14 13:19 CST, 'The Ghan on 29 Nov should run'.",
+    "Closed to sale on 2026-11-14 and added from the weekday pattern: The Ghan 15 Nov 2026, Indian Pacific Perth 14 Nov 2026, The Overland Adelaide 15 Nov 2026 (marked in runs). Kept: Lee 2026-11-14 13:19 CST."
   ]
 }
