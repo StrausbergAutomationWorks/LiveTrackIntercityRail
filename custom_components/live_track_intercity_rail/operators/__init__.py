@@ -25,15 +25,17 @@ brand, the eleventh (2026-11-08, SSOT 8.9, backlog 327; operators/sweden.py). Ir
 Irish Rail's realtime API as updates, through the shared client, the twelfth (2026-11-10, SSOT 8.10, backlog 328).
 The Netherlands' NS (IC), Arriva and Keolis (the regional trains) read NS's vehicle feed with SpoorKaart's track and
 OVapi's timetable and delays, through the shared client, one entry per company, the thirteenth (2026-11-11, SSOT
-8.11; operators/ns.py).
+8.11; operators/ns.py). Transwa (Western Australia) reads the PTA's timetable alone, no realtime existing, through the
+shared client, the fourteenth (2026-11-14, SSOT 8.12;
+operators/wa_trains.py, entry "WA Trains").
 """
 
 from __future__ import annotations
 
 from .amtrak import AMTRAK
 from .base import (REGIONS, SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_DIGITRAFFIC, SOURCE_ENTUR, SOURCE_ENTUR_ET,
-                   SOURCE_IRISH_RAIL, SOURCE_NS, SOURCE_RENFE, SOURCE_RENFE_LD, SOURCE_TFNSW, SOURCE_TRAFIKVERKET, SOURCE_TRANSPORT_VIC, SOURCE_VIA,
-                   SOURCES, Operator)
+                   SOURCE_IRISH_RAIL, SOURCE_NS, SOURCE_RENFE, SOURCE_RENFE_LD, SOURCE_TFNSW, SOURCE_TRAFIKVERKET, SOURCE_TRANSPERTH, SOURCE_TRANSPORT_VIC,
+                   SOURCE_VIA, SOURCES, Operator)
 from .brightline import BRIGHTLINE
 from .go_ahead_norge import GO_AHEAD_NORGE
 from .irish_rail import IRISH_RAIL
@@ -43,14 +45,15 @@ from .renfe_regionals import RENFE_REGIONALS
 from .renfe_spain import RENFE_SPAIN
 from .sj_nord import SJ_NORD
 from .sweden import SWEDEN
+from .wa_trains import WA_TRAINS
 from .via_rail import VIA_RAIL
 from .vline import VLINE
 from .vr import VR
 from .vy import VY
 
 OPERATORS: dict[str, Operator] = {op.id: op for op in (AMTRAK, BRIGHTLINE, GO_AHEAD_NORGE, IRISH_RAIL, NSW_TRAINLINK,
-                                                       RENFE_REGIONALS, RENFE_SPAIN, SJ_NORD, VIA_RAIL, VLINE, VR,
-                                                       VY) + SWEDEN + NETHERLANDS}
+                                                       RENFE_REGIONALS, RENFE_SPAIN, SJ_NORD, VIA_RAIL, VLINE, VR, VY,
+                                                       WA_TRAINS) + SWEDEN + NETHERLANDS}
 
 
 def regions_in_use() -> dict[str, str]:
@@ -71,5 +74,5 @@ def operators_in(region: str) -> list[Operator]:
 
 __all__ = ["OPERATORS", "REGIONS", "SOURCES", "SOURCE_AMTRAKER", "SOURCE_BRIGHTLINE_RT", "SOURCE_DIGITRAFFIC",
            "SOURCE_ENTUR", "SOURCE_ENTUR_ET", "SOURCE_IRISH_RAIL", "SOURCE_NS", "SOURCE_RENFE", "SOURCE_RENFE_LD", "SOURCE_TFNSW", "SOURCE_TRAFIKVERKET",
-           "SOURCE_TRANSPORT_VIC", "SOURCE_VIA",
+           "SOURCE_TRANSPERTH", "SOURCE_TRANSPORT_VIC", "SOURCE_VIA",
            "Operator", "operators_in", "regions_in_use"]

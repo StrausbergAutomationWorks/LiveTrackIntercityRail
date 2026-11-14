@@ -13,4 +13,5 @@
   trafikverket    Trafikverket, Sweden: one brand through the shared client (SSOT 8.9); its lines in sweden_lines
   irish_rail      Irish Rail, Ireland: the NTA timetable, the realtime API as updates, shared client (SSOT 8.10)
   ns              NS, the Netherlands: NS's positions, SpoorKaart's track, OVapi's timetable and delays (SSOT 8.11)
+  transperth      Transwa, Western Australia: the PTA's timetable alone, no realtime, shared client (SSOT 8.12)
 """

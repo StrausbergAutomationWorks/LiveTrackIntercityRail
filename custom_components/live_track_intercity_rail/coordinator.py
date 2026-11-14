@@ -51,19 +51,21 @@ from .const import (
 )
 from . import projection
 from .operators import (SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_DIGITRAFFIC, SOURCE_ENTUR, SOURCE_ENTUR_ET,
-                        SOURCE_IRISH_RAIL, SOURCE_NS, SOURCE_RENFE,
+                        SOURCE_IRISH_RAIL, SOURCE_NS, SOURCE_RENFE, SOURCE_TRANSPERTH,
                         SOURCE_RENFE_LD, SOURCE_TFNSW, SOURCE_TRAFIKVERKET, SOURCE_TRANSPORT_VIC, SOURCE_VIA, Operator)
 from .route_store import RouteStore
 from .shared_coordinator import get_shared_client, release_shared_client
 from .shared_digitraffic_rail import get_shared_rail_client, release_shared_rail_client
 from .shared_entur import get_shared_entur_client, release_shared_entur_client
 from .shared_irish_rail import get_shared_irish_rail_client, release_shared_irish_rail_client
+from .shared_transperth import get_shared_transperth_client, release_shared_transperth_client
 from .shared_ns import get_shared_ns_client, release_shared_ns_client
 from .shared_renfe import get_shared_renfe_client, release_shared_renfe_client
 from .shared_tfnsw import get_shared_tfnsw_client, release_shared_tfnsw_client
 from .shared_trafikverket import get_shared_trafikverket_client, release_shared_trafikverket_client
 from .shared_transport_vic import get_shared_transport_vic_client, release_shared_transport_vic_client
 from .sources import amtraker, entur, entur_et, irish_rail, renfe, renfe_ld, tfnsw, trafikverket, vline
+from .sources import transperth as transperth_source
 from .sources import ns as ns_source
 from .sources.base import EXTRA_KEYS, Snapshot, hold_last, trains_in_service
 from .sources.brightline_rt import BrightlineRealtime
@@ -133,6 +135,9 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._ns_client = None
         self._ns: ns_source.NsRealtime | None = None
         self._ns_view: ns_source.StaticView | None = None
+        self._tp_client = None
+        self._tw: transperth_source.TranswaTimetable | None = None
+        self._tw_view: transperth_source.StaticView | None = None
         self._session = async_get_clientsession(hass)
         if op.source == SOURCE_AMTRAKER:
             # On the event loop, as shared_coordinator requires.
@@ -229,6 +234,14 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._ns_view = ns_source.StaticView(self._ns_client)
             self._ns = ns_source.NsRealtime()
             self.routes.static_client = self._ns_view
+        elif op.source == SOURCE_TRANSPERTH:
+            # On the event loop, as shared_transperth requires. One copy of the PTA's timetable for every Live Track
+            # integration in Western Australia (Commuter Rail draws Transperth's trains); keyless. Nothing is fetched per
+            # poll: the runs are placed from the timetable on disk by the clock (sources/transperth.py).
+            self._tp_client = get_shared_transperth_client(hass, op.source_options["consumer"])
+            self._tw_view = transperth_source.StaticView(self._tp_client, op.source_options["consumer"])
+            self._tw = transperth_source.TranswaTimetable()
+            self.routes.static_client = self._tw_view
         else:  # pragma: no cover - an operator naming a source not built
             raise ValueError(f"unknown source {op.source!r} for {op.id}")
 
@@ -276,6 +289,10 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._ns_client = None
             self.routes.static_client = None
             release_shared_ns_client(self.hass, self.operator.source_options["consumer"])
+        if self._tp_client is not None:
+            self._tp_client = None
+            self.routes.static_client = None
+            release_shared_transperth_client(self.hass, self.operator.source_options["consumer"])
 
     async def _get_rt(self, url: str) -> bytes | None:
         """One whole file, or None on any failure; the reason is kept.
@@ -487,6 +504,15 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return await self.hass.async_add_executor_job(
             self._ir.parse, trains, time.time(), projector.geometry if projector else {})
 
+    async def _fetch_transperth(self) -> Snapshot | None:
+        """Transwa's runs from the timetable on disk, placed by the clock. Nothing is fetched per poll; the view's version
+        tells the route store when to distill the PTA's zip again."""
+        version = await self.hass.async_add_executor_job(transperth_source.read, self._tw_view)
+        self.routes.note_static(version)
+        projector = self.routes.projector
+        return await self.hass.async_add_executor_job(
+            self._tw.parse, time.time(), projector.geometry if projector else None)
+
     async def _fetch_ns(self) -> Snapshot | None:
         """This operator's trains from the shared NS client, in the executor (synchronous urllib). Every registered key
         refused for 10 minutes asks the user for a new one; anything else is ridden out by hold_last."""
@@ -511,6 +537,8 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return await self._fetch_ns()
         if self._ir is not None:
             return await self._fetch_irish_rail()
+        if self._tw is not None:
+            return await self._fetch_transperth()
         if self._trv is not None:
             return await self._fetch_trafikverket()
         if self._entur is not None:

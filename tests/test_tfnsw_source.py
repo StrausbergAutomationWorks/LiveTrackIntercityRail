@@ -461,7 +461,8 @@ class Operator(unittest.TestCase):
 
     def test_region_offered(self):
         self.assertEqual(operators.regions_in_use()["AU"], "Australia")
-        self.assertEqual([o.id for o in operators.operators_in("AU")], ["nsw_trainlink", "vline"])
+        # WA Trains (Transwa) since 2026-11-14 (Intercity SSOT 8.12), sorted by name.
+        self.assertEqual([o.id for o in operators.operators_in("AU")], ["nsw_trainlink", "vline", "wa_trains"])
 
     def test_other_railroads_need_no_key(self):
         for op in operators.OPERATORS.values():
@@ -475,7 +476,7 @@ class Operator(unittest.TestCase):
                 # from Entur's (SSOT 8.8), Irish Rail from its client's (SSOT 8.10).
                 self.assertEqual(op.gtfs_from_source,
                                  op.id in ("renfe_regionals_catalunya", "renfe_spain", "vy", "go_ahead_norge",
-                                           "sj_nord", "irish_rail"), op.id)
+                                           "sj_nord", "irish_rail", "wa_trains"), op.id)
 
 
 class Manifest(unittest.TestCase):
@@ -486,10 +487,10 @@ class Manifest(unittest.TestCase):
         import re
         here = pathlib.Path(__file__).resolve().parents[1] / "custom_components" / "live_track_intercity_rail"
         req = json.loads((here / "manifest.json").read_text(encoding="utf-8"))["requirements"]
-        # 0.2.38 since 2026-11-13: V/Line's long routes only and saw_livetrack.vline (backlog 337). 0.2.35 from 2026-11-11: saw_livetrack.ns, the Netherlands (Intercity SSOT 8.11). 0.2.33 from 2026-11-10: the Irish Rail client builds its TLS opener at first use. 0.2.32 from 2026-11-10: saw_livetrack.irish_rail, Ireland (Intercity SSOT 8.10). 0.2.31 from 2026-11-08: saw_livetrack.trafikverket, Sweden (Intercity SSOT 8.9). 0.2.29 from 2026-11-08: SIRI ET for SJ Nord (Intercity SSOT 8.8, "SJ NORD: BUILT"). 0.2.27 from
+        # 0.2.40 since 2026-11-14: saw_livetrack.transperth, Transwa (Intercity SSOT 8.12). 0.2.38 from 2026-11-13: V/Line's long routes only and saw_livetrack.vline (backlog 337). 0.2.35 from 2026-11-11: saw_livetrack.ns, the Netherlands (Intercity SSOT 8.11). 0.2.33 from 2026-11-10: the Irish Rail client builds its TLS opener at first use. 0.2.32 from 2026-11-10: saw_livetrack.irish_rail, Ireland (Intercity SSOT 8.10). 0.2.31 from 2026-11-08: saw_livetrack.trafikverket, Sweden (Intercity SSOT 8.9). 0.2.29 from 2026-11-08: SIRI ET for SJ Nord (Intercity SSOT 8.8, "SJ NORD: BUILT"). 0.2.27 from
         # 2026-11-07: saw_livetrack.entur, Norway. 0.2.25 from 2026-11-05: digitraffic_rail.next_stop after the
         # last actual row (backlog 289).
-        self.assertTrue(req[0].startswith("saw-livetrack[gtfs]>=0.2.38,"), req)
+        self.assertTrue(req[0].startswith("saw-livetrack[gtfs]>=0.2.40,"), req)
         names = {re.split(r"[=<>\[]", r)[0].lower() for r in req}
         extra = [r.split(";")[0].strip() for r in md.requires("saw-livetrack") if 'extra == "gtfs"' in r]
         self.assertTrue(extra)
