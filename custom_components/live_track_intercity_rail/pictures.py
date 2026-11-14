@@ -29,7 +29,13 @@ SNOWMAN = "snowman"              # going north to Santa: odd numbers
 REINDEER_LATE = "reindeer_late"  # flips with Nuuttipukki, very late
 SNOWMAN_LATE = "snowman_late"
 MOKKI = "mokki"                  # the summer cottage, every VR long-distance train
-NAMES = (REINDEER, SNOWMAN, REINDEER_LATE, SNOWMAN_LATE, MOKKI)
+# Journey Beyond's trains (Intercity SSOT 8.13; Lee 2026-11-14 03:53-04:06 CST): the animal only, no words, from
+# Lee's four CC0 images, traced to SVG with the disc baked in (20_Research/journey_beyond/icons/, byte-copied).
+# `_out` the animal in its colour on the grey (or #004866) disc, the direction Journey Beyond lists first; `_back`
+# reversed. The Ghan the camel and rider, Indian Pacific the bird, Great Southern the kangaroo, The Overland the emu.
+JB_PICTURES = tuple(f"jb_{t}_{d}" for t in ("ghan", "indian_pacific", "great_southern", "overland")
+                    for d in ("out", "back"))
+NAMES = (REINDEER, SNOWMAN, REINDEER_LATE, SNOWMAN_LATE, MOKKI) + JB_PICTURES
 
 DIRECTORY = Path(__file__).parent / "pictures"
 
