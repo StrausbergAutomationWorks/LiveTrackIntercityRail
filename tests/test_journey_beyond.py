@@ -241,6 +241,17 @@ class Operator(unittest.TestCase):
             self.assertTrue(pictures.path(name).is_file())
         self.assertEqual(op.marker_keys({"service_family": "other"}), {})
 
+    def test_the_picture_through_the_record(self):
+        # As the coordinator builds a record (coordinator.py: only EXTRA_KEYS reach it). The first deploy published the
+        # Perth-Sydney Indian Pacific with `_out`: `service_direction` was not in EXTRA_KEYS (2026-11-14 12:1x CST).
+        base = load("sources.base")
+        op = ops.OPERATORS["journey_beyond"]
+        self.assertIn("service_direction", base.EXTRA_KEYS)
+        self.assertIn("service_direction", base.RECORD_ONLY_KEYS)
+        s = src.JourneyBeyondTimetable().parse(z(2026, 11, 14, 18), GEO)
+        rec = {k: v for k, v in s.extras["indian_pacific-14"].items() if k in base.EXTRA_KEYS}
+        self.assertEqual(op.marker_keys(rec), {"entity_picture": pictures.url("jb_indian_pacific_back")})
+
     def test_every_pattern_has_a_picture(self):
         op = ops.OPERATORS["journey_beyond"]
         for p in TT["patterns"].values():

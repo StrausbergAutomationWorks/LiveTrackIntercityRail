@@ -38,12 +38,13 @@ from saw_livetrack.gtfs.realtime import Obs  # noqa: F401  (re-exported)
 # ("AVLO"), for the look, and its line's length in km, for its lateness by scheduled distance.
 # `observed_at_source` (06_MAP_CONTRACT.md, the observed_at rule under D2; NS, Intercity SSOT 8.11): "first_seen" where
 # observed_at is the poll that first saw the position, the source giving none. `brand` (NS's regional trains): the
-# brand a company runs the train under, for the operator's look only.
+# brand a company runs the train under, for the operator's look only. `service_direction` (Journey Beyond, Intercity
+# SSOT 8.13): "out" or "back", the run's direction as Journey Beyond lists it, for the operator's picture only.
 EXTRA_KEYS = ("line_name", "speed_kmh", "heading_octant", "destination", "marker_status",
               "departure_date", "santa_express", "stalled", "route_code", "route_color", "toward_hub",
-              "service_family", "trip_km", "observed_at_source", "brand")
+              "service_family", "trip_km", "observed_at_source", "brand", "service_direction")
 RECORD_ONLY_KEYS = ("destination", "departure_date", "santa_express", "route_code", "route_color",
-                    "toward_hub", "service_family", "trip_km", "brand")
+                    "toward_hub", "service_family", "trip_km", "brand", "service_direction")
 # In an adapter's extras only, never copied to the record (not in EXTRA_KEYS):
 # the speed a HELD fix was reported with, for the along-route estimate
 # (projection.py). VIA holds a train's last fix while it has no position. Its presence
