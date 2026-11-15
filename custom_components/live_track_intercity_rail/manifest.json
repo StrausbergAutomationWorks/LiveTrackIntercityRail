@@ -1,15 +1,18 @@
 {
   "domain": "live_track_intercity_rail",
   "name": "Live Track Intercity Rail",
+  "after_dependencies": [
+    "lovelace"
+  ],
+  "categories": [
+    "vehicles_transport.public_transport"
+  ],
   "codeowners": [
     "@LeeS773-prog"
   ],
   "config_flow": true,
   "dependencies": [
     "http"
-  ],
-  "after_dependencies": [
-    "lovelace"
   ],
   "documentation": "https://github.com/StrausbergAutomationWorks/LiveTrackIntercityRail",
   "integration_type": "service",
