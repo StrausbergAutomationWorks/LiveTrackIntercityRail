@@ -461,9 +461,10 @@ class Operator(unittest.TestCase):
 
     def test_region_offered(self):
         self.assertEqual(operators.regions_in_use()["AU"], "Australia")
-        # WA Trains (Transwa) since 2026-11-14 (Intercity SSOT 8.12) and Journey Beyond (8.13), sorted by name.
+        # WA Trains (Transwa) since 2026-11-14 (Intercity SSOT 8.12), Journey Beyond (8.13) and Queensland Rail Travel
+        # (8.14), sorted by name.
         self.assertEqual([o.id for o in operators.operators_in("AU")],
-                         ["journey_beyond", "nsw_trainlink", "vline", "wa_trains"])
+                         ["journey_beyond", "nsw_trainlink", "queensland_rail_travel", "vline", "wa_trains"])
 
     def test_other_railroads_need_no_key(self):
         for op in operators.OPERATORS.values():
@@ -475,10 +476,11 @@ class Operator(unittest.TestCase):
                 self.assertFalse(op.needs_key, op.id)
                 # Renfe's regionals take the timetable from the shared client too (SSOT 8.7), and Norway's railroads
                 # from Entur's (SSOT 8.8), Irish Rail from its client's (SSOT 8.10); Journey Beyond's ships with the
-                # integration and reaches the route store the same way (SSOT 8.13).
+                # integration and reaches the route store the same way (SSOT 8.13), as do QRT's lines (SSOT 8.14).
                 self.assertEqual(op.gtfs_from_source,
                                  op.id in ("renfe_regionals_catalunya", "renfe_spain", "vy", "go_ahead_norge",
-                                           "sj_nord", "irish_rail", "wa_trains", "journey_beyond"), op.id)
+                                           "sj_nord", "irish_rail", "wa_trains", "journey_beyond",
+                                           "queensland_rail_travel"), op.id)
 
 
 class Manifest(unittest.TestCase):

@@ -51,7 +51,7 @@ from .const import (
 )
 from . import projection
 from .operators import (SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_DIGITRAFFIC, SOURCE_ENTUR, SOURCE_ENTUR_ET,
-                        SOURCE_IRISH_RAIL, SOURCE_JOURNEY_BEYOND, SOURCE_NS, SOURCE_RENFE, SOURCE_TRANSPERTH,
+                        SOURCE_IRISH_RAIL, SOURCE_JOURNEY_BEYOND, SOURCE_NS, SOURCE_QRT, SOURCE_RENFE, SOURCE_TRANSPERTH,
                         SOURCE_RENFE_LD, SOURCE_TFNSW, SOURCE_TRAFIKVERKET, SOURCE_TRANSPORT_VIC, SOURCE_VIA, Operator)
 from .route_store import RouteStore
 from .shared_coordinator import get_shared_client, release_shared_client
@@ -66,6 +66,7 @@ from .shared_trafikverket import get_shared_trafikverket_client, release_shared_
 from .shared_transport_vic import get_shared_transport_vic_client, release_shared_transport_vic_client
 from .sources import amtraker, entur, entur_et, irish_rail, renfe, renfe_ld, tfnsw, trafikverket, vline
 from .sources import journey_beyond as jb_source
+from .sources import qrt as qrt_source
 from .sources import transperth as transperth_source
 from .sources import ns as ns_source
 from .sources.base import EXTRA_KEYS, Snapshot, hold_last, trains_in_service
@@ -141,6 +142,9 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._tw_view: transperth_source.StaticView | None = None
         self._jb: jb_source.JourneyBeyondTimetable | None = None
         self._jb_view: jb_source.StaticView | None = None
+        self._qrt_client: qrt_source.QrtClient | None = None
+        self._qrt: qrt_source.QrtService | None = None
+        self._qrt_view: qrt_source.StaticView | None = None
         self._session = async_get_clientsession(hass)
         if op.source == SOURCE_AMTRAKER:
             # On the event loop, as shared_coordinator requires.
@@ -251,6 +255,13 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._jb_view = jb_source.StaticView()
             self._jb = jb_source.JourneyBeyondTimetable()
             self.routes.static_client = self._jb_view
+        elif op.source == SOURCE_QRT:
+            # QRT's Service Updates page's own JSON, read for this user, paced and cached (sources/qrt.py, 05 B18); the
+            # lines ship with the integration (data/qrt_lines.json.gz; Intercity SSOT 8.14).
+            self._qrt_client = qrt_source.QrtClient(USER_AGENT)
+            self._qrt_view = qrt_source.StaticView()
+            self._qrt = qrt_source.QrtService()
+            self.routes.static_client = self._qrt_view
         else:  # pragma: no cover - an operator naming a source not built
             raise ValueError(f"unknown source {op.source!r} for {op.id}")
 
@@ -531,6 +542,20 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return await self.hass.async_add_executor_job(
             self._jb.parse, time.time(), projector.geometry if projector else None)
 
+    async def _fetch_qrt(self) -> Snapshot | None:
+        """Queensland Rail Travel's trains from their times: the shipped lines' digest for the route store, then one
+        paced read of QRT's Service Updates (in the executor); past STALE_S with no good answer it is a failed fetch."""
+        version = await self.hass.async_add_executor_job(qrt_source.version, self._qrt_view)
+        self.routes.note_static(version)
+        try:
+            services = await self.hass.async_add_executor_job(qrt_source.read, self._qrt_client)
+        except qrt_source.QrtUnavailable as err:
+            self._last_reason = f"QRT: {err}"[:200]
+            return None
+        projector = self.routes.projector
+        return await self.hass.async_add_executor_job(
+            self._qrt.parse, services, time.time(), projector.geometry if projector else None)
+
     async def _fetch_ns(self) -> Snapshot | None:
         """This operator's trains from the shared NS client, in the executor (synchronous urllib). Every registered key
         refused for 10 minutes asks the user for a new one; anything else is ridden out by hold_last."""
@@ -559,6 +584,8 @@ class IntercityRailCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return await self._fetch_transperth()
         if self._jb is not None:
             return await self._fetch_journey_beyond()
+        if self._qrt is not None:
+            return await self._fetch_qrt()
         if self._trv is not None:
             return await self._fetch_trafikverket()
         if self._entur is not None:

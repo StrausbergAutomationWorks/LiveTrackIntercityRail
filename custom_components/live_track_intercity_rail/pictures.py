@@ -35,7 +35,12 @@ MOKKI = "mokki"                  # the summer cottage, every VR long-distance tr
 # reversed. The Ghan the camel and rider, Indian Pacific the bird, Great Southern the kangaroo, The Overland the emu.
 JB_PICTURES = tuple(f"jb_{t}_{d}" for t in ("ghan", "indian_pacific", "great_southern", "overland")
                     for d in ("out", "back"))
-NAMES = (REINDEER, SNOWMAN, REINDEER_LATE, SNOWMAN_LATE, MOKKI) + JB_PICTURES
+# Queensland Rail Travel (Intercity SSOT 8.14; Lee 2026-11-14/15): each line's badge, SAW's own drawings built by
+# bin\qrt_icons_build.py into 20_Research/queensland_rail_travel/icons/ and byte-copied. `_out` leaves Brisbane (the
+# Inlander Townsville, Kuranda Cairns, the Gulflander Normanton), `_back` the colours swapped.
+QRT_PICTURES = tuple(f"qrt_{t}_{d}" for t in ("soq", "sob", "tilt", "westlander", "inlander", "kuranda", "gulflander")
+                     for d in ("out", "back"))
+NAMES = (REINDEER, SNOWMAN, REINDEER_LATE, SNOWMAN_LATE, MOKKI) + JB_PICTURES + QRT_PICTURES
 
 DIRECTORY = Path(__file__).parent / "pictures"
 

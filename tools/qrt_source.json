@@ -1,0 +1,457 @@
+{
+ "about": "Queensland Rail Travel for Live Track Intercity Rail (Intercity SSOT 8.14). SAW's own material: PlaceCode to OpenStreetMap station pairing and each line's stop pattern in its out direction (from Brisbane; Inlander from Townsville; Kuranda from Cairns; Gulflander from Normanton). No QRT times: those are read by each install from QRT's Service Updates page (10_SEED/05_SHARED_LESSONS_DATA.md B18).",
+ "stations": {
+  "ABH": {
+   "name": "Alpha",
+   "osm": "n1875557675"
+  },
+  "ANA": {
+   "name": "Anakie",
+   "osm": "n1333120877"
+  },
+  "AYR": {
+   "name": "Ayr",
+   "osm": "n1789411219"
+  },
+  "BCI": {
+   "name": "Barcaldine",
+   "osm": "n1601841169"
+  },
+  "BDB": {
+   "name": "Bundaberg",
+   "osm": "r17610874"
+  },
+  "BJN": {
+   "name": "Bowen",
+   "osm": "n1789411222"
+  },
+  "BKU": {
+   "name": "Blackbull",
+   "osm": "n6679989131"
+  },
+  "BLT": {
+   "name": "Blackwater",
+   "osm": "n1789411221"
+  },
+  "BLU": {
+   "name": "Bluff",
+   "osm": "n3139382833"
+  },
+  "BZB": {
+   "name": "Babinda",
+   "osm": "n1789411220"
+  },
+  "CAA": {
+   "name": "Carmila",
+   "osm": "n1789411224"
+  },
+  "CAB": {
+   "name": "Caboolture",
+   "osm": "n124682385"
+  },
+  "CAR": {
+   "name": "Cardwell",
+   "osm": "n1789411223"
+  },
+  "CCL": {
+   "name": "Chinchilla",
+   "osm": "n475651910"
+  },
+  "CDQ": {
+   "name": "Croydon",
+   "osm": "n6905488747"
+  },
+  "CNJ": {
+   "name": "Cloncurry",
+   "osm": "n581903174"
+  },
+  "CNS": {
+   "name": "Cairns",
+   "osm": "n127570103"
+  },
+  "COO": {
+   "name": "Cooroy",
+   "osm": "n1875330646"
+  },
+  "CQD": {
+   "name": "Corinda",
+   "osm": "n1875506631"
+  },
+  "CRC": {
+   "name": "Critters Camp",
+   "osm": "n3246085522"
+  },
+  "CTL": {
+   "name": "Charleville",
+   "osm": "n902312623"
+  },
+  "CXT": {
+   "name": "Charters Towers",
+   "osm": "n11165118462"
+  },
+  "DBY": {
+   "name": "Dalby",
+   "osm": "n264033298"
+  },
+  "DCH": {
+   "name": "Duchess",
+   "osm": "n295012533"
+  },
+  "DUA": {
+   "name": "Duaringa",
+   "osm": "n1789411228"
+  },
+  "EMD": {
+   "name": "Emerald",
+   "osm": "n1875557673"
+  },
+  "FRW": {
+   "name": "Freshwater",
+   "osm": "n2060753756"
+  },
+  "GAT": {
+   "name": "Gatton",
+   "osm": "n792207139"
+  },
+  "GGT": {
+   "name": "Golden Gate",
+   "osm": "n6680173201"
+  },
+  "GIR": {
+   "name": "Giru",
+   "osm": "n1789411229"
+  },
+  "GLT": {
+   "name": "Gladstone",
+   "osm": "n1789411230"
+  },
+  "GOR": {
+   "name": "Gordonvale",
+   "osm": "w390305913"
+  },
+  "GYN": {
+   "name": "Gympie North",
+   "osm": "n1875506660"
+  },
+  "HGD": {
+   "name": "Hughenden",
+   "osm": "n11165118452"
+  },
+  "HIN": {
+   "name": "Helidon",
+   "osm": "n1789411232"
+  },
+  "HMH": {
+   "name": "Home Hill",
+   "osm": "n1789411233"
+  },
+  "HOW": {
+   "name": "Howard",
+   "osm": "n1789411234"
+  },
+  "IFL": {
+   "name": "Innisfail",
+   "osm": "n1789411237"
+  },
+  "IGH": {
+   "name": "Ingham",
+   "osm": "n1789411236"
+  },
+  "ILF": {
+   "name": "Ilfracombe",
+   "osm": "n3853877057"
+  },
+  "IPS": {
+   "name": "Ipswich",
+   "osm": "n1764783038"
+  },
+  "ISA": {
+   "name": "Mount Isa",
+   "osm": "n11165118408"
+  },
+  "JCK": {
+   "name": "Julia Creek",
+   "osm": "n1789411238"
+  },
+  "JCO": {
+   "name": "Jericho",
+   "osm": "n1875557676"
+  },
+  "KUR": {
+   "name": "Kuranda",
+   "osm": "n358464817"
+  },
+  "LAI": {
+   "name": "Laidley",
+   "osm": "n1753270443"
+  },
+  "LRE": {
+   "name": "Longreach",
+   "osm": "n1875557677"
+  },
+  "LSH": {
+   "name": "Landsborough",
+   "osm": "n1875330651"
+  },
+  "MBJ": {
+   "name": "Maryborough West",
+   "osm": "n1019716880"
+  },
+  "MIQ": {
+   "name": "Miles",
+   "osm": "n1278815458"
+  },
+  "MIR": {
+   "name": "Miriam Vale",
+   "osm": "n1789411242"
+  },
+  "MKY": {
+   "name": "Mackay",
+   "osm": "n1875557679"
+  },
+  "MLM": {
+   "name": "Mount Larcom",
+   "osm": "n1789411243"
+  },
+  "MTQ": {
+   "name": "Mitchell",
+   "osm": "n1875557680"
+  },
+  "MVE": {
+   "name": "Morven",
+   "osm": "n1764797167"
+  },
+  "NBR": {
+   "name": "Nambour",
+   "osm": "n1875330653"
+  },
+  "NTN": {
+   "name": "Normanton",
+   "osm": "n6905390681"
+  },
+  "OKY": {
+   "name": "Oakey",
+   "osm": "n1789411247"
+  },
+  "PLD": {
+   "name": "Pentland",
+   "osm": "n1789411249"
+  },
+  "PPP": {
+   "name": "Proserpine",
+   "osm": "n1875557674"
+  },
+  "RCM": {
+   "name": "Richmond",
+   "osm": "n314536136"
+  },
+  "RMA": {
+   "name": "Roma",
+   "osm": "n1789411251"
+  },
+  "ROK": {
+   "name": "Rockhampton",
+   "osm": "n332971002"
+  },
+  "RST": {
+   "name": "Brisbane - Roma Street",
+   "osm": "n9586829503"
+  },
+  "RSW": {
+   "name": "Rosewood",
+   "osm": "n4512483186"
+  },
+  "SAR": {
+   "name": "Sarina",
+   "osm": "n1875557682"
+  },
+  "SLW": {
+   "name": "St Lawrence",
+   "osm": "n11162706859"
+  },
+  "TCK": {
+   "name": "Torrens Creek",
+   "osm": "n1789411253"
+  },
+  "TLY": {
+   "name": "Tully",
+   "osm": "w1412965424"
+  },
+  "TVS": {
+   "name": "Townsville - Charters Towers Road",
+   "osm": "n11162772077"
+  },
+  "TWP": {
+   "name": "Toowoomba",
+   "osm": "n2143750709"
+  },
+  "YLB": {
+   "name": "Yuleba",
+   "osm": "n1789411258"
+  }
+ },
+ "patterns": {
+  "soq": {
+   "line": "Spirit of Queensland",
+   "prefix": "V",
+   "picture": "soq",
+   "calls": [
+    "RST",
+    "CAB",
+    "NBR",
+    "COO",
+    "GYN",
+    "MBJ",
+    "BDB",
+    "MIR",
+    "GLT",
+    "MLM",
+    "ROK",
+    "SLW",
+    "CAA",
+    "SAR",
+    "MKY",
+    "PPP",
+    "BJN",
+    "HMH",
+    "AYR",
+    "GIR",
+    "TVS",
+    "IGH",
+    "CAR",
+    "TLY",
+    "IFL",
+    "BZB",
+    "GOR",
+    "CNS"
+   ]
+  },
+  "sob": {
+   "line": "Spirit of the Outback",
+   "prefix": "P",
+   "picture": "sob",
+   "calls": [
+    "RST",
+    "CAB",
+    "NBR",
+    "COO",
+    "GYN",
+    "MBJ",
+    "BDB",
+    "MIR",
+    "GLT",
+    "MLM",
+    "ROK",
+    "DUA",
+    "BLU",
+    "BLT",
+    "EMD",
+    "ANA",
+    "ABH",
+    "JCO",
+    "BCI",
+    "ILF",
+    "LRE"
+   ]
+  },
+  "tilt_rok": {
+   "line": "Rockhampton Tilt Train",
+   "prefix": "Q",
+   "picture": "tilt",
+   "calls": [
+    "RST",
+    "CAB",
+    "LSH",
+    "NBR",
+    "COO",
+    "GYN",
+    "MBJ",
+    "HOW",
+    "BDB",
+    "MIR",
+    "GLT",
+    "MLM",
+    "ROK"
+   ]
+  },
+  "tilt_bdb": {
+   "line": "Bundaberg Tilt Train",
+   "prefix": "Q",
+   "picture": "tilt",
+   "calls": [
+    "RST",
+    "CAB",
+    "LSH",
+    "NBR",
+    "COO",
+    "GYN",
+    "MBJ",
+    "HOW",
+    "BDB"
+   ]
+  },
+  "westlander": {
+   "line": "Westlander",
+   "prefix": "3",
+   "picture": "westlander",
+   "calls": [
+    "RST",
+    "CQD",
+    "IPS",
+    "RSW",
+    "LAI",
+    "GAT",
+    "HIN",
+    "TWP",
+    "OKY",
+    "DBY",
+    "CCL",
+    "MIQ",
+    "YLB",
+    "RMA",
+    "MTQ",
+    "MVE",
+    "CTL"
+   ]
+  },
+  "inlander": {
+   "line": "Inlander",
+   "prefix": "3",
+   "picture": "inlander",
+   "calls": [
+    "TVS",
+    "CXT",
+    "PLD",
+    "TCK",
+    "HGD",
+    "RCM",
+    "JCK",
+    "CNJ",
+    "DCH",
+    "ISA"
+   ]
+  },
+  "kuranda": {
+   "line": "Kuranda Scenic Railway",
+   "prefix": "3",
+   "picture": "kuranda",
+   "calls": [
+    "CNS",
+    "FRW",
+    "KUR"
+   ]
+  },
+  "gulflander": {
+   "line": "Gulflander",
+   "prefix": "5",
+   "picture": "gulflander",
+   "calls": [
+    "NTN",
+    "CRC",
+    "BKU",
+    "GGT",
+    "CDQ"
+   ]
+  }
+ }
+}

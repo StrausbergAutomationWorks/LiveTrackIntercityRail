@@ -53,9 +53,12 @@ SOURCE_TRANSPERTH = "transperth"
 # Journey Beyond (Australia): every train from the timetable SHIPPED with the integration (data/journey_beyond_*),
 # nothing fetched; no live position exists (sources/journey_beyond.py).
 SOURCE_JOURNEY_BEYOND = "journey_beyond"
+# Queensland Rail Travel (Australia): QRT's Service Updates page's own JSON, read by each install (05 B18;
+# sources/qrt.py). Every train from its calls' times.
+SOURCE_QRT = "qrt"
 SOURCES = (SOURCE_AMTRAKER, SOURCE_BRIGHTLINE_RT, SOURCE_VIA, SOURCE_DIGITRAFFIC, SOURCE_TFNSW,
            SOURCE_TRANSPORT_VIC, SOURCE_RENFE, SOURCE_RENFE_LD, SOURCE_ENTUR, SOURCE_ENTUR_ET, SOURCE_TRAFIKVERKET,
-           SOURCE_IRISH_RAIL, SOURCE_NS, SOURCE_TRANSPERTH, SOURCE_JOURNEY_BEYOND)
+           SOURCE_IRISH_RAIL, SOURCE_NS, SOURCE_TRANSPERTH, SOURCE_JOURNEY_BEYOND, SOURCE_QRT)
 
 
 @dataclass(frozen=True)
