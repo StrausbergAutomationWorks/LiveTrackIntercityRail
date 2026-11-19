@@ -19,7 +19,7 @@ MIN_SCAN_INTERVAL = 15
 MAX_SCAN_INTERVAL = 600
 
 USER_AGENT = (
-    "LiveTrackIntercityRail/0.1.0 "
+    "LiveTrackIntercityRail/0.1.1 "
     "(+https://github.com/StrausbergAutomationWorks/LiveTrackIntercityRail)"
 )
 
