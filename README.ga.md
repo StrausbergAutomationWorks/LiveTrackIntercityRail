@@ -104,7 +104,7 @@ Ní theastaíonn eochair ó na 13 iarnród eile.
 | **An Eoraip**: An Ísiltír | NS Intercity, agus traenacha réigiúnacha Arriva (Arriva, RRReis, Blauwnet) agus Keolis (Blauwnet, RRReis); tá Sprinters NS in Live Track Commuter Rail | NS, OVapi | eochair saor in aisce |
 | **An Eoraip**: An Iorua | línte F, RE, RX agus R Vy (F1 isteach sa tSualainn freisin), F5 agus R50 Go-Ahead Norge, F6, F7 agus R60 go R75 SJ Nord | Entur | faic |
 | **An Eoraip**: An Spáinn | traenacha AVE, Avlo, Alvia, Avant, Euromed, Intercity, MD agus Regional Renfe, isteach san Fhrainc agus sa Phortaingéil freisin; línte réigiúnacha R11 go R17 Rodalies de Catalunya | Renfe | faic |
-| **An Eoraip**: An tSualainn | SJ, VR Snabbtåg, Snälltåget, Öresundståg, Pågatågen, Mälartåg, Västtågen, Krösatågen, Östgötapendeln, Norrtåg, Tåg i Bergslagen, X-Tåget, Värmlandstrafik, Tågab agus Inlandsbanan, iarnród an ceann | Trafikverket | eochair saor in aisce |
+| **An Eoraip**: An tSualainn | SJ, VR Snabbtåg, Snälltåget, Öresundståg, Pågatågen, Mälartåg, Västtågen, Krösatågen, Östgötapendeln, Norrtåg, Tåg i Bergslagen, X-Tåget, Värmlandstrafik, Tågab agus Inlandsbanan, iarnród an ceann; Öresundståg isteach sa Danmhairg freisin | Trafikverket | eochair saor in aisce |
 | **Meiriceá Thuaidh**: Ceanada | VIA Rail, gach bealach | VIA Rail | faic |
 | **Meiriceá Thuaidh**: Stáit Aontaithe Mheiriceá | Amtrak, gach bealach, isteach i gCeanada freisin | Amtraker | faic |
 | **Meiriceá Thuaidh**: Stáit Aontaithe Mheiriceá | Brightline (Florida) | Brightline | faic |
@@ -774,8 +774,9 @@ dhúchais, inis dúinn an léann an README seo go maith: féach
 [Cuidigh leis fás](#cuidigh-leis-fás).
 
 Tá an dialóg socraithe agus na roghanna i mBéarla amháin faoi láthair, cibé
-teanga atá ar do Home Assistant. Is fáilte roimh aistriúchán orthu:
-[cuideoimid leat ceann a dhéanamh](#cuir-leis-tú-féin-é-le-cabhair-uainn).
+teanga atá ar do Home Assistant. Má labhraíonn tú teanga eile, is féidir leat
+iad a aistriú tú féin: liosta gearr frásaí in aon chomhad amháin atá ann, agus
+[cuideoimid leat é a dhéanamh](#cuir-leis-tú-féin-é-le-cabhair-uainn).
 
 Ar aimsigh tú botún in aistriúchán, nó an bhfuil teanga eile de dhíth ort?
 Inis dúinn ag <https://github.com/StrausbergAutomationWorks/LiveTrackIntercityRail/issues>,
@@ -854,10 +855,6 @@ in `tools/` (`journey_beyond.py`, `qrt_lines.py`, `renfe_spain_lines.py`,
 `sweden_lines.py`). Ritheann na tástálacha le
 `python -m unittest discover -s tests`.
 
-**Aitheantas.** Tugann StrausbergAutomationWorks ómós do Sheanóirí an ama a
-caitheadh agus an lae inniu agus aithníonn sé a bhfuil tugtha ag pobail na
-gCéad Náisiún (Bundúchasaigh agus Oileánaigh Chaolas Torres) san Astráil.
-
 ---
 
 ## Eochairfhocail
@@ -872,3 +869,9 @@ Irish Rail · Enterprise · traenacha beo · NS Intercity · Arriva · treinen l
 Zugverkehr · treni in tempo reale · togtrafik · 火车实时地图 · geo_location ·
 map card · Lovelace · HACS · Marketplace · Live Track · LiveTrack ·
 StrausbergAutomationWorks
+
+---
+
+**Aitheantas.** Aithníonn StrausbergAutomationWorks pobail dhúchasacha gach tíre
+agus gach uisce ar an léarscáil seo, ar fud an domhain, agus tugann sé ómós dá
+Seanóirí, san am a caitheadh agus inniu.

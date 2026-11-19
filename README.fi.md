@@ -105,7 +105,7 @@ Muut 13 rautatietä eivät tarvitse avainta.
 | **Eurooppa**: Alankomaat | NS Intercity sekä Arrivan (Arriva, RRReis, Blauwnet) ja Keoliksen (Blauwnet, RRReis) aluejunat; NS:n Sprinterit ovat Live Track Commuter Railissa | NS, OVapi | ilmainen avain |
 | **Eurooppa**: Norja | Vyn F-, RE-, RX- ja R-linjat (F1 myös Ruotsiin), Go-Ahead Norgen F5 ja R50, SJ Nordin F6, F7 ja R60–R75 | Entur | ei mitään |
 | **Eurooppa**: Espanja | Renfen AVE-, Avlo-, Alvia-, Avant-, Euromed-, Intercity-, MD- ja Regional-junat, myös Ranskaan ja Portugaliin; Rodalies de Catalunyan aluelinjat R11–R17 | Renfe | ei mitään |
-| **Eurooppa**: Ruotsi | SJ, VR Snabbtåg, Snälltåget, Öresundståg, Pågatågen, Mälartåg, Västtågen, Krösatågen, Östgötapendeln, Norrtåg, Tåg i Bergslagen, X-Tåget, Värmlandstrafik, Tågab ja Inlandsbanan, kukin oma rautatiensä | Trafikverket | ilmainen avain |
+| **Eurooppa**: Ruotsi | SJ, VR Snabbtåg, Snälltåget, Öresundståg, Pågatågen, Mälartåg, Västtågen, Krösatågen, Östgötapendeln, Norrtåg, Tåg i Bergslagen, X-Tåget, Värmlandstrafik, Tågab ja Inlandsbanan, kukin oma rautatiensä; Öresundståg myös Tanskaan | Trafikverket | ilmainen avain |
 | **Pohjois-Amerikka**: Kanada | VIA Rail, jokainen reitti | VIA Rail | ei mitään |
 | **Pohjois-Amerikka**: Yhdysvallat | Amtrak, jokainen reitti, myös Kanadaan | Amtraker | ei mitään |
 | **Pohjois-Amerikka**: Yhdysvallat | Brightline (Florida) | Brightline | ei mitään |
@@ -778,8 +778,9 @@ ole vielä ollut äidinkielisen lukijan tarkistettavana. Jos suomi on
 [Auta sitä kasvamaan](#auta-sitä-kasvamaan).
 
 Asetusvalintaikkuna ja asetukset ovat toistaiseksi vain englanniksi, oli Home
-Assistantisi kieli mikä tahansa. Niiden käännös on tervetullut:
-[autamme sinua tekemään sen](#lisää-se-itse-meidän-avullamme).
+Assistantisi kieli mikä tahansa. Jos puhut jotain muuta kieltä, voit kääntää ne
+itse: ne ovat lyhyt lista lauseita yhdessä tiedostossa, ja [autamme sinua
+siinä](#lisää-se-itse-meidän-avullamme).
 
 Löysitkö virheen käännöksestä, tai tarvitsetko toisen kielen? Kerro meille
 osoitteessa <https://github.com/StrausbergAutomationWorks/LiveTrackIntercityRail/issues>,
@@ -858,10 +859,6 @@ uudelleen kansion `tools/` skripteillä (`journey_beyond.py`, `qrt_lines.py`,
 `renfe_spain_lines.py`, `sweden_lines.py`). Testit ajetaan komennolla
 `python -m unittest discover -s tests`.
 
-**Kunnioitus.** StrausbergAutomationWorks osoittaa kunnioitusta menneille ja
-nykyisille vanhimmille ja tunnustaa First Nations -kansojen (Australian
-alkuperäisasukkaiden ja Torres Strait Islander -kansojen) panoksen.
-
 ---
 
 ## Hakusanat
@@ -876,3 +873,9 @@ Irish Rail · Enterprise · traenacha beo · NS Intercity · Arriva · treinen l
 Zugverkehr · treni in tempo reale · togtrafik · 火车实时地图 · geo_location ·
 map card · Lovelace · HACS · Marketplace · Live Track · LiveTrack ·
 StrausbergAutomationWorks
+
+---
+
+**Kunnioitus.** StrausbergAutomationWorks tunnustaa kaikkien tämän kartan
+kattamien maiden ja vesien alkuperäiskansat kaikkialla maailmassa ja osoittaa
+kunnioitusta niiden vanhimmille, menneille ja nykyisille.

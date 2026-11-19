@@ -79,7 +79,7 @@ StrausbergAutomationWorks 的原创作品。与 Amtrak、Amtraker、Brightline�
 | **欧洲**：荷兰 | NS Intercity，以及 Arriva（Arriva、RRReis、Blauwnet）和 Keolis（Blauwnet、RRReis）的区域列车；NS 的 Sprinter 在 Live Track Commuter Rail 中 | NS、OVapi | 一个免费密钥 |
 | **欧洲**：挪威 | Vy 的 F、RE、RX 和 R 线（F1 也开往瑞典），Go-Ahead Norge 的 F5 和 R50，SJ Nord 的 F6、F7 以及 R60 至 R75 | Entur | 无 |
 | **欧洲**：西班牙 | Renfe 的 AVE、Avlo、Alvia、Avant、Euromed、Intercity、MD 和 Regional 列车，也开往法国和葡萄牙；Rodalies de Catalunya 的区域线路 R11 至 R17 | Renfe | 无 |
-| **欧洲**：瑞典 | SJ、VR Snabbtåg、Snälltåget、Öresundståg、Pågatågen、Mälartåg、Västtågen、Krösatågen、Östgötapendeln、Norrtåg、Tåg i Bergslagen、X-Tåget、Värmlandstrafik、Tågab 和 Inlandsbanan，各自作为一条铁路 | Trafikverket | 一个免费密钥 |
+| **欧洲**：瑞典 | SJ、VR Snabbtåg、Snälltåget、Öresundståg、Pågatågen、Mälartåg、Västtågen、Krösatågen、Östgötapendeln、Norrtåg、Tåg i Bergslagen、X-Tåget、Värmlandstrafik、Tågab 和 Inlandsbanan，各自作为一条铁路；Öresundståg 也开往丹麦 | Trafikverket | 一个免费密钥 |
 | **北美**：加拿大 | VIA Rail，所有线路 | VIA Rail | 无 |
 | **北美**：美国 | Amtrak，所有线路，也开往加拿大 | Amtraker | 无 |
 | **北美**：美国 | Brightline（佛罗里达州） | Brightline | 无 |
@@ -444,7 +444,7 @@ Live Track Intercity Rail 仍在成长。我们发现新的铁路和国家就会
 
 本 README：[English](README.md)、[Deutsch](README.de.md)、[Français](README.fr.md)、[Nederlands](README.nl.md)、**简体中文**、[Español](README.es.md)、[Italiano](README.it.md)、[Dansk](README.da.md)、[Suomi](README.fi.md)、[Svenska](README.sv.md)、[Norsk bokmål](README.nb.md)、[Gaeilge](README.ga.md)。每份翻译的 README 都是完整的。目前还没有一份经过母语人士阅读。如果其中某种语言是你的母语，请告诉我们它的 README 读起来是否通顺：见[帮助它成长](#帮助它成长)。
 
-设置对话框和选项目前只有英文，无论你的 Home Assistant 使用什么语言。欢迎翻译它们：[我们会帮你完成](#在我们的帮助下自己添加)。
+设置对话框和选项目前只有英文，无论你的 Home Assistant 使用什么语言。如果你会说其他语言，可以自己翻译它们：只是一个文件里的一小串短语，[我们会帮你完成](#在我们的帮助下自己添加)。
 
 发现翻译中的错误，或需要其他语言？请在 <https://github.com/StrausbergAutomationWorks/LiveTrackIntercityRail/issues> 告诉我们，或[在我们的帮助下翻译](#在我们的帮助下自己添加)。
 
@@ -477,10 +477,12 @@ Live Track Intercity Rail 仍在成长。我们发现新的铁路和国家就会
 
 **开发者须知：** 每条铁路是 `custom_components/live_track_intercity_rail/operators/` 中的一个模块，读取 `sources/` 中的一个来源适配器；随附的线路走向用 `tools/` 中的脚本重新构建（`journey_beyond.py`、`qrt_lines.py`、`renfe_spain_lines.py`、`sweden_lines.py`）。测试用 `python -m unittest discover -s tests` 运行。
 
-**致敬。** StrausbergAutomationWorks 向过去和现在的长老致敬，并感谢原住民族（澳大利亚原住民和托雷斯海峡岛民）所作的贡献。
-
 ---
 
 ## 关键词
 
 Home Assistant 火车 · Home Assistant 列车追踪 · 火车实时地图 · 城际铁路 · 长途列车 · GTFS-Realtime · Amtrak · Amtraker · Brightline · VIA Rail · trains en temps réel · VR · kaukojunat · NSW TrainLink · XPT · V/Line · The Ghan · Indian Pacific · Spirit of Queensland · Transwa · Renfe · AVE · Avlo · Alvia · Rodalies · trenes en tiempo real · Vy · SJ Nord · tog i sanntid · SJ · Snälltåget · Öresundståg · tåg i realtid · Irish Rail · Enterprise · traenacha beo · NS Intercity · Arriva · treinen live · Zugverkehr · treni in tempo reale · togtrafik · geo_location · 地图卡片 · Lovelace · HACS · Marketplace · Live Track · LiveTrack · StrausbergAutomationWorks
+
+---
+
+**致敬。** StrausbergAutomationWorks 向这张地图上世界各地陆地和水域的原住民族致意，并向他们过去和现在的长老致敬。

@@ -103,7 +103,7 @@ The other 13 railroads need no key.
 | **Europe**: Netherlands | NS Intercity, and the regional trains of Arriva (Arriva, RRReis, Blauwnet) and Keolis (Blauwnet, RRReis); NS's Sprinters are in Live Track Commuter Rail | NS, OVapi | a free key |
 | **Europe**: Norway | Vy's F, RE, RX and R lines (F1 also into Sweden), Go-Ahead Norge's F5 and R50, SJ Nord's F6, F7 and R60 to R75 | Entur | nothing |
 | **Europe**: Spain | Renfe's AVE, Avlo, Alvia, Avant, Euromed, Intercity, MD and Regional trains, also into France and Portugal; Rodalies de Catalunya's regional lines R11 to R17 | Renfe | nothing |
-| **Europe**: Sweden | SJ, VR Snabbtåg, Snälltåget, Öresundståg, Pågatågen, Mälartåg, Västtågen, Krösatågen, Östgötapendeln, Norrtåg, Tåg i Bergslagen, X-Tåget, Värmlandstrafik, Tågab and Inlandsbanan, one railroad each | Trafikverket | a free key |
+| **Europe**: Sweden | SJ, VR Snabbtåg, Snälltåget, Öresundståg, Pågatågen, Mälartåg, Västtågen, Krösatågen, Östgötapendeln, Norrtåg, Tåg i Bergslagen, X-Tåget, Värmlandstrafik, Tågab and Inlandsbanan, one railroad each; Öresundståg also into Denmark | Trafikverket | a free key |
 | **North America**: Canada | VIA Rail, every route | VIA Rail | nothing |
 | **North America**: United States | Amtrak, every route, also into Canada | Amtraker | nothing |
 | **North America**: United States | Brightline (Florida) | Brightline | nothing |
@@ -740,9 +740,10 @@ is complete. None has yet been read by a native speaker. If one of these
 languages is yours, please tell us whether its README reads well: see
 [Help it grow](#help-it-grow).
 
-The setup dialog and the options are in English only for now, whatever your
-Home Assistant language. A translation of them is welcome:
-[we will help you make one](#add-it-yourself-with-our-help).
+The setup dialog and the options are in English only for now, whatever your Home
+Assistant language. If you speak another language, you can translate them
+yourself: it is a short list of phrases in one file, and [we will help you do
+it](#add-it-yourself-with-our-help).
 
 Found a mistake in a translation, or need another language? Tell us at
 <https://github.com/StrausbergAutomationWorks/LiveTrackIntercityRail/issues>, or
@@ -820,10 +821,6 @@ adapter in `sources/`; the shipped route lines are rebuilt with the scripts in
 `sweden_lines.py`). The tests run with
 `python -m unittest discover -s tests`.
 
-**Acknowledgement.** StrausbergAutomationWorks pays its respect to Elders past
-and present and acknowledges the contributions of First Nations (Aboriginal
-and Torres Strait Islander) peoples.
-
 ---
 
 ## Keywords
@@ -838,3 +835,9 @@ Irish Rail · Enterprise · traenacha beo · NS Intercity · Arriva · treinen l
 Zugverkehr · treni in tempo reale · togtrafik · 火车实时地图 · geo_location ·
 map card · Lovelace · HACS · Marketplace · Live Track · LiveTrack ·
 StrausbergAutomationWorks
+
+---
+
+**Acknowledgement.** StrausbergAutomationWorks acknowledges the Indigenous
+peoples of every land and water on this map, all over the world, and pays its
+respect to their Elders, past and present.

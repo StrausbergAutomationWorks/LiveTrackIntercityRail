@@ -104,7 +104,7 @@ De andere 13 spoorwegen hebben geen sleutel nodig.
 | **Europa**: Nederland | NS Intercity, en de regionale treinen van Arriva (Arriva, RRReis, Blauwnet) en Keolis (Blauwnet, RRReis); de Sprinters van NS staan in Live Track Commuter Rail | NS, OVapi | een gratis sleutel |
 | **Europa**: Noorwegen | de F-, RE-, RX- en R-lijnen van Vy (F1 ook naar Zweden), F5 en R50 van Go-Ahead Norge, F6, F7 en R60 tot R75 van SJ Nord | Entur | niets |
 | **Europa**: Spanje | de AVE-, Avlo-, Alvia-, Avant-, Euromed-, Intercity-, MD- en Regional-treinen van Renfe, ook naar Frankrijk en Portugal; de regionale lijnen R11 tot R17 van Rodalies de Catalunya | Renfe | niets |
-| **Europa**: Zweden | SJ, VR Snabbtåg, Snälltåget, Öresundståg, Pågatågen, Mälartåg, Västtågen, Krösatågen, Östgötapendeln, Norrtåg, Tåg i Bergslagen, X-Tåget, Värmlandstrafik, Tågab en Inlandsbanan, elk een eigen spoorweg | Trafikverket | een gratis sleutel |
+| **Europa**: Zweden | SJ, VR Snabbtåg, Snälltåget, Öresundståg, Pågatågen, Mälartåg, Västtågen, Krösatågen, Östgötapendeln, Norrtåg, Tåg i Bergslagen, X-Tåget, Värmlandstrafik, Tågab en Inlandsbanan, elk een eigen spoorweg; Öresundståg ook naar Denemarken | Trafikverket | een gratis sleutel |
 | **Noord-Amerika**: Canada | VIA Rail, elke route | VIA Rail | niets |
 | **Noord-Amerika**: Verenigde Staten | Amtrak, elke route, ook naar Canada | Amtraker | niets |
 | **Noord-Amerika**: Verenigde Staten | Brightline (Florida) | Brightline | niets |
@@ -779,9 +779,10 @@ is volledig. Geen enkele is nog door een moedertaalspreker gelezen. Is een van
 deze talen de jouwe, laat ons dan weten of de README goed leest: zie
 [Help het groeien](#help-het-groeien).
 
-De instellingsdialoog en de opties zijn voorlopig alleen in het Engels, in
-welke taal je Home Assistant ook staat. Een vertaling ervan is welkom:
-[we helpen je er een te maken](#zelf-iets-toevoegen-met-onze-hulp).
+De instellingsdialoog en de opties zijn voorlopig alleen in het Engels, in welke
+taal je Home Assistant ook staat. Spreek je een andere taal, dan kun je ze zelf
+vertalen: het is een korte lijst zinnen in één bestand, en [we helpen je
+daarbij](#zelf-iets-toevoegen-met-onze-hulp).
 
 Een fout gevonden in een vertaling, of een andere taal nodig? Laat het ons
 weten op <https://github.com/StrausbergAutomationWorks/LiveTrackIntercityRail/issues>,
@@ -861,10 +862,6 @@ gebouwd met de scripts in `tools/` (`journey_beyond.py`, `qrt_lines.py`,
 `renfe_spain_lines.py`, `sweden_lines.py`). De tests draaien met
 `python -m unittest discover -s tests`.
 
-**Erkenning.** StrausbergAutomationWorks betuigt zijn respect aan de Elders
-van vroeger en nu en erkent de bijdragen van de First Nations-volken
-(Aboriginal en Torres Strait Islander).
-
 ---
 
 ## Trefwoorden
@@ -879,3 +876,9 @@ tåg i realtid · Irish Rail · Enterprise · traenacha beo · NS Intercity ·
 Arriva · Keolis · Zugverkehr · treni in tempo reale · togtrafik · 火车实时地图 ·
 geo_location · kaart · Lovelace · HACS · Marktplaats · Live Track · LiveTrack ·
 StrausbergAutomationWorks
+
+---
+
+**Erkenning.** StrausbergAutomationWorks erkent de inheemse volken van alle
+landen en wateren op deze kaart, overal ter wereld, en betuigt zijn respect aan
+hun Elders, van vroeger en nu.

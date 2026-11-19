@@ -104,7 +104,7 @@ Le altre 13 ferrovie non hanno bisogno di chiave.
 | **Europa**: Paesi Bassi | NS Intercity, e i treni regionali di Arriva (Arriva, RRReis, Blauwnet) e Keolis (Blauwnet, RRReis); gli Sprinter di NS sono in Live Track Commuter Rail | NS, OVapi | una chiave gratuita |
 | **Europa**: Norvegia | le linee F, RE, RX e R di Vy (la F1 anche verso la Svezia), la F5 e la R50 di Go-Ahead Norge, la F6, la F7 e dalla R60 alla R75 di SJ Nord | Entur | niente |
 | **Europa**: Spagna | i treni AVE, Avlo, Alvia, Avant, Euromed, Intercity, MD e Regional di Renfe, anche verso Francia e Portogallo; le linee regionali da R11 a R17 di Rodalies de Catalunya | Renfe | niente |
-| **Europa**: Svezia | SJ, VR Snabbtåg, Snälltåget, Öresundståg, Pågatågen, Mälartåg, Västtågen, Krösatågen, Östgötapendeln, Norrtåg, Tåg i Bergslagen, X-Tåget, Värmlandstrafik, Tågab e Inlandsbanan, ciascuna come ferrovia a sé | Trafikverket | una chiave gratuita |
+| **Europa**: Svezia | SJ, VR Snabbtåg, Snälltåget, Öresundståg, Pågatågen, Mälartåg, Västtågen, Krösatågen, Östgötapendeln, Norrtåg, Tåg i Bergslagen, X-Tåget, Värmlandstrafik, Tågab e Inlandsbanan, ciascuna come ferrovia a sé; Öresundståg anche fino in Danimarca | Trafikverket | una chiave gratuita |
 | **Nord America**: Canada | VIA Rail, ogni percorso | VIA Rail | niente |
 | **Nord America**: Stati Uniti | Amtrak, ogni percorso, anche verso il Canada | Amtraker | niente |
 | **Nord America**: Stati Uniti | Brightline (Florida) | Brightline | niente |
@@ -778,8 +778,9 @@ lingue è la tua, dicci se il suo README si legge bene: vedi
 [Aiutaci a farlo crescere](#aiutaci-a-farlo-crescere).
 
 La finestra di configurazione e le opzioni sono per ora solo in inglese,
-qualunque sia la lingua del tuo Home Assistant. Una loro traduzione è
-benvenuta: [ti aiuteremo a farne una](#aggiungerlo-tu-con-il-nostro-aiuto).
+qualunque sia la lingua del tuo Home Assistant. Se parli un'altra lingua, puoi
+tradurle tu: è un breve elenco di frasi in un solo file, e [ti aiuteremo a
+farlo](#aggiungerlo-tu-con-il-nostro-aiuto).
 
 Hai trovato un errore in una traduzione, o ti serve un'altra lingua? Diccelo
 su <https://github.com/StrausbergAutomationWorks/LiveTrackIntercityRail/issues>,
@@ -859,10 +860,6 @@ ricostruiscono con gli script in `tools/` (`journey_beyond.py`,
 `qrt_lines.py`, `renfe_spain_lines.py`, `sweden_lines.py`). I test si
 eseguono con `python -m unittest discover -s tests`.
 
-**Riconoscimento.** StrausbergAutomationWorks rende omaggio agli Anziani del
-passato e del presente e riconosce i contributi dei popoli delle Prime Nazioni
-(aborigeni e isolani dello Stretto di Torres).
-
 ---
 
 ## Parole chiave
@@ -877,3 +874,9 @@ Snälltåget · Öresundståg · tåg i realtid · Irish Rail · Enterprise ·
 traenacha beo · NS Intercity · Arriva · treinen live · Zugverkehr · togtrafik ·
 火车实时地图 · geo_location · scheda mappa · Lovelace · HACS · Marketplace ·
 Live Track · LiveTrack · StrausbergAutomationWorks
+
+---
+
+**Riconoscimento.** StrausbergAutomationWorks riconosce i popoli indigeni di
+tutte le terre e le acque di questa mappa, in tutto il mondo, e rende omaggio ai
+loro Anziani del passato e del presente.

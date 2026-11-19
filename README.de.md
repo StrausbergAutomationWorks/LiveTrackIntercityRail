@@ -103,7 +103,7 @@ Die anderen 13 Bahnen brauchen keinen Schlüssel.
 | **Europa**: Niederlande | NS Intercity und die Regionalzüge von Arriva (Arriva, RRReis, Blauwnet) und Keolis (Blauwnet, RRReis); die Sprinter von NS sind in Live Track Commuter Rail | NS, OVapi | einen kostenlosen Schlüssel |
 | **Europa**: Norwegen | die Linien F, RE, RX und R von Vy (F1 auch nach Schweden), F5 und R50 von Go-Ahead Norge, F6, F7 und R60 bis R75 von SJ Nord | Entur | nichts |
 | **Europa**: Spanien | die Züge AVE, Avlo, Alvia, Avant, Euromed, Intercity, MD und Regional von Renfe, auch nach Frankreich und Portugal; die Regionallinien R11 bis R17 von Rodalies de Catalunya | Renfe | nichts |
-| **Europa**: Schweden | SJ, VR Snabbtåg, Snälltåget, Öresundståg, Pågatågen, Mälartåg, Västtågen, Krösatågen, Östgötapendeln, Norrtåg, Tåg i Bergslagen, X-Tåget, Värmlandstrafik, Tågab und Inlandsbanan, jede als eigene Bahn | Trafikverket | einen kostenlosen Schlüssel |
+| **Europa**: Schweden | SJ, VR Snabbtåg, Snälltåget, Öresundståg, Pågatågen, Mälartåg, Västtågen, Krösatågen, Östgötapendeln, Norrtåg, Tåg i Bergslagen, X-Tåget, Värmlandstrafik, Tågab und Inlandsbanan, jede als eigene Bahn; Öresundståg auch nach Dänemark | Trafikverket | einen kostenlosen Schlüssel |
 | **Nordamerika**: Kanada | VIA Rail, jede Strecke | VIA Rail | nichts |
 | **Nordamerika**: Vereinigte Staaten | Amtrak, jede Strecke, auch nach Kanada | Amtraker | nichts |
 | **Nordamerika**: Vereinigte Staaten | Brightline (Florida) | Brightline | nichts |
@@ -800,8 +800,9 @@ eine dieser Sprachen Ihre ist, sagen Sie uns bitte, ob sich ihre README gut
 liest: siehe [Helfen Sie mit, es zu erweitern](#helfen-sie-mit-es-zu-erweitern).
 
 Der Einrichtungsdialog und die Optionen sind vorerst nur auf Englisch, gleich
-welche Sprache Ihr Home Assistant hat. Eine Übersetzung davon ist willkommen:
-[Wir helfen Ihnen dabei](#selbst-etwas-hinzufügen-mit-unserer-hilfe).
+welche Sprache Ihr Home Assistant hat. Wenn Sie eine andere Sprache sprechen,
+können Sie sie selbst übersetzen: Es ist eine kurze Liste von Sätzen in einer
+Datei, und [wir helfen Ihnen dabei](#selbst-etwas-hinzufügen-mit-unserer-hilfe).
 
 Einen Fehler in einer Übersetzung gefunden, oder eine andere Sprache nötig?
 Sagen Sie es uns unter
@@ -882,10 +883,6 @@ Skripten in `tools/` neu gebaut (`journey_beyond.py`, `qrt_lines.py`,
 `renfe_spain_lines.py`, `sweden_lines.py`). Die Tests laufen mit
 `python -m unittest discover -s tests`.
 
-**Würdigung.** StrausbergAutomationWorks erweist den Ältesten der
-Vergangenheit und Gegenwart seinen Respekt und würdigt die Beiträge der
-First Nations (Aboriginal and Torres Strait Islander) Völker.
-
 ---
 
 ## Stichwörter
@@ -900,3 +897,9 @@ Irish Rail · Enterprise · traenacha beo · NS Intercity · Arriva · treinen l
 treni in tempo reale · togtrafik · 火车实时地图 · geo_location · Kartenkarte ·
 Lovelace · HACS · Marketplace · Live Track · LiveTrack ·
 StrausbergAutomationWorks
+
+---
+
+**Würdigung.** StrausbergAutomationWorks würdigt die indigenen Völker aller
+Länder und Gewässer auf dieser Karte, überall auf der Welt, und erweist ihren
+Ältesten, in Vergangenheit und Gegenwart, seinen Respekt.
