@@ -491,10 +491,10 @@ class Manifest(unittest.TestCase):
         import re
         here = pathlib.Path(__file__).resolve().parents[1] / "custom_components" / "live_track_intercity_rail"
         req = json.loads((here / "manifest.json").read_text(encoding="utf-8"))["requirements"]
-        # 0.2.41 since 2026-11-18: the Amtraker client asks for gzip (1.19 MB to 113 KB per read). 0.2.40 from 2026-11-14: saw_livetrack.transperth, Transwa (Intercity SSOT 8.12). 0.2.38 from 2026-11-13: V/Line's long routes only and saw_livetrack.vline (backlog 337). 0.2.35 from 2026-11-11: saw_livetrack.ns, the Netherlands (Intercity SSOT 8.11). 0.2.33 from 2026-11-10: the Irish Rail client builds its TLS opener at first use. 0.2.32 from 2026-11-10: saw_livetrack.irish_rail, Ireland (Intercity SSOT 8.10). 0.2.31 from 2026-11-08: saw_livetrack.trafikverket, Sweden (Intercity SSOT 8.9). 0.2.29 from 2026-11-08: SIRI ET for SJ Nord (Intercity SSOT 8.8, "SJ NORD: BUILT"). 0.2.27 from
+        # 0.2.42 since 2026-11-20: Live Track writes only its own map-card resource rows (hacs/default review). 0.2.41 from 2026-11-18: the Amtraker client asks for gzip (1.19 MB to 113 KB per read). 0.2.40 from 2026-11-14: saw_livetrack.transperth, Transwa (Intercity SSOT 8.12). 0.2.38 from 2026-11-13: V/Line's long routes only and saw_livetrack.vline (backlog 337). 0.2.35 from 2026-11-11: saw_livetrack.ns, the Netherlands (Intercity SSOT 8.11). 0.2.33 from 2026-11-10: the Irish Rail client builds its TLS opener at first use. 0.2.32 from 2026-11-10: saw_livetrack.irish_rail, Ireland (Intercity SSOT 8.10). 0.2.31 from 2026-11-08: saw_livetrack.trafikverket, Sweden (Intercity SSOT 8.9). 0.2.29 from 2026-11-08: SIRI ET for SJ Nord (Intercity SSOT 8.8, "SJ NORD: BUILT"). 0.2.27 from
         # 2026-11-07: saw_livetrack.entur, Norway. 0.2.25 from 2026-11-05: digitraffic_rail.next_stop after the
         # last actual row (backlog 289).
-        self.assertTrue(req[0].startswith("saw-livetrack[gtfs]>=0.2.41,"), req)
+        self.assertTrue(req[0].startswith("saw-livetrack[gtfs]>=0.2.42,"), req)
         names = {re.split(r"[=<>\[]", r)[0].lower() for r in req}
         extra = [r.split(";")[0].strip() for r in md.requires("saw-livetrack") if 'extra == "gtfs"' in r]
         self.assertTrue(extra)
