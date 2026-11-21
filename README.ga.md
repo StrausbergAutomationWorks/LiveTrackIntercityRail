@@ -332,9 +332,31 @@ filter:
 ```
 
 Teastaíonn [auto-entities](https://github.com/thomasloven/lovelace-auto-entities)
-ón Margadh do na marcóirí. Le modúil Live Track eile suiteáilte, cuir scagaire
+ón Margadh don fhoirm seo. Le modúil Live Track eile suiteáilte, cuir scagaire
 `- domain: geo_location` eile leis do gach ceann dá bhfoinsí
 (`live_track_commuter_rail`, `live_track_aircraft` agus mar sin de).
+
+**Gan auto-entities:** is féidir le LiveTrackMapCard féin a roghnú cad a
+thaispeánann sí, le `entity_filter`. Greamaigh é seo ina ionad sin; níl aon
+rud eile le suiteáil:
+
+```yaml
+type: custom:live-track-map-card
+entity_filter:
+  include:
+    - domain: geo_location
+      attributes:
+        source: live_track_intercity_rail
+      options:
+        display: attribute
+        attribute: marker_label
+        position_transition: auto
+  exclude:
+    - state: unavailable
+```
+
+Téann modúil eile Live Track in `entity_filter` ar an mbealach céanna: riail
+`- domain: geo_location` eile do gach foinse.
 
 **Ar an léarscáil:**
 

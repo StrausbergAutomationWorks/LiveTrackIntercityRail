@@ -230,7 +230,26 @@ filter:
     - state: unavailable
 ```
 
-标记需要 Marketplace 中的 [auto-entities](https://github.com/thomasloven/lovelace-auto-entities)。如果安装了其他 Live Track 模块，为它们的每个来源再加一个 `- domain: geo_location` 过滤器（`live_track_commuter_rail`、`live_track_aircraft` 等）。
+这种写法需要 Marketplace 中的 [auto-entities](https://github.com/thomasloven/lovelace-auto-entities)。如果安装了其他 Live Track 模块，为它们的每个来源再加一个 `- domain: geo_location` 过滤器（`live_track_commuter_rail`、`live_track_aircraft` 等）。
+
+**不用 auto-entities：** LiveTrackMapCard 可以用 `entity_filter` 自己选择要显示的内容。改为粘贴下面这段，无需再安装其他东西：
+
+```yaml
+type: custom:live-track-map-card
+entity_filter:
+  include:
+    - domain: geo_location
+      attributes:
+        source: live_track_intercity_rail
+      options:
+        display: attribute
+        attribute: marker_label
+        position_transition: auto
+  exclude:
+    - state: unavailable
+```
+
+其他 Live Track 模块以同样方式放进 `entity_filter`：每个来源再加一条 `- domain: geo_location` 规则。
 
 **在地图上：**
 
