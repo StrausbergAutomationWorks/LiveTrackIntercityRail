@@ -19,9 +19,8 @@ hinzugefügt, aus ihren eigenen veröffentlichten Daten.
 > und Länder hinzu. Fehlt Ihre? [Schlagen Sie sie vor](#helfen-sie-mit-es-zu-erweitern),
 > oder fügen Sie sie selbst hinzu: Wir helfen Ihnen dabei.
 
-**Status: 0.1.0, die erste Veröffentlichung.** Per Link zum Marketplace
-hinzugefügt ([unten](#installation-schritt-für-schritt)); es ist noch nicht im
-Katalog des Marketplace.
+**Status: 0.1.3, veröffentlicht.** Im Katalog des Marketplace ([Installation
+unten](#installation-schritt-für-schritt)).
 
 Eigene Arbeit von StrausbergAutomationWorks. Nicht verbunden mit und nicht
 unterstützt von Amtrak, Amtraker, Brightline, VIA Rail, Fintraffic, VR,
@@ -176,19 +175,18 @@ Alles ist kostenlos und quelloffen. Nichts wird für Sponsoren zurückgehalten.
 
 ### Über den Marketplace (empfohlen)
 
-Live Track Intercity Rail ist noch nicht im Katalog des Marketplace. Fügen Sie
-es per Link hinzu:
-
 1. Öffnen Sie in Home Assistant **Einstellungen → Marketplace** (HACS).
-2. Wählen Sie **Über Link hinzufügen** (oder das Dreipunktmenü →
-   **Benutzerdefinierte Repositorys**).
-3. Geben Sie `StrausbergAutomationWorks/LiveTrackIntercityRail` ein. Wenn nach
-   dem Typ gefragt wird, wählen Sie **Integration**.
-4. Suchen Sie **Live Track Intercity Rail** in der Liste und wählen Sie
-   **Herunterladen** oder **Installieren**.
-5. **Starten Sie Home Assistant neu**: **Einstellungen → System → Reparaturen**
+2. Suchen Sie nach **Live Track Intercity Rail** und öffnen Sie es.
+3. Wählen Sie **Herunterladen** (oder **Installieren**).
+4. **Starten Sie Home Assistant neu**: **Einstellungen → System → Reparaturen**
    bietet den Neustart an, oder nutzen Sie **Einstellungen → System → Neu
    starten**.
+
+Findet die Suche es nicht, fügen Sie es per Link hinzu: wählen Sie **Über Link
+hinzufügen** (oder das Dreipunktmenü → **Benutzerdefinierte Repositorys**),
+geben Sie `StrausbergAutomationWorks/LiveTrackIntercityRail` ein, wählen Sie
+**Integration**, wenn nach dem Typ gefragt wird, und fahren Sie dann mit Schritt
+3 fort.
 
 Der Marketplace bietet dann jede neue Veröffentlichung als Aktualisierung an.
 
@@ -402,9 +400,15 @@ Live-Track-Modul installiert, entfernen Sie die Zeile selbst unter
 
 **Um die Karte stattdessen von Hand zu installieren**, folgen Sie den
 Schritten in der [README der Karte](https://github.com/StrausbergAutomationWorks/LiveTrackMapCard#live-track).
-Eine Zeile, die Sie selbst für eine Kopie unter `/local/` angelegt haben, wird
-nur dann auf die Kopie dieses Moduls umgestellt, wenn diese eine neuere
-Veröffentlichung ist.
+Eine Zeile, die Sie selbst für eine Kopie unter `/local/` oder unter einer
+anderen Adresse angelegt haben, wird nie geändert oder entfernt. Solange sie die
+Karte lädt, überlässt jedes Live-Track-Modul ihr die Karte, auch wenn ein Modul
+eine neuere Veröffentlichung mitbringt, und nichts unter **Reparaturen** weist
+darauf hin. Um zur Kopie des Moduls zurückzukehren, entfernen Sie Ihre Zeile
+unter **Einstellungen → Dashboards → Ressourcen** und starten Home Assistant
+neu. Wenn Sie die Datei Ihrer Kopie löschen, entfernen Sie auch ihre Zeile:
+Solange eine Zeile stehen bleibt, deren Datei fehlt, legt das Modul keine eigene
+Zeile an.
 
 Jede andere Kartenkarte, die `geo_location`-Entitäten zeigt, zeigt die Züge
 auch, als einfache Markierungen.

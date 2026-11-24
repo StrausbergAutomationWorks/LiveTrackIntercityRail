@@ -8,7 +8,7 @@
 
 > **不断扩展，欢迎提出想法。** Live Track Intercity Rail 目前覆盖 3 大洲 9 个国家的 33 条铁路，我们还在添加更多铁路和国家。缺少你的铁路吗？[提出建议](#帮助它成长)，或者自己添加：我们会帮你完成。
 
-**状态：0.1.0，首个版本。** 已通过链接添加到 Marketplace（[见下方](#安装步骤)）；它还不在 Marketplace 的目录中。
+**状态：0.1.3，已发布。** 已在 Marketplace 的目录中（[安装方法见下文](#安装步骤)）。
 
 StrausbergAutomationWorks 的原创作品。与 Amtrak、Amtraker、Brightline、VIA Rail、Fintraffic、VR、Transport for NSW、NSW TrainLink、Transport Victoria、V/Line、Queensland Rail、Journey Beyond、Public Transport Authority of Western Australia、Transwa、Renfe、Rodalies de Catalunya、Entur、Vy、Go-Ahead Norge、SJ Nord、Trafikverket、SJ、VR Snabbtåg、Snälltåget、Öresundståg、Pågatågen、Mälartåg、Västtågen、Krösatågen、Östgötapendeln、Norrtåg、Tåg i Bergslagen、X-Tåget、Värmlandstrafik、Tågab、Inlandsbanan、Irish Rail、National Transport Authority（爱尔兰）、NS、Arriva、Keolis、OVapi 或任何其他铁路均无关联，也未获其认可。
 
@@ -131,13 +131,12 @@ Live Track 是一组 Home Assistant 集成，每种移动的东西一个，全�
 
 ### 通过 Marketplace（推荐）
 
-Live Track Intercity Rail 还不在 Marketplace 的目录中。通过它的链接添加：
-
 1. 在 Home Assistant 中打开**设置 → Marketplace**（HACS）。
-2. 选择**从链接添加**（或三点菜单 → **自定义存储库**）。
-3. 输入 `StrausbergAutomationWorks/LiveTrackIntercityRail`。如果要求选择类型，选择**集成**。
-4. 在列表中找到 **Live Track Intercity Rail**，选择**下载**或**安装**。
-5. **重启 Home Assistant**：**设置 → 系统 → 修复**会提供重启，或使用**设置 → 系统 → 重新启动 Home Assistant**。
+2. 搜索 **Live Track Intercity Rail** 并打开它。
+3. 选择**下载**（或**安装**）。
+4. **重启 Home Assistant**：**设置 → 系统 → 修复**会提供重启，或使用**设置 → 系统 → 重新启动 Home Assistant**。
+
+如果搜索找不到它，就通过链接添加：选择**从链接添加**（或三点菜单 → **自定义存储库**），输入 `StrausbergAutomationWorks/LiveTrackIntercityRail`，如果询问类型，选择**集成**，然后从第 3 步继续。
 
 之后 Marketplace 会把每个新版本作为更新提供。
 
@@ -270,7 +269,7 @@ lovelace:
 
 每个 Live Track 模块都带有一份卡片副本，并在 Home Assistant 启动时注册它。它们共同在**设置 → 仪表盘 → 资源**中保持恰好一行：其中任一模块所带的最新卡片版本，绝不会是更旧的版本。你自己通过 Marketplace 安装的卡片不会被改动。删除本模块的最后一条铁路时，这一行会转交给另一个 Live Track 模块，如果没有其他模块就会被删除。如果集成的文件被删除而其铁路仍处于设置状态，并且没有安装其他 Live Track 模块，请自己在**设置 → 仪表盘 → 资源**中删除这一行。
 
-**如果想改为手动安装卡片**，请按照[卡片的 README](https://github.com/StrausbergAutomationWorks/LiveTrackMapCard#live-track) 中的步骤操作。你自己为 `/local/` 下的副本创建的行，只有当本模块的副本是更新的版本时，才会指向本模块的副本。
+**如果想改为手动安装卡片**，请按照[卡片的 README](https://github.com/StrausbergAutomationWorks/LiveTrackMapCard#live-track) 中的步骤操作。你自己为 `/local/` 下或任何其他地址的副本创建的行，永远不会被修改或删除。只要它在加载卡片，每个 Live Track 模块都会把卡片留给它，即使某个模块带有更新的版本也是如此，而且**修复**中不会有任何提示。要改回本模块的副本，请在**设置 → 仪表盘 → 资源**中删除你的那一行，然后重启 Home Assistant。如果你删除了副本的文件，也请删除它的那一行：只要一行的文件已不存在而这一行仍然保留，本模块就不会添加自己的行。
 
 任何其他显示 `geo_location` 实体的地图卡片也会显示这些列车，作为普通标记。
 

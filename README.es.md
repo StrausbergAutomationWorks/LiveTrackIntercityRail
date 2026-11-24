@@ -20,9 +20,8 @@ publicados.
 > ferrocarriles y países. ¿Falta el tuyo? [Sugiérelo](#ayúdanos-a-hacerlo-crecer),
 > o añádelo tú mismo: te ayudaremos a hacerlo.
 
-**Estado: 0.1.0, la primera versión.** Añadido al Marketplace por enlace
-([más abajo](#instalación-paso-a-paso)); todavía no está en el catálogo del
-Marketplace.
+**Estado: 0.1.3, publicado.** En el catálogo del Marketplace ([instálalo más
+abajo](#instalación-paso-a-paso)).
 
 Obra original de StrausbergAutomationWorks. Sin relación con, ni respaldo de,
 Amtrak, Amtraker, Brightline, VIA Rail, Fintraffic, VR, Transport for NSW,
@@ -174,18 +173,16 @@ Todo es gratuito y de código abierto. Nada se reserva para patrocinadores.
 
 ### Desde el Marketplace (recomendado)
 
-Live Track Intercity Rail todavía no está en el catálogo del Marketplace.
-Añádelo por su enlace:
-
 1. En Home Assistant, abre **Configuración → Marketplace** (HACS).
-2. Elige **Añadir desde enlace** (o el menú de tres puntos → **Repositorios
-   personalizados**).
-3. Escribe `StrausbergAutomationWorks/LiveTrackIntercityRail`. Si se te pide
-   el tipo, elige **Integración**.
-4. Busca **Live Track Intercity Rail** en la lista y elige **Descargar** o
-   **Instalar**.
-5. **Reinicia Home Assistant**: **Configuración → Sistema → Reparaciones**
+2. Busca **Live Track Intercity Rail** y ábrelo.
+3. Elige **Descargar** (o **Instalar**).
+4. **Reinicia Home Assistant**: **Configuración → Sistema → Reparaciones**
    ofrece el reinicio, o usa **Configuración → Sistema → Reiniciar**.
+
+Si la búsqueda no lo encuentra, añádelo por su enlace: elige **Añadir desde
+enlace** (o el menú de tres puntos → **Repositorios personalizados**), escribe
+`StrausbergAutomationWorks/LiveTrackIntercityRail`, elige **Integración** si te
+pide el tipo y continúa desde el paso 3.
 
 Después, el Marketplace te ofrece cada nueva versión como actualización.
 
@@ -393,8 +390,14 @@ control → Recursos**.
 
 **Para instalar la tarjeta a mano en su lugar**, sigue los pasos del
 [README de la tarjeta](https://github.com/StrausbergAutomationWorks/LiveTrackMapCard#live-track).
-Una fila que hayas creado tú mismo para una copia en `/local/` solo se apunta
-a la copia de este módulo cuando esa copia es una versión más nueva.
+Una fila que hayas creado tú, para una copia en `/local/` o en cualquier otra
+dirección, nunca se cambia ni se elimina. Mientras cargue la tarjeta, todos los
+módulos Live Track le dejan la tarjeta, incluso cuando un módulo trae una
+versión más nueva, y nada en **Reparaciones** lo indica. Para volver a la copia
+del módulo, elimina tu fila en **Configuración → Paneles de control → Recursos**
+y reinicia Home Assistant. Si borras el archivo de tu copia, elimina también su
+fila: mientras quede una fila cuyo archivo ya no existe, el módulo no añade
+ninguna fila propia.
 
 Cualquier otra tarjeta de mapa que muestre entidades `geo_location` también
 muestra los trenes, como marcadores simples.

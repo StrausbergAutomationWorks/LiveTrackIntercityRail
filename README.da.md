@@ -19,9 +19,8 @@ fra dens egne offentliggjorte data.
 > lande. Mangler din? [Foreslå den](#hjælp-den-med-at-vokse), eller tilføj den
 > selv: vi hjælper dig med det.
 
-**Status: 0.1.0, den første udgivelse.** Tilføjet til Markedspladsen via link
-([nedenfor](#installation-trin-for-trin)); den er endnu ikke i Markedspladsens
-katalog.
+**Status: 0.1.3, udgivet.** I Markedspladsens katalog ([installér den
+nedenfor](#installation-trin-for-trin)).
 
 Originalt værk af StrausbergAutomationWorks. Ikke tilknyttet eller godkendt
 af Amtrak, Amtraker, Brightline, VIA Rail, Fintraffic, VR, Transport for NSW,
@@ -173,18 +172,16 @@ Alt er gratis og open source. Intet holdes tilbage til sponsorer.
 
 ### Fra Markedspladsen (anbefalet)
 
-Live Track Intercity Rail er endnu ikke i Markedspladsens katalog. Tilføj den
-via dens link:
-
 1. Åbn **Indstillinger → Markedspladsen** (HACS) i Home Assistant.
-2. Vælg **Tilføj fra link** (eller menuen med de tre prikker →
-   **Brugerdefinerede repositorier**).
-3. Skriv `StrausbergAutomationWorks/LiveTrackIntercityRail`. Hvis du bliver
-   spurgt om typen, så vælg **Integration**.
-4. Find **Live Track Intercity Rail** på listen, og vælg **Download** eller
-   **Installér**.
-5. **Genstart Home Assistant**: **Indstillinger → System → Reparationer**
+2. Søg efter **Live Track Intercity Rail**, og åbn den.
+3. Vælg **Download** (eller **Installér**).
+4. **Genstart Home Assistant**: **Indstillinger → System → Reparationer**
    tilbyder genstarten, eller brug **Indstillinger → System → Genstart**.
+
+Hvis søgningen ikke finder den, så tilføj den via dens link: vælg **Tilføj fra
+link** (eller menuen med de tre prikker → **Brugerdefinerede repositorier**),
+skriv `StrausbergAutomationWorks/LiveTrackIntercityRail`, vælg **Integration**,
+hvis du bliver spurgt om typen, og fortsæt derefter fra trin 3.
 
 Markedspladsen tilbyder derefter hver ny udgivelse som en opdatering.
 
@@ -386,8 +383,14 @@ andet Live Track-modul er installeret, så fjern selv rækken i **Indstillinger
 
 **Vil du hellere installere kortet i hånden**, så følg trinene i
 [kortets README](https://github.com/StrausbergAutomationWorks/LiveTrackMapCard#live-track).
-En række, du selv har lavet til en kopi under `/local/`, peges kun mod dette
-moduls kopi, når dette moduls kopi er en nyere udgivelse.
+En række, du selv har lavet til en kopi under `/local/` eller på en anden
+adresse, bliver aldrig ændret eller fjernet. Så længe den indlæser kortet,
+overlader alle Live Track-moduler kortet til den, også når et modul har en nyere
+udgivelse, og intet under **Reparationer** gør opmærksom på det. Vil du tilbage
+til modulets kopi, så fjern din række under **Indstillinger → Betjeningspaneler
+→ Ressourcer**, og genstart Home Assistant. Sletter du filen til din kopi, så
+fjern også dens række: så længe en række, hvis fil er væk, bliver stående,
+tilføjer modulet ingen række af sin egen.
 
 Ethvert andet kort, der viser `geo_location`-entiteter, viser også togene,
 som almindelige markører.
