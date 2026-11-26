@@ -159,9 +159,6 @@ Alles ist kostenlos und quelloffen. Nichts wird für Sponsoren zurückgehalten.
   von Hand kopieren.
 * **Internetzugang** für Home Assistant: Jeder Zug kommt aus den eigenen
   veröffentlichten Daten seiner Bahn.
-* **Freiwillig: auto-entities** aus dem Marketplace, um die Markierungen auf
-  die Karte zu bringen (siehe
-  [Die Karte auf ein Dashboard bringen](#die-karte-auf-ein-dashboard-bringen)).
 * Nichts zu bezahlen. 13 der 33 Bahnen brauchen kein Konto; die anderen 20
   brauchen einen eigenen kostenlosen Schlüssel, und vier Schlüssel decken sie
   alle ab ([oben](#mit-ihrem-eigenen-kostenlosen-schlüssel-oder-konto-eingeschaltet)).
@@ -313,33 +310,6 @@ keine Ressource hinzuzufügen.
    dann **Karte hinzufügen**.
 2. Scrollen Sie ganz nach unten und wählen Sie **Manuell**.
 3. Fügen Sie dies ein und wählen Sie **Speichern**:
-
-```yaml
-type: custom:auto-entities
-card:
-  type: custom:live-track-map-card
-filter:
-  include:
-    - domain: geo_location
-      attributes:
-        source: live_track_intercity_rail
-      options:
-        display: attribute
-        attribute: marker_label
-        position_transition: auto
-  exclude:
-    - state: unavailable
-```
-
-Diese Form braucht
-[auto-entities](https://github.com/thomasloven/lovelace-auto-entities) aus dem
-Marketplace. Sind andere Live-Track-Module installiert, fügen Sie für jede
-ihrer Quellen einen weiteren Filter `- domain: geo_location` hinzu
-(`live_track_commuter_rail`, `live_track_aircraft` und so weiter).
-
-**Ohne auto-entities:** LiveTrackMapCard kann mit `entity_filter` selbst
-auswählen, was sie zeigt. Fügen Sie stattdessen dies ein; weiter muss nichts
-installiert werden:
 
 ```yaml
 type: custom:live-track-map-card

@@ -162,8 +162,6 @@ lucht urraíochta.
   de láimh.
 * **Rochtain ar an idirlíon** do Home Assistant: tagann gach traein ó shonraí
   foilsithe a hiarnróid féin.
-* **Roghnach: auto-entities** ón Margadh, chun na marcóirí a chur ar an
-  léarscáil (féach [Cuir an léarscáil ar phainéal](#cuir-an-léarscáil-ar-phainéal)).
 * Faic le híoc. Ní theastaíonn cuntas ó 13 de na 33 iarnród; teastaíonn
   eochair saor in aisce de do chuid féin ón 20 eile, agus clúdaíonn ceithre
   eochair iad go léir
@@ -311,32 +309,6 @@ acmhainn le cur leis.
    ansin **Cuir cárta leis**.
 2. Scrollaigh go dtí an bun agus roghnaigh **Lámhleabhar**.
 3. Greamaigh é seo, agus roghnaigh **Sábháil**:
-
-```yaml
-type: custom:auto-entities
-card:
-  type: custom:live-track-map-card
-filter:
-  include:
-    - domain: geo_location
-      attributes:
-        source: live_track_intercity_rail
-      options:
-        display: attribute
-        attribute: marker_label
-        position_transition: auto
-  exclude:
-    - state: unavailable
-```
-
-Teastaíonn [auto-entities](https://github.com/thomasloven/lovelace-auto-entities)
-ón Margadh don fhoirm seo. Le modúil Live Track eile suiteáilte, cuir scagaire
-`- domain: geo_location` eile leis do gach ceann dá bhfoinsí
-(`live_track_commuter_rail`, `live_track_aircraft` agus mar sin de).
-
-**Gan auto-entities:** is féidir le LiveTrackMapCard féin a roghnú cad a
-thaispeánann sí, le `entity_filter`. Greamaigh é seo ina ionad sin; níl aon
-rud eile le suiteáil:
 
 ```yaml
 type: custom:live-track-map-card
