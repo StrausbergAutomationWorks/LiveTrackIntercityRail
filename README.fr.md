@@ -21,7 +21,7 @@ ses propres données publiées.
 > [Proposez-la](#aidez-le-à-grandir), ou ajoutez-la vous-même : nous vous
 > aiderons à le faire.
 
-**État : 0.1.3, publié.** Dans le catalogue du Marketplace ([l'installer
+**État : 0.1.4, publié.** Dans le catalogue du Marketplace ([l'installer
 ci-dessous](#linstaller-étape-par-étape)).
 
 Travail original de StrausbergAutomationWorks. Ni affilié à, ni approuvé par

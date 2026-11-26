@@ -19,7 +19,7 @@ sig, från sina egna publicerade data.
 > och länder. Saknas din? [Föreslå den](#hjälp-den-att-växa), eller lägg
 > till den själv: vi hjälper dig med det.
 
-**Status: 0.1.3, utgiven.** I Marknadsplatsens katalog ([installera den
+**Status: 0.1.4, utgiven.** I Marknadsplatsens katalog ([installera den
 nedan](#installera-den-steg-för-steg)).
 
 Originalarbete av StrausbergAutomationWorks. Inte knutet till, eller

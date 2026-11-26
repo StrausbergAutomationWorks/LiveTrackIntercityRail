@@ -19,7 +19,7 @@ hinzugefügt, aus ihren eigenen veröffentlichten Daten.
 > und Länder hinzu. Fehlt Ihre? [Schlagen Sie sie vor](#helfen-sie-mit-es-zu-erweitern),
 > oder fügen Sie sie selbst hinzu: Wir helfen Ihnen dabei.
 
-**Status: 0.1.3, veröffentlicht.** Im Katalog des Marketplace ([Installation
+**Status: 0.1.4, veröffentlicht.** Im Katalog des Marketplace ([Installation
 unten](#installation-schritt-für-schritt)).
 
 Eigene Arbeit von StrausbergAutomationWorks. Nicht verbunden mit und nicht

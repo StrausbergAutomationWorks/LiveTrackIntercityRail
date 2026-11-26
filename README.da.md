@@ -19,7 +19,7 @@ fra dens egne offentliggjorte data.
 > lande. Mangler din? [Foreslå den](#hjælp-den-med-at-vokse), eller tilføj den
 > selv: vi hjælper dig med det.
 
-**Status: 0.1.3, udgivet.** I Markedspladsens katalog ([installér den
+**Status: 0.1.4, udgivet.** I Markedspladsens katalog ([installér den
 nedenfor](#installation-trin-for-trin)).
 
 Originalt værk af StrausbergAutomationWorks. Ikke tilknyttet eller godkendt

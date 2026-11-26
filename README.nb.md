@@ -19,7 +19,7 @@ sine egne publiserte data.
 > land. Mangler din? [Foreslå den](#hjelp-den-å-vokse), eller legg den til
 > selv: vi hjelper deg med det.
 
-**Status: 0.1.3, utgitt.** I Marketplace sin katalog ([installer den
+**Status: 0.1.4, utgitt.** I Marketplace sin katalog ([installer den
 nedenfor](#installer-den-trinn-for-trinn)).
 
 Originalt arbeid av StrausbergAutomationWorks. Ikke tilknyttet, eller

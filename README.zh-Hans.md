@@ -8,7 +8,7 @@
 
 > **不断扩展，欢迎提出想法。** Live Track Intercity Rail 目前覆盖 3 大洲 9 个国家的 33 条铁路，我们还在添加更多铁路和国家。缺少你的铁路吗？[提出建议](#帮助它成长)，或者自己添加：我们会帮你完成。
 
-**状态：0.1.3，已发布。** 已在 Marketplace 的目录中（[安装方法见下文](#安装步骤)）。
+**状态：0.1.4，已发布。** 已在 Marketplace 的目录中（[安装方法见下文](#安装步骤)）。
 
 StrausbergAutomationWorks 的原创作品。与 Amtrak、Amtraker、Brightline、VIA Rail、Fintraffic、VR、Transport for NSW、NSW TrainLink、Transport Victoria、V/Line、Queensland Rail、Journey Beyond、Public Transport Authority of Western Australia、Transwa、Renfe、Rodalies de Catalunya、Entur、Vy、Go-Ahead Norge、SJ Nord、Trafikverket、SJ、VR Snabbtåg、Snälltåget、Öresundståg、Pågatågen、Mälartåg、Västtågen、Krösatågen、Östgötapendeln、Norrtåg、Tåg i Bergslagen、X-Tåget、Värmlandstrafik、Tågab、Inlandsbanan、Irish Rail、National Transport Authority（爱尔兰）、NS、Arriva、Keolis、OVapi 或任何其他铁路均无关联，也未获其认可。
 

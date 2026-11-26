@@ -19,7 +19,7 @@ lisätään erikseen, sen omista julkaistuista tiedoista.
 > Puuttuuko omasi? [Ehdota sitä](#auta-sitä-kasvamaan) tai lisää se itse:
 > autamme sinua.
 
-**Tila: 0.1.3, julkaistu.** Markkinapaikan luettelossa ([asenna se
+**Tila: 0.1.4, julkaistu.** Markkinapaikan luettelossa ([asenna se
 alempana](#asenna-se-vaihe-vaiheelta)).
 
 StrausbergAutomationWorksin alkuperäistä työtä. Ei sidoksissa seuraaviin eikä

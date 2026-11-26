@@ -20,7 +20,7 @@ pubblicati.
 > e altri paesi. Manca la tua? [Suggeriscila](#aiutaci-a-farlo-crescere), o
 > aggiungila tu: ti aiuteremo a farlo.
 
-**Stato: 0.1.3, pubblicato.** Nel catalogo del Marketplace ([installalo più
+**Stato: 0.1.4, pubblicato.** Nel catalogo del Marketplace ([installalo più
 sotto](#installazione-passo-dopo-passo)).
 
 Opera originale di StrausbergAutomationWorks. Non affiliato a, né approvato

@@ -19,7 +19,7 @@ voeg je apart toe, op basis van zijn eigen gepubliceerde gegevens.
 > landen toe. Ontbreekt de jouwe? [Stel hem voor](#help-het-groeien), of voeg
 > hem zelf toe: we helpen je daarbij.
 
-**Status: 0.1.3, uitgebracht.** In de catalogus van de Marktplaats ([installeer
+**Status: 0.1.4, uitgebracht.** In de catalogus van de Marktplaats ([installeer
 het hieronder](#installeren-stap-voor-stap)).
 
 Origineel werk van StrausbergAutomationWorks. Niet verbonden aan, of
